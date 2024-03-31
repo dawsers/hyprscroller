@@ -1,0 +1,10 @@
+[hyprscroller]
+description = "A plugin providing a scrolling layout, inspired by PaperWM"
+authors = ["dawser"]
+output = "hyprscroller.so"
+build = [
+    "make release",
+]
+commit_pins = [
+    ["84ab8d11e8951a6551d1e1bf87796a8589da6d47", ""]
+]

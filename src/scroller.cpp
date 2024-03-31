@@ -1,10 +1,11 @@
 //#define COLORS_IPC
 
-#include <hyprland/src/Window.hpp>
-#include <hyprland/src/config/ConfigDataValues.hpp>
+#include <hyprland/src/desktop/Window.hpp>
+#include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/debug/Log.hpp>
 #include <hyprland/src/helpers/Vector2D.hpp>
-#include <hyprland/src/helpers/Workspace.hpp>
+#include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 #ifdef COLORS_IPC
@@ -466,9 +467,9 @@ public:
     Row(CWindow *window)
     : workspace(window->m_iWorkspaceID), active(nullptr) {
         // for gaps outer
-        static auto* const PGAPSIN = &g_pConfigManager->getConfigValuePtr("general:gaps_in")->intValue;
-        static auto* const PGAPSOUT = &g_pConfigManager->getConfigValuePtr("general:gaps_out")->intValue;
-        static auto* const BORDERSIZE = &g_pConfigManager->getConfigValuePtr("general:border_size")->intValue;
+        static auto PGAPSIN = CConfigValue<Hyprlang::INT>("general:gaps_in");
+        static auto PGAPSOUT = CConfigValue<Hyprlang::INT>("general:gaps_out");
+        static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
 
         const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
         const auto SIZE = PMONITOR->vecSize;
@@ -481,7 +482,7 @@ public:
                 SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * *PGAPSOUT,
                 SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * *PGAPSOUT);
 
-        update_sizes(fullsz, maxsz, *PGAPSIN, *BORDERSIZE);
+        update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
     }
     ~Row() {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
@@ -986,9 +987,9 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
         return;
 
     // for gaps outer
-    static auto* const PGAPSIN = &g_pConfigManager->getConfigValuePtr("general:gaps_in")->intValue;
-    static auto* const PGAPSOUT = &g_pConfigManager->getConfigValuePtr("general:gaps_out")->intValue;
-    static auto* const BORDERSIZE = &g_pConfigManager->getConfigValuePtr("general:border_size")->intValue;
+    static auto PGAPSIN       = CConfigValue<Hyprlang::INT>("general:gaps_in");
+    static auto PGAPSOUT       = CConfigValue<Hyprlang::INT>("general:gaps_out");
+    static auto PBORDERSIZE       = CConfigValue<Hyprlang::INT>("general:border_size");
 
     const auto SIZE = PMONITOR->vecSize;
     const auto POS = PMONITOR->vecPosition;
@@ -1000,7 +1001,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
             SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * *PGAPSOUT,
             SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * *PGAPSOUT);
 
-    s->update_sizes(fullsz, maxsz, *PGAPSIN, *BORDERSIZE);
+    s->update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
     if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FULLSCREEN_FULL) {
         s->set_fullscreen_active_window();
     } else {
@@ -1011,7 +1012,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
         if (sw == nullptr) {
             return;
         }
-        sw->update_sizes(fullsz, maxsz, *PGAPSIN, *BORDERSIZE);
+        sw->update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
         sw->recalculate_row_geometry();
     }
 }
@@ -1203,6 +1204,14 @@ void ScrollerLayout::onDisable() {
         delete row->data();
     }
     rows.clear();
+}
+
+/*
+    Called to predict the size of a newly opened window to send it a configure.
+    Return 0,0 if unpredictable
+*/
+Vector2D predictSizeForNewWindowTiled() {
+    return Vector2D(0.0, 0.0);
 }
 
 void ScrollerLayout::cycle_window_size(int workspace, int step)

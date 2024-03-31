@@ -31,6 +31,7 @@ public:
     virtual CWindow *getNextWindowCandidate(CWindow *);
     virtual void onWindowFocusChange(CWindow *);
     virtual void replaceWindowDataWith(CWindow *from, CWindow *to);
+    virtual Vector2D predictSizeForNewWindowTiled();
 
     // New Dispatchers
     void cycle_window_size(int workspace, int step);

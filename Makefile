@@ -1,47 +1,31 @@
 .PHONY: all debug release clean install dev
 
-CXXFLAGS = -fPIC -fno-gnu-unique -std=c++2b
+debug:
+	cmake -B ./Debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=$(PREFIX)
+	cmake --build ./Debug -j
+	rm -rf ./compile_commands.json
+	rm -rf ./hyprscroller.so
+	ln -s ./Debug/compile_commands.json .
+	ln -s ./Debug/hyprscroller.so .
 
-SRCS = src/main.cpp \
-	src/dispatchers.cpp \
-	src/scroller.cpp
-
-OBJS = $(SRCS:%.cpp=%.o)
-
-debug: CXXFLAGS += -g
-debug: hyprscroller.so
-
-release: CXXFLAGS += -O3
-release: hyprscroller.so
-
-%.o : %.cpp
-	$(CXX) $(CXXFLAGS) -DWLR_USE_UNSTABLE \
-	    -MT $@ -MMD -MP -MF $*.d \
-	    `pkg-config --cflags pixman-1 libdrm hyprland` \
-	    -c $< -o $@
+release:
+	cmake -B ./Release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(PREFIX)
+	cmake --build ./Release -j
+	rm -rf ./compile_commands.json
+	rm -rf ./hyprscroller.so
+	ln -s ./Release/compile_commands.json .
+	ln -s ./Release/hyprscroller.so .
 
 all: clean release
 
-hyprscroller.so: $(OBJS)
-	$(CXX) $(CXXFLAGS) -shared \
-	    -DWLR_USE_UNSTABLE \
-	    `pkg-config --cflags pixman-1 libdrm hyprland` \
-	    $(OBJS) \
-	    -o hyprscroller.so
-
 clean:
-	rm -f $(OBJS)
-	rm -f $(SRCS:%.cpp=%.d)
-	rm -f ./hyprscroller.so
-	rm -f compile_commands.json
+	rm -rf Release
+	rm -rf Debug
+	rm -rf ./hyprscroller.so
+	rm -rf ./compile_commands.json
 
 install: release
 	mkdir -p `xdg-user-dir`/.config/hypr/plugins
 	cp hyprscroller.so `xdg-user-dir`/.config/hypr/plugins
 
-dev: clean compile_commands.json
-
-compile_commands.json: Makefile $(SRCS)
-	bear -- make debug
-
--include $(SRCS:%.cpp=%.d)
+dev: clean debug

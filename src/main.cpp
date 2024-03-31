@@ -2,6 +2,7 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 
 #include "dispatchers.h"
+#include "hyprlang.hpp"
 #include "scroller.h"
 
 HANDLE PHANDLE = nullptr;
@@ -14,7 +15,9 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.freecolumn_border", SConfigValue{.data = std::make_shared<CGradientValueData>(0xff9e1515)});
+#ifdef COLORS_IPC
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.freecolumn_border", Hyprlang::CConfigValue(Hyprlang::INT(0xff9e1515)));
+#endif
     g_ScrollerLayout = std::make_unique<ScrollerLayout>();
     HyprlandAPI::addLayout(PHANDLE, "scroller", g_ScrollerLayout.get());
 

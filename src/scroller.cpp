@@ -1,6 +1,7 @@
 //#define COLORS_IPC
 
-#include <hyprland/src/desktop/Window.hpp>
+//#include <hyprland/src/desktop/Window.hpp>
+#include <hyprland/src/Window.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/debug/Log.hpp>

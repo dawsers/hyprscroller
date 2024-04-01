@@ -302,6 +302,11 @@ public:
     }
     bool move_focus_up() {
         if (active == windows.first()) {
+            CMonitor *monitor = g_pCompositor->getMonitorInDirection('u');
+            if (monitor == nullptr) {
+                active = windows.last();
+                return true;
+            }
             // use default dispatch for movefocus (change monitor)
             g_pKeybindManager->m_mDispatchers["movefocus"]("u");
             return false;
@@ -311,6 +316,11 @@ public:
     }
     bool move_focus_down() {
         if (active == windows.last()) {
+            CMonitor *monitor = g_pCompositor->getMonitorInDirection('d');
+            if (monitor == nullptr) {
+                active = windows.first();
+                return true;
+            }
             // use default dispatch for movefocus (change monitor)
             g_pKeybindManager->m_mDispatchers["movefocus"]("d");
             return false;
@@ -588,6 +598,12 @@ public:
 private:
     bool move_focus_left() {
         if (active == columns.first()) {
+            CMonitor *monitor = g_pCompositor->getMonitorInDirection('l');
+            if (monitor == nullptr) {
+                active = columns.last();
+                return true;
+            }
+
             g_pKeybindManager->m_mDispatchers["movefocus"]("l");
             return false;
         }
@@ -596,6 +612,12 @@ private:
     }
     bool move_focus_right() {
         if (active == columns.last()) {
+            CMonitor *monitor = g_pCompositor->getMonitorInDirection('r');
+            if (monitor == nullptr) {
+                active = columns.first();
+                return true;
+            }
+
             g_pKeybindManager->m_mDispatchers["movefocus"]("r");
             return false;
         }

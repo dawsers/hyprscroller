@@ -6,6 +6,6 @@ build = [
     "make release",
 ]
 commit_pins = [
-    ["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "be3af6893c0d4f854c8646bda0acae6ccaab2d1c"]
+    ["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "be3af6893c0d4f854c8646bda0acae6ccaab2d1c"],
     ["c5e28ebcfe00a510922779b2c568cfa52a317445", "4e7d18bb8f27f43274f8686fffc7daa2f249dd21"]
 ]

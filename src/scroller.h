@@ -3,6 +3,7 @@
 #include "list.h"
 
 enum class Direction { Left, Right, Up, Down, Begin, End, Center };
+enum class FitWidth { Active, Visible, All, ToEnd, ToBeg };
 
 class Row;
 
@@ -41,6 +42,7 @@ public:
     void expel_window_right(int workspace);
     void reset_height(int workspace);
     void toggle_height(int workspace);
+    void fit_width(int workspace, FitWidth);
 
 private:
     Row *getRowForWorkspace(int workspace);

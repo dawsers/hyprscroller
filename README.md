@@ -276,7 +276,7 @@ When moving focus in a direction, if the focus changes column, it should try
 first to go to the column in that direction if there is one, or if not, to the
 monitor in the same direction (if there is one). If none of the previous
 considerations are true, the focus will cycle to the first/last column/window
-on the monitor, depending on the direction of focus.
+of the workspace, depending on the direction of focus.
 
 When entering a new column, the focus will go to the last active window in
 that column (there is memory).

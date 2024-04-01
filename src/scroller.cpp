@@ -137,6 +137,10 @@ public:
     double get_geom_w() const {
         return geom.w;
     }
+    // Used by Row::fit_width()
+    void set_geom_w(double w) {
+        geom.w = w;
+    }
     bool toggle_fullscreen(const Box &fullbbox) {
         CWindow *wactive = active->data()->ptr();
         wactive->m_bIsFullscreen = !wactive->m_bIsFullscreen;
@@ -813,6 +817,73 @@ public:
         column->toggle_maximized(max.w, max.h);
         recalculate_row_geometry();
     }
+
+    void fit_width(FitWidth fitwidth) {
+        ListNode<Column *> *from, *to;
+        switch (fitwidth) {
+        case FitWidth::Active:
+            from = to = active;
+            break;
+        case FitWidth::Visible:
+            for (auto c = columns.first(); c != nullptr; c = c->next()) {
+                Column *col = c->data();
+                auto c0 = col->get_geom_x();
+                auto c1 = col->get_geom_x() + col->get_geom_w();
+                if (c0 <= max.x + max.w && c0 >= max.x ||
+                    c1 >= max.x && c1 <= max.x + max.w ||
+                    //should never happen as columns are never wider than the screen
+                    c0 < max.x && c1 > max.x + max.w) {
+                    from = c;
+                    break;
+                }
+            }
+            for (auto c = columns.last(); c != nullptr; c = c->prev()) {
+                Column *col = c->data();
+                auto c0 = col->get_geom_x();
+                auto c1 = col->get_geom_x() + col->get_geom_w();
+                if (c0 <= max.x + max.w && c0 >= max.x ||
+                    c1 >= max.x && c1 <= max.x + max.w ||
+                    //should never happen as columns are never wider than the screen
+                    c0 < max.x && c1 > max.x + max.w) {
+                    to = c;
+                    break;
+                }
+            }
+            break;
+        case FitWidth::All:
+            from = columns.first();
+            to = columns.last();
+            break;
+        case FitWidth::ToEnd:
+            from = active;
+            to = columns.last();
+            break;
+        case FitWidth::ToBeg:
+            from = columns.first();
+            to = active;
+            break;
+        default:
+            return;
+        }
+
+        // Now align from to left edge of the screen (max.x), split width of
+        // screen (max.w) among from->to, and readapt the rest
+        if (from != nullptr && to != nullptr) {
+            auto c = from;
+            double total = 0.0;
+            for (auto c = from; c != to->next(); c = c->next()) {
+                total += c->data()->get_geom_w();
+            }
+            for (auto c = from; c != to->next(); c = c->next()) {
+                Column *col = c->data();
+                col->set_geom_w(col->get_geom_w() / total * max.w);
+            }
+            from->data()->set_geom_pos(max.x, max.y);
+
+            adjust_columns(from);
+        }
+    }
+
     void recalculate_row_geometry() {
         if (active == nullptr)
             return;
@@ -863,12 +934,18 @@ public:
             active->data()->set_geom_pos(a_x, max.y);
         }
 
+        adjust_columns(active);
+    }
+
+private:
+    // Adjust all the columns in the row using 'column' as anchor
+    void adjust_columns(ListNode<Column *> *column) {
         // Adjust the positions of the columns to the left
-        for (auto col = active->prev(), prev = active; col != nullptr; prev = col, col = col->prev()) {
+        for (auto col = column->prev(), prev = column; col != nullptr; prev = col, col = col->prev()) {
             col->data()->set_geom_pos(prev->data()->get_geom_x() - col->data()->get_geom_w(), max.y);
         }
         // Adjust the positions of the columns to the right
-        for (auto col = active->next(), prev = active; col != nullptr; prev = col, col = col->next()) {
+        for (auto col = column->next(), prev = column; col != nullptr; prev = col, col = col->next()) {
             col->data()->set_geom_pos(prev->data()->get_geom_x() + prev->data()->get_geom_w(), max.y);
         }
 
@@ -881,7 +958,6 @@ public:
         }
     }
 
-private:
     int workspace;
     Box full;
     Box max;
@@ -1312,3 +1388,10 @@ void ScrollerLayout::toggle_height(int workspace) {
     s->toggle_height();
 }
 
+void ScrollerLayout::fit_width(int workspace, FitWidth fitwidth) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+    s->fit_width(fitwidth);
+}

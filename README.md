@@ -18,6 +18,14 @@ found problematic compiling trunk versions of *Hyprland* on a system that
 already has a system-wide version of it installed, so I will not make an extra
 effort there until things improve in that front.
 
+
+## Requirements
+
+*hyprscroller* currently supports *Hyprland* tagged versions 0.35.0, 0.37.1,
+and you can try your luck with the latest `git` changes, but I will be slower to keep
+up with those.
+
+
 ## Building and installing
 
 With Hyprland installed it should be as simple as running
@@ -84,6 +92,7 @@ The plugin adds the following dispatchers:
 | `scroller:expelwindow`  | Pop the current window out of its column and place it to the right.                                |
 | `scroller:resetheight`  | For a multi-window column, makes every window the same height.                                     |
 | `scroller:toggleheight` | Toggle between `Auto` and `Free` height mode for the active column.                                |
+| `scroller:fitwidth`     | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`             |
 
 
 ## Window/Column Focus and Movement
@@ -150,6 +159,26 @@ To expel any window from its current column and position it in a new column on
 its right, use `expelwindow`.
 
 
+## Fitting the Screen
+
+When you have a ultra-wide monitor or the default column widths don't fit your
+workflow, you can use manual resizing, but it is sometimes slow and tricky.
+
+`scroller:fitwidth` allows you to re-fit the columns you want to the screen
+extents. It accepts an argument related to the columns it will try to fit. The
+new width of each column will be proportional to its previous width relative
+to the other columns affected.
+
+1. `active`: It is similar to maximize, it will fit the active column.
+2. `visible`: All the currently fully or partially visible columns will be
+   resized to fit the screen.
+3. `all`: All the columns in the row will be resized to fit.
+4. `toend`: All the columns from the focused one to the end of the row will be
+   affected.
+5. `tobeg` or `tobeginning`: All the columns from the focused on to the
+   beginning of the row will now fit the screen.
+
+
 ## Key bindings
 
 As an example, you could set some key bindings in your `hyprland.conf` like this:
@@ -208,6 +237,22 @@ binde = , right, resizeactive, 100 0
 binde = , left, resizeactive, -100 0
 binde = , up, resizeactive, 0 -100
 binde = , down, resizeactive, 0 100
+# use reset to go back to the global submap
+bind = , escape, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
+
+# Fitwidth submap
+# will switch to a submap called fitwidth
+bind = $mainMod, T, submap, fitwidth
+# will start a submap called "fiwidth"
+submap = fitwidth
+# sets repeatable binds for resizing the active window
+bind = , up, scroller:fitwidth, active
+bind = , down, scroller:fitwidth, all
+bind = , right, scroller:fitwidth, toend
+bind = , left, scroller:fitwidth, tobeg
+bind = , t, scroller:fitwidth, visible
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one

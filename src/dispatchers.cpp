@@ -132,6 +132,30 @@ namespace {
 
         g_ScrollerLayout->toggle_height(workspace);
     }
+    std::optional<FitWidth> parse_fit_width(std::string arg) {
+        if (arg == "active")
+            return FitWidth::Active;
+        else if (arg == "visible")
+            return FitWidth::Visible;
+        else if (arg == "all")
+            return FitWidth::All;
+        else if (arg == "toend")
+            return FitWidth::ToEnd;
+        else if (arg == "tobeg" || arg == "tobeginning")
+            return FitWidth::ToBeg;
+        else
+            return {};
+    }
+    void dispatch_fitwidth(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        auto args = CVarList(arg);
+        if (auto fitwidth = parse_fit_width(args[0])) {
+            g_ScrollerLayout->fit_width(workspace, *fitwidth);
+        }
+    }
 }
 
 void dispatchers::addDispatchers() {
@@ -143,4 +167,5 @@ void dispatchers::addDispatchers() {
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:resetheight", dispatch_resetheight);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleheight", dispatch_toggleheight);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
 }

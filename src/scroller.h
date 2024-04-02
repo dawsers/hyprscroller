@@ -43,6 +43,7 @@ public:
     void reset_height(int workspace);
     void toggle_height(int workspace);
     void fit_width(int workspace, FitWidth);
+    void toggle_overview(int workspace);
 
 private:
     Row *getRowForWorkspace(int workspace);

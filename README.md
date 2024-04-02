@@ -82,17 +82,18 @@ general {
 
 The plugin adds the following dispatchers:
 
-| Dispatcher              | Description                                                                                        |
-|-------------------------|----------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`    | A replacement for `movefocus`, takes a direction as argument.                                      |
-| `scroller:movewindow`   | A replacement for `movewindow`, takes a direction as argument.                                     |
-| `scroller:cyclesize`    | Resize the focused window. Cycles through: one third, half, and two thirds of the screen size.     |
-| `scroller:alignwindow`  | Align the focused window on the screen, `l/left`, `c/center`, `r/right`                            |
-| `scroller:admitwindow`  | Push the current window into the bottom position of the column to its left.                        |
-| `scroller:expelwindow`  | Pop the current window out of its column and place it to the right.                                |
-| `scroller:resetheight`  | For a multi-window column, makes every window the same height.                                     |
-| `scroller:toggleheight` | Toggle between `Auto` and `Free` height mode for the active column.                                |
-| `scroller:fitwidth`     | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`             |
+| Dispatcher              | Description                                                                                          |
+|-------------------------|------------------------------------------------------------------------------------------------------|
+| `scroller:movefocus`    | A replacement for `movefocus`, takes a direction as argument.                                        |
+| `scroller:movewindow`   | A replacement for `movewindow`, takes a direction as argument.                                       |
+| `scroller:cyclesize`    | Resize the focused window. Cycles through: one third, half, and two thirds of the screen size.       |
+| `scroller:alignwindow`  | Align the focused window on the screen, `l/left`, `c/center`, `r/right`                              |
+| `scroller:admitwindow`  | Push the current window into the bottom position of the column to its left.                          |
+| `scroller:expelwindow`  | Pop the current window out of its column and place it to the right.                                  |
+| `scroller:resetheight`  | For a multi-window column, makes every window the same height.                                       |
+| `scroller:toggleheight` | Toggle between `Auto` and `Free` height mode for the active column.                                  |
+| `scroller:fitwidth`     | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`               |
+| `scroller:overview`     | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor  |
 
 
 ## Window/Column Focus and Movement
@@ -179,6 +180,17 @@ to the other columns affected.
    beginning of the row will now fit the screen.
 
 
+## Overview
+
+`scroller:overview` toggles a bird's eye view of the current workspace where
+all the windows are scaled to fit the current monitor. You can still interact
+with them normally (change focus, move windows, type in them etc.). When
+toggling back to normal mode, the original window sizes will be restored...so
+it is not wise to use *overview* for window resizing. Use it as a way to see
+where things are and move the active focus, or a window, anything beyond that
+will probably find bugs.
+
+
 ## Key bindings
 
 As an example, you could set some key bindings in your `hyprland.conf` like this:
@@ -257,6 +269,8 @@ bind = , t, scroller:fitwidth, visible
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
+
+bind = $mainMod, tab, scroller:overview
 ```
 
 

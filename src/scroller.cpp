@@ -61,9 +61,12 @@ public:
     CWindow *ptr() { return window; }
     double get_geom_h() const { return box_h; }
     void set_geom_h(double geom_h) { box_h = geom_h; }
+    void push_geom_h() { mem_h = box_h; }
+    void pop_geom_h() { box_h = mem_h; }
 private:
     CWindow *window;
     double box_h;
+    double mem_h;    // memory to store old height when in maximized/overview modes
 };
 
 class Column {
@@ -141,6 +144,18 @@ public:
     void set_geom_w(double w) {
         geom.w = w;
     }
+    double get_height() const {
+        double height = 0;
+        for (auto win = windows.first(); win != nullptr; win = win->next()) {
+            height += win->data()->get_geom_h();
+        }
+        return height;
+    }
+    void scale_height(double scale) {
+        for (auto win = windows.first(); win != nullptr; win = win->next()) {
+            win->data()->set_geom_h(win->data()->get_geom_h() * scale);
+        }
+    }
     bool toggle_fullscreen(const Box &fullbbox) {
         CWindow *wactive = active->data()->ptr();
         wactive->m_bIsFullscreen = !wactive->m_bIsFullscreen;
@@ -156,15 +171,30 @@ public:
         // If this is called, it won't work unless the window is also set to full screen
         full = fullbbox;
     }
+    void push_geom() {
+        mem_x = geom.x;
+        mem_w = geom.w;
+        for (auto w = windows.first(); w != nullptr; w = w->next()) {
+            w->data()->push_geom_h();
+        }
+    }
+    void pop_geom() {
+        geom.x = mem_x;
+        geom.w = mem_w;
+        for (auto w = windows.first(); w != nullptr; w = w->next()) {
+            w->data()->pop_geom_h();
+        }
+    }
     void toggle_maximized(double maxw, double maxh) {
         maxdim = !maxdim;
         if (maxdim) {
-            maxmem = Vector2D(geom.w, active->data()->get_geom_h());
+            mem_w = geom.w;
+            active->data()->push_geom_h();
             geom.w = maxw;
             active->data()->set_geom_h(maxh);
         } else {
-            geom.w = maxmem.x;
-            active->data()->set_geom_h(maxmem.y);
+            geom.w = mem_w;
+            active->data()->pop_geom_h();
         }
     }
     bool fullscreen() const {
@@ -431,7 +461,7 @@ public:
          if (mwidth <= 0.0 || rwidth >= maxw)
             return;
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
-            auto wh = win->data()->ptr()->m_vSize.y;
+            auto wh = win->data()->get_geom_h();
             if (win == active)
                 wh += delta.y;
             else if (height == WindowHeight::Auto) {
@@ -471,7 +501,8 @@ private:
     bool initialized;
     Box geom;        // bbox of column
     bool maxdim;     // maximized?
-    Vector2D maxmem; // keeps a memory of the active window size while in maximized mode
+    double mem_x;    // keeps a memory of the column x position while in maximized/overview mode
+    double mem_w;    // keeps a memory of the column width while in maximized/overview mode
     Box full;        // full screen geometry
     ListNode<Window *> *active;
     List<Window *> windows;
@@ -480,7 +511,7 @@ private:
 class Row {
 public:
     Row(CWindow *window)
-    : workspace(window->m_iWorkspaceID), active(nullptr) {
+    : workspace(window->m_iWorkspaceID), overview(false), active(nullptr) {
         // for gaps outer
         static auto PGAPSIN = CConfigValue<Hyprlang::INT>("general:gaps_in");
         static auto PGAPSOUT = CConfigValue<Hyprlang::INT>("general:gaps_out");
@@ -808,9 +839,6 @@ public:
 
         recalculate_row_geometry();
     }
-    Vector2D predict_window_size() const {
-        return Vector2D(0.5 * max.w, max.h);
-    }
     void update_sizes(const Box &full_size, const Box &max_size, int gaps_in, int border_size) {
         full = full_size;
         max = max_size;
@@ -908,6 +936,42 @@ public:
             adjust_columns(from);
         }
     }
+    void toggle_overview() {
+        overview = !overview;
+        if (overview) {
+            double total_w = 0.0, max_h = 0.0;
+            for (auto c = columns.first(); c != nullptr; c = c->next()) {
+                total_w += c->data()->get_geom_w();
+                if (c->data()->get_height() > max_h) {
+                    max_h = c->data()->get_height();
+                }
+            }
+            double scale = std::min(max.w / total_w, max.h / max_h);
+            for (auto c = columns.first(); c != nullptr; c = c->next()) {
+                Column *col = c->data();
+                col->push_geom();
+                col->set_geom_w(col->get_geom_w() * scale);
+                col->scale_height(scale);
+            }
+            columns.first()->data()->set_geom_pos(max.x, max.y);
+
+            adjust_columns(columns.first());
+        } else {
+            for (auto c = columns.first(); c != nullptr; c = c->next()) {
+                Column *col = c->data();
+                col->pop_geom();
+            }
+            // Try to maintain the positions except if the active is not visible,
+            // in that case, make it visible.
+            Column *acolumn = active->data();
+            if (acolumn->get_geom_x() < max.x) {
+                acolumn->set_geom_pos(max.x, max.y);
+            } else if (acolumn->get_geom_x() + acolumn->get_geom_w() > max.x + max.w) {
+                acolumn->set_geom_pos(max.x + max.w - acolumn->get_geom_w(), max.y);
+            }
+            adjust_columns(active);
+        }
+    }
 
     void recalculate_row_geometry() {
         if (active == nullptr)
@@ -986,6 +1050,7 @@ private:
     int workspace;
     Box full;
     Box max;
+    bool overview;
     int gap;
     int border;
     ListNode<Column *> *active;
@@ -1308,22 +1373,6 @@ void ScrollerLayout::onDisable() {
     rows.clear();
 }
 
-/*
-    Called to predict the size of a newly opened window to send it a configure.
-    Return 0,0 if unpredictable
-*/
-Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
-    if (!g_pCompositor->m_pLastMonitor)
-        return {};
-
-    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
-    auto s = getRowForWorkspace(workspace_id);
-    if (s == nullptr)
-        return {};
-
-    return s->predict_window_size();
-}
-
 void ScrollerLayout::cycle_window_size(int workspace, int step)
 {
     auto s = getRowForWorkspace(workspace);
@@ -1427,4 +1476,12 @@ void ScrollerLayout::fit_width(int workspace, FitWidth fitwidth) {
         return;
     }
     s->fit_width(fitwidth);
+}
+
+void ScrollerLayout::toggle_overview(int workspace) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+    s->toggle_overview();
 }

@@ -156,6 +156,13 @@ namespace {
             g_ScrollerLayout->fit_width(workspace, *fitwidth);
         }
     }
+    void dispatch_overview(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        g_ScrollerLayout->toggle_overview(workspace);
+    }
 }
 
 void dispatchers::addDispatchers() {
@@ -168,4 +175,5 @@ void dispatchers::addDispatchers() {
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:resetheight", dispatch_resetheight);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleheight", dispatch_toggleheight);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:overview", dispatch_overview);
 }

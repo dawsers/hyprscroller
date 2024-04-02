@@ -808,6 +808,9 @@ public:
 
         recalculate_row_geometry();
     }
+    Vector2D predict_window_size() const {
+        return Vector2D(0.5 * max.w, max.h);
+    }
     void update_sizes(const Box &full_size, const Box &max_size, int gaps_in, int border_size) {
         full = full_size;
         max = max_size;
@@ -1309,8 +1312,16 @@ void ScrollerLayout::onDisable() {
     Called to predict the size of a newly opened window to send it a configure.
     Return 0,0 if unpredictable
 */
-Vector2D predictSizeForNewWindowTiled() {
-    return Vector2D(0.0, 0.0);
+Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
+    if (!g_pCompositor->m_pLastMonitor)
+        return {};
+
+    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+    auto s = getRowForWorkspace(workspace_id);
+    if (s == nullptr)
+        return {};
+
+    return s->predict_window_size();
 }
 
 void ScrollerLayout::cycle_window_size(int workspace, int step)

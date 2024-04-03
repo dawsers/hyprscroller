@@ -513,9 +513,14 @@ public:
     Row(CWindow *window)
     : workspace(window->m_iWorkspaceID), overview(false), active(nullptr) {
         // for gaps outer
-        static auto PGAPSIN = CConfigValue<Hyprlang::INT>("general:gaps_in");
-        static auto PGAPSOUT = CConfigValue<Hyprlang::INT>("general:gaps_out");
+        static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
+        static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
+        auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
+        auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
         static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
+        // For now, support only constant CCssGapData
+        auto gaps_in = PGAPSIN->top;
+        auto gaps_out = PGAPSOUT->top;
 
         const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
         const auto SIZE = PMONITOR->vecSize;
@@ -523,12 +528,12 @@ public:
         const auto TOPLEFT = PMONITOR->vecReservedTopLeft;
         const auto BOTTOMRIGHT = PMONITOR->vecReservedBottomRight;
         auto fullsz = Box(POS, SIZE);
-        auto maxsz = Box(POS.x + TOPLEFT.x + *PGAPSOUT,
-                POS.y + TOPLEFT.y + *PGAPSOUT,
-                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * *PGAPSOUT,
-                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * *PGAPSOUT);
+        auto maxsz = Box(POS.x + TOPLEFT.x + gaps_out,
+                POS.y + TOPLEFT.y + gaps_out,
+                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
+                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
 
-        update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
+        update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
     }
     ~Row() {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
@@ -1146,32 +1151,38 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
     auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
     if (!PMONITOR)
         return;
+
+    g_pHyprRenderer->damageMonitor(PMONITOR);
+
     auto PWORKSPACE = g_pCompositor->getWorkspaceByID(PMONITOR->activeWorkspace);
     if (!PWORKSPACE)
         return;
-
-    g_pHyprRenderer->damageMonitor(PMONITOR);
 
     auto s = getRowForWorkspace(PWORKSPACE->m_iID);
     if (s == nullptr)
         return;
 
     // for gaps outer
-    static auto PGAPSIN       = CConfigValue<Hyprlang::INT>("general:gaps_in");
-    static auto PGAPSOUT       = CConfigValue<Hyprlang::INT>("general:gaps_out");
-    static auto PBORDERSIZE       = CConfigValue<Hyprlang::INT>("general:border_size");
+    static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
+    static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
+    auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
+    auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
+    static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
+    // For now, support only constant CCssGapData
+    auto gaps_in = PGAPSIN->top;
+    auto gaps_out = PGAPSOUT->top;
 
     const auto SIZE = PMONITOR->vecSize;
     const auto POS = PMONITOR->vecPosition;
     const auto TOPLEFT = PMONITOR->vecReservedTopLeft;
     const auto BOTTOMRIGHT = PMONITOR->vecReservedBottomRight;
     auto fullsz = Box(POS, SIZE);
-    auto maxsz = Box(POS.x + TOPLEFT.x + *PGAPSOUT,
-            POS.y + TOPLEFT.y + *PGAPSOUT,
-            SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * *PGAPSOUT,
-            SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * *PGAPSOUT);
+    auto maxsz = Box(POS.x + TOPLEFT.x + gaps_out,
+            POS.y + TOPLEFT.y + gaps_out,
+            SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
+            SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
 
-    s->update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
+    s->update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
     if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FULLSCREEN_FULL) {
         s->set_fullscreen_active_window();
     } else {
@@ -1182,7 +1193,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
         if (sw == nullptr) {
             return;
         }
-        sw->update_sizes(fullsz, maxsz, *PGAPSIN, *PBORDERSIZE);
+        sw->update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
         sw->recalculate_row_geometry();
     }
 }
@@ -1386,8 +1397,11 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
 
     int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
     auto s = getRowForWorkspace(workspace_id);
-    if (s == nullptr)
-        return {};
+    if (s == nullptr) {
+        Vector2D size =g_pCompositor->m_pLastMonitor->vecSize;
+        size.x *= 0.5;
+        return size;
+    }
 
     return s->predict_window_size();
 }

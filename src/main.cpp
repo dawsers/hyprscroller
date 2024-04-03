@@ -20,6 +20,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     dispatchers::addDispatchers();
 
+    HyprlandAPI::reloadConfig();
+
     return {"hyprscroller", "scrolling window layout", "dawser", "1.0"};
 }
 

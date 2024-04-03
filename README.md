@@ -9,21 +9,23 @@ which is a similar idea.
 ![Intro](./videos/hyprscroller.gif)
 
 The plugin is quite feature complete and supports gaps, borders, special
-workspace, full screen modes and installation through `hyprpm`.
+workspace, full screen modes, overview and installation through `hyprpm`.
 
 I use *hyprscroller* on my main machine and will support it for as long as I
 keep on using *Hyprland*. However, I will only add new features that I find
-interesting, and support the *Hyprland* version my distribution uses. I have
-found problematic compiling trunk versions of *Hyprland* on a system that
-already has a system-wide version of it installed, so I will not make an extra
-effort there until things improve in that front.
+interesting, and support two *Hyprland* versions: the one my distribution uses,
+and the latest tagged one. I have found problematic compiling trunk versions
+of *Hyprland* on a system that already has a system-wide version of it
+installed, so I will not make an extra effort there until things improve in
+that front.
 
 
 ## Requirements
 
-*hyprscroller* currently supports *Hyprland* tagged versions 0.35.0, 0.37.1,
-and you can try your luck with the latest `git` changes, but I will be slower to keep
-up with those.
+*hyprscroller* supports the version of *Hyprland* I use (currently v0.35)
+plus the latest tagged one (currently v0.38.0), and you can try your luck with
+the latest `git` changes, but I will be slower to keep up with those, as there
+are too many API changes going on upstream.
 
 
 ## Building and installing
@@ -82,18 +84,18 @@ general {
 
 The plugin adds the following dispatchers:
 
-| Dispatcher              | Description                                                                                          |
-|-------------------------|------------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`    | A replacement for `movefocus`, takes a direction as argument.                                        |
-| `scroller:movewindow`   | A replacement for `movewindow`, takes a direction as argument.                                       |
-| `scroller:cyclesize`    | Resize the focused window. Cycles through: one third, half, and two thirds of the screen size.       |
-| `scroller:alignwindow`  | Align the focused window on the screen, `l/left`, `c/center`, `r/right`                              |
-| `scroller:admitwindow`  | Push the current window into the bottom position of the column to its left.                          |
-| `scroller:expelwindow`  | Pop the current window out of its column and place it to the right.                                  |
-| `scroller:resetheight`  | For a multi-window column, makes every window the same height.                                       |
-| `scroller:toggleheight` | Toggle between `Auto` and `Free` height mode for the active column.                                  |
-| `scroller:fitwidth`     | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`               |
-| `scroller:overview`     | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor  |
+| Dispatcher                | Description                                                                                          |
+|---------------------------|------------------------------------------------------------------------------------------------------|
+| `scroller:movefocus`      | A replacement for `movefocus`, takes a direction as argument.                                        |
+| `scroller:movewindow`     | A replacement for `movewindow`, takes a direction as argument.                                       |
+| `scroller:cyclesize`      | Resize the focused window. Cycles through: one third, half, and two thirds of the screen size.       |
+| `scroller:alignwindow`    | Align the focused window on the screen, `l/left`, `c/center`, `r/right`                              |
+| `scroller:admitwindow`    | Push the current window into the bottom position of the column to its left.                          |
+| `scroller:expelwindow`    | Pop the current window out of its column and place it to the right.                                  |
+| `scroller:resetheight`    | For a multi-window column, makes every window the same height.                                       |
+| `scroller:toggleheight`   | Toggle between `Auto` and `Free` height mode for the active column.                                  |
+| `scroller:fitwidth`       | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`               |
+| `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor  |
 
 
 ## Window/Column Focus and Movement
@@ -182,11 +184,11 @@ to the other columns affected.
 
 ## Overview
 
-`scroller:overview` toggles a bird's eye view of the current workspace where
+`scroller:toggleoverview` toggles a bird's eye view of the current workspace where
 all the windows are scaled to fit the current monitor. You can still interact
 with them normally (change focus, move windows, type in them etc.). When
 toggling back to normal mode, the original window sizes will be restored...so
-it is not wise to use *overview* for window resizing. Use it as a way to see
+it is not wise to use *toggleoverview* for window resizing. Use it as a way to see
 where things are and move the active focus, or a window, anything beyond that
 will probably find bugs.
 
@@ -270,7 +272,7 @@ bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
-bind = $mainMod, tab, scroller:overview
+bind = $mainMod, tab, scroller:toggleoverview
 ```
 
 

@@ -256,23 +256,48 @@ bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
-# Fitwidth submap
+# Fit width submap
 # will switch to a submap called fitwidth
-bind = $mainMod, T, submap, fitwidth
-# will start a submap called "fiwidth"
+bind = $mainMod, W, submap, fitwidth
+# will start a submap called "fitwidth"
 submap = fitwidth
-# sets repeatable binds for resizing the active window
-bind = , up, scroller:fitwidth, active
-bind = , down, scroller:fitwidth, all
+# sets binds for fitting columns in the screen
+bind = , W, scroller:fitwidth, visible
+bind = , W, submap, reset
 bind = , right, scroller:fitwidth, toend
+bind = , right, submap, reset
 bind = , left, scroller:fitwidth, tobeg
-bind = , t, scroller:fitwidth, visible
+bind = , left, submap, reset
+bind = , up, scroller:fitwidth, active
+bind = , up, submap, reset
+bind = , down, scroller:fitwidth, all
+bind = , down, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
+# overview keys
+# bind key to toggle overview (normal)
 bind = $mainMod, tab, scroller:toggleoverview
+# overview submap
+# will switch to a submap called overview
+bind = $mainMod, tab, submap, overview
+# will start a submap called "overview"
+submap = overview
+bind = , right, scroller:movefocus, right
+bind = , left, scroller:movefocus, left
+bind = , up, scroller:movefocus, up
+bind = , down, scroller:movefocus, down
+# use reset to go back to the global submap
+bind = , escape, scroller:toggleoverview,
+bind = , escape, submap, reset
+bind = , return, scroller:toggleoverview,
+bind = , return, submap, reset
+bind = $mainMod, tab, scroller:toggleoverview,
+bind = $mainMod, tab, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
 ```
 
 

@@ -458,35 +458,41 @@ public:
         // we never get in trouble when a window gets expelled from a column
         // with gaps_out, gaps_in, to a column with gaps_in on both sides.
         auto mwidth = geom.w + delta.x - 2.0 * (border + std::max(std::max(gap_x.x, gap_x.y), gap));
-         if (mwidth <= 0.0 || rwidth >= maxw)
+        if (mwidth <= 0.0 || rwidth >= maxw)
             return;
-        for (auto win = windows.first(); win != nullptr; win = win->next()) {
-            auto wh = win->data()->get_geom_h();
-            if (win == active)
-                wh += delta.y;
-            else if (height == WindowHeight::Auto) {
-                // In Auto, all the windows need to fit the column, so the
-                // resizing pushes the active window against the others
-                wh -= delta.y / (size() - 1);
+
+        if (std::abs(static_cast<int>(delta.y)) > 0) {
+            for (auto win = windows.first(); win != nullptr; win = win->next()) {
+                auto gap0 = win == windows.first() ? 0.0 : gap;
+                auto gap1 = win == windows.last() ? 0.0 : gap;
+                auto wh = win->data()->get_geom_h() - gap0 - gap1 - 2.0 * border;
+                if (win == active)
+                    wh += delta.y;
+                else if (height == WindowHeight::Auto) {
+                    // In Auto, all the windows need to fit the column, so the
+                    // resizing pushes the active window against the others
+                    wh -= delta.y / (size() - 1);
+                }
+                if (wh <= 0.0 || wh + 2.0 * border + gap0 + gap1 > geom.h)
+                    // geom.h already includes gaps_out
+                    return;
             }
-            if (wh <= 0.0 || wh > geom.h - 2.0 * border)
-                // geom.h already includes gaps_out
-                return;
         }
         // Now, resize.
         width = ColumnWidth::Free;
 
         geom.w += delta.x;
-        for (auto win = windows.first(); win != nullptr; win = win->next()) {
-            Window *window = win->data();
-            if (win == active)
-                window->set_geom_h(window->get_geom_h() + delta.y);
-            else if (height == WindowHeight::Auto) {
-                window->set_geom_h(window->get_geom_h() - delta.y / (size() - 1));
+        if (std::abs(static_cast<int>(delta.y)) > 0) {
+            for (auto win = windows.first(); win != nullptr; win = win->next()) {
+                Window *window = win->data();
+                if (win == active)
+                    window->set_geom_h(window->get_geom_h() + delta.y);
+                else if (height == WindowHeight::Auto) {
+                    window->set_geom_h(window->get_geom_h() - delta.y / (size() - 1));
+                }
             }
         }
     }
-
 
 private:
     void reset_heights() {

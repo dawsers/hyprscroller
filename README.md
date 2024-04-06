@@ -142,12 +142,12 @@ modes:
 ## Aligning
 
 Columns are generally aligned in automatic mode, always making the active one
-visible, and trying to make at least the previously focused one visible too.
-Focus is *lazy*: if a column is visible, it doesn't move it when changing
-focus or moving the window, so you can keep your eyes focused on that region of
-the screen. However, you can always align any column to the *center*, *left*
-or *right* of the monitor, for example center a column for easier reading,
-regardless of what happens to the other columns.
+visible, and trying to make at least the previously focused one visible too if
+it fits the viewport, if not, the one adjacent on the other side. However, you
+can always align any column to the *center*, *left* or *right* of the monitor,
+for example center a column for easier reading, regardless of what happens to
+the other columns. As soon as you change focus or move a column, the alignment
+is lost.
 
 `alignwindow` takes a parameter: `l` or `left`, `r` or `right`, and `c` or
 `center` or `centre`.
@@ -191,6 +191,25 @@ toggling back to normal mode, the original window sizes will be restored...so
 it is not wise to use *toggleoverview* for window resizing. Use it as a way to see
 where things are and move the active focus, or a window, anything beyond that
 will probably find bugs.
+
+
+## Options
+
+*hyprscroller* currently accepts the following options:
+
+1. `column_default_width`: determines the width of new columns (windows).
+Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
+`maximized`, `floating` (uses the default width set by the application).
+
+For example:
+
+``` conf
+plugin {
+    scroller {
+        column_default_width = onehalf
+    }
+}
+```
 
 
 ## Key bindings
@@ -256,23 +275,48 @@ bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
-# Fitwidth submap
+# Fit width submap
 # will switch to a submap called fitwidth
-bind = $mainMod, T, submap, fitwidth
-# will start a submap called "fiwidth"
+bind = $mainMod, W, submap, fitwidth
+# will start a submap called "fitwidth"
 submap = fitwidth
-# sets repeatable binds for resizing the active window
-bind = , up, scroller:fitwidth, active
-bind = , down, scroller:fitwidth, all
+# sets binds for fitting columns in the screen
+bind = , W, scroller:fitwidth, visible
+bind = , W, submap, reset
 bind = , right, scroller:fitwidth, toend
+bind = , right, submap, reset
 bind = , left, scroller:fitwidth, tobeg
-bind = , t, scroller:fitwidth, visible
+bind = , left, submap, reset
+bind = , up, scroller:fitwidth, active
+bind = , up, submap, reset
+bind = , down, scroller:fitwidth, all
+bind = , down, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
+# overview keys
+# bind key to toggle overview (normal)
 bind = $mainMod, tab, scroller:toggleoverview
+# overview submap
+# will switch to a submap called overview
+bind = $mainMod, tab, submap, overview
+# will start a submap called "overview"
+submap = overview
+bind = , right, scroller:movefocus, right
+bind = , left, scroller:movefocus, left
+bind = , up, scroller:movefocus, up
+bind = , down, scroller:movefocus, down
+# use reset to go back to the global submap
+bind = , escape, scroller:toggleoverview,
+bind = , escape, submap, reset
+bind = , return, scroller:toggleoverview,
+bind = , return, submap, reset
+bind = $mainMod, tab, scroller:toggleoverview,
+bind = $mainMod, tab, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
 ```
 
 
@@ -284,7 +328,8 @@ This is how the plugin should work. Anything different is a bug.
 
 The window should be created in a new column, to the right of the active one.
 The window size should be: *width*: `OneHalf` (one half of the monitor's
-available width), *height*: `Auto` (uses the monitor's available space).
+available width) or `column_default_width` if set, and *height*: `Auto`
+(uses the monitor's available space).
 
 ### Moving focus, moving windows.
 

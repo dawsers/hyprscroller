@@ -55,6 +55,11 @@ enum class WindowHeight {
     Free
 };
 
+enum class ColumnReorder {
+    Auto,
+    Lazy
+};
+
 class Window {
 public:
     Window(CWindow *window, double box_h) : window(window), box_h(box_h) {}
@@ -72,20 +77,40 @@ private:
 class Column {
 public:
     Column(CWindow *cwindow, double maxw, double maxh)
-        : width(ColumnWidth::OneHalf), height(WindowHeight::Auto), initialized(false), maxdim(false) {
-            Window *window = new Window(cwindow, maxh);
-            update_width(width, maxw, maxh);
-            geom.h = maxh;
-            windows.push_back(window);
-            active = windows.first();
+        : height(WindowHeight::Auto), initialized(false), maxdim(false) {
+        static auto const *column_default_width = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_default_width")->getDataStaticPtr();
+        std::string column_width = *column_default_width;
+        if (column_width == "onehalf") {
+            width = ColumnWidth::OneHalf;
+        } else if (column_width == "onethird") {
+            width = ColumnWidth::OneThird;
+        } else if (column_width == "twothirds") {
+            width = ColumnWidth::TwoThirds;
+        } else if (column_width == "maximized") {
+            width = ColumnWidth::Free;
+        } else if (column_width == "floating") {
+            if (cwindow->m_vLastFloatingSize.y > 0) {
+                width = ColumnWidth::Free;
+                maxw = cwindow->m_vLastFloatingSize.x;
+            } else {
+                width = ColumnWidth::OneHalf;
+            }
+        } else {
+            width = ColumnWidth::OneHalf;
+        }
+        Window *window = new Window(cwindow, maxh);
+        update_width(width, maxw, maxh);
+        geom.h = maxh;
+        windows.push_back(window);
+        active = windows.first();
     }
     Column(Window *window, ColumnWidth width, double maxw, double maxh)
         : width(width), height(WindowHeight::Auto), initialized(true), maxdim(false) {
-            window->set_geom_h(maxh);
-            update_width(width, maxw, maxh);
-            geom.h = maxh;
-            windows.push_back(window);
-            active = windows.first();
+        window->set_geom_h(maxh);
+        update_width(width, maxw, maxh);
+        geom.h = maxh;
+        windows.push_back(window);
+        active = windows.first();
     }
     ~Column() {
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
@@ -361,14 +386,14 @@ public:
             return true;
         }
     }
-    void admit_window(Window *window, double gap, double border) {
+    void admit_window(Window *window) {
         active = windows.emplace_after(active, window);
         if (height == WindowHeight::Auto) {
             reset_heights();
         }
     }
 
-    Window *expel_active(double gap, double border, double geom_h) {
+    Window *expel_active(double gap, double geom_h) {
         Window *window = active->data();
         window->set_geom_h(geom_h);
         auto act = active == windows.first() ? active->next() : active->prev();
@@ -448,11 +473,12 @@ public:
             reset_heights();
         }
     }
-    void resize_active_window(double maxw, const Vector2D &gap_x, double gap, double border, const Vector2D &delta) {
+    void resize_active_window(double maxw, const Vector2D &gap_x, double gap, const Vector2D &delta) {
         // First, check if resize is possible or it would leave any window
         // with an invalid size.
 
         // Width check
+        auto border = active->data()->ptr()->getRealBorderSize();
         auto rwidth = geom.w + delta.x - 2.0 * border - gap_x.x - gap_x.y;
         // Now we check for a size smaller than the maximum possible gap, so
         // we never get in trouble when a window gets expelled from a column
@@ -473,7 +499,7 @@ public:
                     // resizing pushes the active window against the others
                     wh -= delta.y / (size() - 1);
                 }
-                if (wh <= 0.0 || wh + 2.0 * border + gap0 + gap1 > geom.h)
+                if (wh <= 0.0 || wh + 2.0 * win->data()->ptr()->getRealBorderSize() + gap0 + gap1 > geom.h)
                     // geom.h already includes gaps_out
                     return;
             }
@@ -517,29 +543,9 @@ private:
 class Row {
 public:
     Row(CWindow *window)
-    : workspace(window->m_iWorkspaceID), overview(false), active(nullptr) {
-        // for gaps outer
-        static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
-        static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
-        auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
-        auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
-        static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
-        // For now, support only constant CCssGapData
-        auto gaps_in = PGAPSIN->top;
-        auto gaps_out = PGAPSOUT->top;
-
-        const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
-        const auto SIZE = PMONITOR->vecSize;
-        const auto POS = PMONITOR->vecPosition;
-        const auto TOPLEFT = PMONITOR->vecReservedTopLeft;
-        const auto BOTTOMRIGHT = PMONITOR->vecReservedBottomRight;
-        auto fullsz = Box(POS, SIZE);
-        auto maxsz = Box(POS.x + TOPLEFT.x + gaps_out,
-                POS.y + TOPLEFT.y + gaps_out,
-                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
-                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
-
-        update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
+        : workspace(window->m_iWorkspaceID), reorder(ColumnReorder::Auto),
+        overview(false), active(nullptr) {
+        update_sizes(g_pCompositor->getMonitorFromID(window->m_iMonitorID));
     }
     ~Row() {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
@@ -563,6 +569,7 @@ public:
     }
     void add_active_window(CWindow *window) {
         active = columns.emplace_after(active, new Column(window, max.w, max.h));
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
 
@@ -570,6 +577,7 @@ public:
     // true if successful, or false if this is the last row
     // so the layout can remove it.
     bool remove_window(CWindow *window) {
+        reorder = ColumnReorder::Auto;
         for (auto c = columns.first(); c != nullptr; c = c->next()) {
             Column *col = c->data();
             if (col->has_window(window)) {
@@ -611,10 +619,12 @@ public:
     bool move_focus(Direction dir) {
         switch (dir) {
         case Direction::Left:
+            reorder = ColumnReorder::Auto;
             if (!move_focus_left())
                 return false;
             break;
         case Direction::Right:
+            reorder = ColumnReorder::Auto;
             if (!move_focus_right())
                 return false;
             break;
@@ -627,12 +637,14 @@ public:
                 return false;
             break;
         case Direction::Begin:
+            reorder = ColumnReorder::Auto;
             move_focus_begin();
             break;
         case Direction::End:
+            reorder = ColumnReorder::Auto;
             move_focus_end();
             break;
-        case Direction::Center:
+        default:
             return true;
         }
         recalculate_row_geometry();
@@ -690,8 +702,7 @@ public:
 
         ColumnWidth width = active->data()->get_width();
         if (width == ColumnWidth::Free) {
-            // When cycle-resizing from Free mode, always move back to default
-            // (OneHalf)
+            // When cycle-resizing from Free mode, always move back to OneHalf
             width = ColumnWidth::OneHalf;
         } else {
             int number = static_cast<int>(ColumnWidth::Number);
@@ -699,6 +710,7 @@ public:
                     (number + static_cast<int>(width) + step) % number);
         }
         active->data()->update_width(width, max.w, max.h);
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
     void resize_active_window(const Vector2D &delta) {
@@ -707,7 +719,7 @@ public:
             active->data()->fullscreen())
             return;
 
-        active->data()->resize_active_window(max.w, calculate_gap_x(active), gap, border, delta);
+        active->data()->resize_active_window(max.w, calculate_gap_x(active), gap, delta);
         recalculate_row_geometry();
     }
     void reset_height() {
@@ -726,17 +738,17 @@ public:
         switch (dir) {
         case Direction::Left:
             active->data()->set_geom_pos(max.x, max.y);
+            reorder = ColumnReorder::Lazy;
             break;
         case Direction::Right:
             active->data()->set_geom_pos(max.x + max.w - active->data()->get_geom_w(), max.y);
+            reorder = ColumnReorder::Lazy;
             break;
         case Direction::Center:
             center_active_column();
+            reorder = ColumnReorder::Lazy;
             break;
-        case Direction::Up:
-        case Direction::Down:
-        case Direction::Begin:
-        case Direction::End:
+        default:
             return;
         }
 
@@ -802,6 +814,7 @@ public:
             return;
         }
 
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
     void admit_window_left() {
@@ -811,14 +824,15 @@ public:
         if (active == columns.first())
             return;
 
-        auto w = active->data()->expel_active(gap, border, max.h);
+        auto w = active->data()->expel_active(gap, max.h);
         auto prev = active->prev();
         if (active->data()->size() == 0) {
             columns.erase(active);
         }
         active = prev;
-        active->data()->admit_window(w, gap, border);
+        active->data()->admit_window(w);
 
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
     void expel_window_right() {
@@ -829,7 +843,7 @@ public:
             // nothing to expel
             return;
 
-        auto w = active->data()->expel_active(gap, border, max.h);
+        auto w = active->data()->expel_active(gap, max.h);
         ColumnWidth width = active->data()->get_width();
         // This code inherits the width of the original column. There is a
         // problem with that when the mode is "Free". The new column may have
@@ -848,16 +862,33 @@ public:
 #endif
         active = columns.emplace_after(active, new Column(w, width, maxw, max.h));
 
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
     Vector2D predict_window_size() const {
         return Vector2D(0.5 * max.w, max.h);
     }
-    void update_sizes(const Box &full_size, const Box &max_size, int gaps_in, int border_size) {
-        full = full_size;
-        max = max_size;
+    void update_sizes(CMonitor *monitor) {
+        // for gaps outer
+        static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
+        static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
+        auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
+        auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
+        // For now, support only constant CCssGapData
+        auto gaps_in = PGAPSIN->top;
+        auto gaps_out = PGAPSOUT->top;
+
+        const auto SIZE = monitor->vecSize;
+        const auto POS = monitor->vecPosition;
+        const auto TOPLEFT = monitor->vecReservedTopLeft;
+        const auto BOTTOMRIGHT = monitor->vecReservedBottomRight;
+
+        full = Box(POS, SIZE);
+        max = Box(POS.x + TOPLEFT.x + gaps_out,
+                POS.y + TOPLEFT.y + gaps_out,
+                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
+                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
         gap = gaps_in;
-        border = border_size;
     }
     void set_fullscreen_active_window() {
         active->data()->set_fullscreen(full);
@@ -882,6 +913,7 @@ public:
     void toggle_maximize_active_column() {
         Column *column = active->data();
         column->toggle_maximized(max.w, max.h);
+        reorder = ColumnReorder::Auto;
         recalculate_row_geometry();
     }
 
@@ -1006,18 +1038,17 @@ public:
         }
         g_pEventManager->postEvent(SHyprIPCEvent{"scroller", active->data()->get_width_name() + "," + active->data()->get_height_name()});
 #endif
-        // Try to avoid moving the active column unless it is out of the screen.
-        auto a_w = std::round(active->data()->get_geom_w());
+        auto a_w = active->data()->get_geom_w();
         double a_x;
         if (active->data()->get_init()) {
-            a_x = std::round(active->data()->get_geom_x());
+            a_x = active->data()->get_geom_x();
         } else {
             // If the column hasn't been initialized yet (newly created window),
             // we know it will be located on the right of active->prev()
             if (active->prev()) {
                 // there is a previous one, locate it on its right
                 Column *prev = active->prev()->data();
-                a_x = std::round(prev->get_geom_x() + prev->get_geom_w());
+                a_x = prev->get_geom_x() + prev->get_geom_w();
             } else {
                 // first window, locate it at the center
                 a_x = max.x + 0.5 * (max.w - a_w);
@@ -1029,12 +1060,70 @@ public:
             // active starts outside on the left
             // set it on the left edge
             active->data()->set_geom_pos(max.x, max.y);
-        } else if (a_x + a_w > max.x + max.w) {
+        } else if (std::round(a_x + a_w) > max.x + max.w) {
             // active overflows to the right, move to end of viewport
             active->data()->set_geom_pos(max.x + max.w - a_w, max.y);
         } else {
-            // the window is in a correct position
-            active->data()->set_geom_pos(a_x, max.y);
+            // active is inside the viewport
+            if (reorder == ColumnReorder::Auto) {
+                // The active column should always be completely in the viewport.
+                // If any of the windows next to it on its right or left are
+                // in the viewport, keep the current position.
+                bool keep_current = false;
+                if (active->prev() != nullptr) {
+                    Column *prev = active->prev()->data();
+                    if (prev->get_geom_x() >= max.x && prev->get_geom_x() + prev->get_geom_w() <= max.x + max.w) {
+                        keep_current = true;
+                    }
+                }
+                if (!keep_current && active->next() != nullptr) {
+                    Column *next = active->next()->data();
+                    if (next->get_geom_x() >= max.x && next->get_geom_x() + next->get_geom_w() <= max.x + max.w) {
+                        keep_current = true;
+                    }
+                }
+                if (!keep_current) {
+                    // If not:
+                    // We try to fit the column next to it on the right if it fits
+                    // completely, otherwise the one on the left. If none of them fit,
+                    // we leave it as it is.
+                    if (active->next() != nullptr) {
+                        if (a_w + active->next()->data()->get_geom_w() <= max.w) {
+                            // set next at the right edge of the viewport
+                            active->data()->set_geom_pos(max.x + max.w - a_w - active->next()->data()->get_geom_w(), max.y);
+                        } else if (active->prev() != nullptr) {
+                            if (active->prev()->data()->get_geom_w() + a_w <= max.w) {
+                                // set previous at the left edge of the viewport
+                                active->data()->set_geom_pos(max.x + active->prev()->data()->get_geom_w(), max.y);
+                            } else {
+                                // none of them fit, leave active as it is
+                                active->data()->set_geom_pos(a_x, max.y);
+                            }
+                        } else {
+                            // nothing on the left, move active to left edge of viewport
+                            active->data()->set_geom_pos(max.x, max.y);
+                        }
+                    } else if (active->prev() != nullptr) {
+                        if (active->prev()->data()->get_geom_w() + a_w <= max.w) {
+                            // set previous at the left edge of the viewport
+                            active->data()->set_geom_pos(max.x + active->prev()->data()->get_geom_w(), max.y);
+                        } else {
+                            // it doesn't fit and nothing on the right, move active to right edge of viewport
+                            active->data()->set_geom_pos(max.x + max.w - a_w, max.y);
+                        }
+                    } else {
+                        // nothing on the right or left, the window is in a correct position
+                        active->data()->set_geom_pos(a_x, max.y);
+                    }
+                } else {
+                    // the window is in a correct position
+                    active->data()->set_geom_pos(a_x, max.y);
+                }
+            } else {  // lazy
+                // Try to avoid moving the active column unless it is out of the screen.
+                // the window is in a correct position
+                active->data()->set_geom_pos(a_x, max.y);
+            }
         }
 
         adjust_columns(active);
@@ -1066,7 +1155,7 @@ private:
     Box max;
     bool overview;
     int gap;
-    int border;
+    ColumnReorder reorder;
     ListNode<Column *> *active;
     List<Column *> columns;
 };
@@ -1168,27 +1257,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
     if (s == nullptr)
         return;
 
-    // for gaps outer
-    static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
-    static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
-    auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
-    auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
-    static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
-    // For now, support only constant CCssGapData
-    auto gaps_in = PGAPSIN->top;
-    auto gaps_out = PGAPSOUT->top;
-
-    const auto SIZE = PMONITOR->vecSize;
-    const auto POS = PMONITOR->vecPosition;
-    const auto TOPLEFT = PMONITOR->vecReservedTopLeft;
-    const auto BOTTOMRIGHT = PMONITOR->vecReservedBottomRight;
-    auto fullsz = Box(POS, SIZE);
-    auto maxsz = Box(POS.x + TOPLEFT.x + gaps_out,
-            POS.y + TOPLEFT.y + gaps_out,
-            SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
-            SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
-
-    s->update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
+    s->update_sizes(PMONITOR);
     if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FULLSCREEN_FULL) {
         s->set_fullscreen_active_window();
     } else {
@@ -1199,7 +1268,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
         if (sw == nullptr) {
             return;
         }
-        sw->update_sizes(fullsz, maxsz, gaps_in, *PBORDERSIZE);
+        sw->update_sizes(PMONITOR);
         sw->recalculate_row_geometry();
     }
 }

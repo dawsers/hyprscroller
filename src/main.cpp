@@ -23,6 +23,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     dispatchers::addDispatchers();
 
+    // one value out of: { onethird, onehalf (default), twothirds, floating, maximized }
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:column_default_width", Hyprlang::STRING{"onehalf"});
+
     HyprlandAPI::reloadConfig();
 
     return {"hyprscroller", "scrolling window layout", "dawser", "1.0"};

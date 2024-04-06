@@ -409,6 +409,10 @@ public:
     ColumnWidth get_width() const {
         return width;
     }
+    // used by Row::fit_width()
+    void set_width_free() {
+        width = ColumnWidth::Free;
+    }
 #ifdef COLORS_IPC
     // For IPC events
     std::string get_width_name() const {
@@ -975,6 +979,7 @@ public:
             }
             for (auto c = from; c != to->next(); c = c->next()) {
                 Column *col = c->data();
+                col->set_width_free();
                 col->set_geom_w(col->get_geom_w() / total * max.w);
             }
             from->data()->set_geom_pos(max.x, max.y);

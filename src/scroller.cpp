@@ -921,10 +921,10 @@ public:
                 Column *col = c->data();
                 auto c0 = col->get_geom_x();
                 auto c1 = col->get_geom_x() + col->get_geom_w();
-                if (c0 <= max.x + max.w && c0 >= max.x ||
-                    c1 >= max.x && c1 <= max.x + max.w ||
+                if (c0 < max.x + max.w && c0 >= max.x ||
+                    c1 > max.x && c1 <= max.x + max.w ||
                     //should never happen as columns are never wider than the screen
-                    c0 < max.x && c1 > max.x + max.w) {
+                    c0 < max.x && c1 >= max.x + max.w) {
                     from = c;
                     break;
                 }
@@ -933,10 +933,10 @@ public:
                 Column *col = c->data();
                 auto c0 = col->get_geom_x();
                 auto c1 = col->get_geom_x() + col->get_geom_w();
-                if (c0 <= max.x + max.w && c0 >= max.x ||
-                    c1 >= max.x && c1 <= max.x + max.w ||
+                if (c0 < max.x + max.w && c0 >= max.x ||
+                    c1 > max.x && c1 <= max.x + max.w ||
                     //should never happen as columns are never wider than the screen
-                    c0 < max.x && c1 > max.x + max.w) {
+                    c0 < max.x && c1 >= max.x + max.w) {
                     to = c;
                     break;
                 }

@@ -3,7 +3,8 @@
 #include "list.h"
 
 enum class Direction { Left, Right, Up, Down, Begin, End, Center };
-enum class FitWidth { Active, Visible, All, ToEnd, ToBeg };
+enum class FitSize { Active, Visible, All, ToEnd, ToBeg };
+enum class Mode { Row, Column };
 
 class Row;
 
@@ -41,8 +42,8 @@ public:
     void admit_window_left(int workspace);
     void expel_window_right(int workspace);
     void reset_height(int workspace);
-    void toggle_height(int workspace);
-    void fit_width(int workspace, FitWidth);
+    void set_mode(int workspace, Mode);
+    void fit_size(int workspace, FitSize);
     void toggle_overview(int workspace);
 
 private:

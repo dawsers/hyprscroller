@@ -125,35 +125,41 @@ namespace {
 
         g_ScrollerLayout->reset_height(workspace);
     }
-    void dispatch_toggleheight(std::string arg) {
+    void dispatch_setmode(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
 
-        g_ScrollerLayout->toggle_height(workspace);
+        Mode mode = Mode::Row;
+        if (arg == "r" || arg == "row") {
+            mode = Mode::Row;
+        } else if (arg == "c" || arg == "col" || arg == "column") {
+            mode = Mode::Column;
+        }
+        g_ScrollerLayout->set_mode(workspace, mode);
     }
-    std::optional<FitWidth> parse_fit_width(std::string arg) {
+    std::optional<FitSize> parse_fit_size(std::string arg) {
         if (arg == "active")
-            return FitWidth::Active;
+            return FitSize::Active;
         else if (arg == "visible")
-            return FitWidth::Visible;
+            return FitSize::Visible;
         else if (arg == "all")
-            return FitWidth::All;
+            return FitSize::All;
         else if (arg == "toend")
-            return FitWidth::ToEnd;
+            return FitSize::ToEnd;
         else if (arg == "tobeg" || arg == "tobeginning")
-            return FitWidth::ToBeg;
+            return FitSize::ToBeg;
         else
             return {};
     }
-    void dispatch_fitwidth(std::string arg) {
+    void dispatch_fitsize(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
 
         auto args = CVarList(arg);
-        if (auto fitwidth = parse_fit_width(args[0])) {
-            g_ScrollerLayout->fit_width(workspace, *fitwidth);
+        if (auto fitsize = parse_fit_size(args[0])) {
+            g_ScrollerLayout->fit_size(workspace, *fitsize);
         }
     }
     void dispatch_toggleoverview(std::string arg) {
@@ -172,8 +178,7 @@ void dispatchers::addDispatchers() {
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:resetheight", dispatch_resetheight);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleheight", dispatch_toggleheight);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
 }

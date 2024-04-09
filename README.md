@@ -23,7 +23,7 @@ that front.
 ## Requirements
 
 *hyprscroller* supports the version of *Hyprland* I use (currently v0.35)
-plus the latest tagged one (currently v0.38.0), and you can try your luck with
+plus the latest tagged one (currently v0.38.1), and you can try your luck with
 the latest `git` changes, but I will be slower to keep up with those, as there
 are too many API changes going on upstream.
 
@@ -84,18 +84,33 @@ general {
 
 The plugin adds the following dispatchers:
 
-| Dispatcher                | Description                                                                                          |
-|---------------------------|------------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`      | A replacement for `movefocus`, takes a direction as argument.                                        |
-| `scroller:movewindow`     | A replacement for `movewindow`, takes a direction as argument.                                       |
-| `scroller:cyclesize`      | Resize the focused window. Cycles through: one third, half, and two thirds of the screen size.       |
-| `scroller:alignwindow`    | Align the focused window on the screen, `l/left`, `c/center`, `r/right`                              |
-| `scroller:admitwindow`    | Push the current window into the bottom position of the column to its left.                          |
-| `scroller:expelwindow`    | Pop the current window out of its column and place it to the right.                                  |
-| `scroller:resetheight`    | For a multi-window column, makes every window the same height.                                       |
-| `scroller:toggleheight`   | Toggle between `Auto` and `Free` height mode for the active column.                                  |
-| `scroller:fitwidth`       | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`               |
-| `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor  |
+| Dispatcher                | Description                                                                                                                 |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `scroller:movefocus`      | A replacement for `movefocus`, takes a direction as argument.                                                               |
+| `scroller:movewindow`     | A replacement for `movewindow`, takes a direction as argument.                                                              |
+| `scroller:setmode`        | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.       |
+| `scroller:cyclesize`      | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                  |
+| `scroller:alignwindow`    | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode)         |
+| `scroller:admitwindow`    | Push the current window below the active one of the column to its left.                                                     |
+| `scroller:expelwindow`    | Pop the current window out of its column and place it on a new column to the right.                                         |
+| `scroller:fitsize`        | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg` |
+| `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                         |
+
+
+## Modes
+
+*Hyprscroller* works in any of two modes that can be changed at any moment.
+
+1. *row* mode: it is the default. It creates new windows in a new column.
+   `cyclesize` affects the width of the active column. `alignwindow` aligns
+   the active column according to the argument received. `fitsize` fits the
+   selected columns to the width of the monitor.
+
+2. *column* mode: It creates new windows in the current column, right below the
+   active window. `cyclesize` affects the height of the active window.
+   `alignwindow` aligns the active window within the column, according to the
+   argument received. `fitsize` fits the selected windows in the column to the
+   height of the monitor.
 
 
 ## Window/Column Focus and Movement
@@ -118,25 +133,11 @@ in a direction or to the beginning or end or the row.
 
 `cyclesize` accepts an argument which is either `+1`/`1`/`next`, or
 `-1`/`prev`/`previous`. It cycles forward or backward through three column
-widths: one third, one half or two thirds of the available width of the
-monitor. However, using `resizewindow`, you can modify the width or height of
+widths (in *row* mode): one third, one half or two thirds of the available
+width of the monitor. In *column* mode, the fractions are relative to the
+height of the monitor, and are: one third, one half, two thirds or one.
+However, using `resizewindow`, you can modify the width or height of
 any window freely.
-
-When using `resizewindow`, the columns/windows can be resized in two different
-modes:
-
-- Columns: `cyclesize` will create three standard widths (1/3, 1/2, 2/3), but
-  using `resizewindow` the column will be marked *free* and can be resized up
-  to the width of the monitor.
-
-- Windows: There are two modes for column windows, `Auto` and `Free`. The modes
-  are toggled with the `toggleheight` dispatcher. `Auto` allows resizing, but
-  all windows fit in the monitor, pushing against each other when resizing. In
-  `Free` mode, you can resize at will. Each window will be limited to fit the
-  monitor, but a full column of windows can be larger than the height of the
-  monitor. The active window will always be visible when moving focus. You can
-  use the `resetheight` dispatcher to move the column windows to `Auto` mode
-  and split the total height in equal parts.
 
 
 ## Aligning
@@ -144,42 +145,55 @@ modes:
 Columns are generally aligned in automatic mode, always making the active one
 visible, and trying to make at least the previously focused one visible too if
 it fits the viewport, if not, the one adjacent on the other side. However, you
-can always align any column to the *center*, *left* or *right* of the monitor,
-for example center a column for easier reading, regardless of what happens to
+can always align any column to the *center*, *left* or *right* of the monitor
+(in *row* mode), or *up* (top), *down* (bottom) or to the *center* in *column*
+mode. For example center a column for easier reading, regardless of what happens to
 the other columns. As soon as you change focus or move a column, the alignment
 is lost.
 
-`alignwindow` takes a parameter: `l` or `left`, `r` or `right`, and `c` or
-`center` or `centre`.
+`alignwindow` takes a parameter: `l` or `left`, `r` or `right`, `c` or
+`center` or `centre`, `u` or `up` and `d` or `down`.
+
+To use *right* or *left* you need to be in *row* mode, and to use *up* or
+*down* in *column* mode. *center* behaves differently depending on the mode.
+In *row* mode it aligns the active column to the center of the monitor. In
+*column* mode, it aligns the active window within its column, to a centered
+position.
 
 
 ## Admit/Expel
 
 You can create columns of windows using `admitwindow`. It takes the active
-window and moves it to the column left of its current one.
+window and moves it to the column left of its current one, right under the
+active window in that column.
 
-To expel any window from its current column and position it in a new column on
+To expel any window from its current column and position it in a new column to
 its right, use `expelwindow`.
 
 
 ## Fitting the Screen
 
-When you have a ultra-wide monitor or the default column widths don't fit your
-workflow, you can use manual resizing, but it is sometimes slow and tricky.
+When you have a ultra-wide monitor, one in a vertical position, or the default
+column widths or window heights don't fit your workflow, you can use manual
+resizing, but it is sometimes slow and tricky.
 
-`scroller:fitwidth` allows you to re-fit the columns you want to the screen
-extents. It accepts an argument related to the columns it will try to fit. The
-new width of each column will be proportional to its previous width relative
-to the other columns affected.
+`scroller:fitsize` works in two different ways, depending on the active mode.
 
-1. `active`: It is similar to maximize, it will fit the active column.
-2. `visible`: All the currently fully or partially visible columns will be
-   resized to fit the screen.
-3. `all`: All the columns in the row will be resized to fit.
-4. `toend`: All the columns from the focused one to the end of the row will be
-   affected.
-5. `tobeg` or `tobeginning`: All the columns from the focused on to the
-   beginning of the row will now fit the screen.
+It allows you to re-fit the columns (*row* mode) or windows (*column* mode) you
+want to the screen extents. It accepts an argument related to the
+columns/windows it will try to fit. The new width/height of each column/window
+will be proportional to its previous width or height, relative to the other
+columns or windows affected.
+
+1. `active`: It is similar to maximize, it will fit the active column/window.
+2. `visible`: All the currently fully or partially visible columns/windows will
+   be resized to fit the screen.
+3. `all`: All the columns in the row or windows in the column will be resized
+   to fit.
+4. `toend`: All the columns or windows from the focused one to the end of the
+   row/column will be affected.
+5. `tobeg` or `tobeginning`: All the columns/windows from the focused one to
+   the beginning of the row/column will now fit the screen.
 
 
 ## Overview
@@ -188,16 +202,16 @@ to the other columns affected.
 all the windows are scaled to fit the current monitor. You can still interact
 with them normally (change focus, move windows, type in them etc.). When
 toggling back to normal mode, the original window sizes will be restored...so
-it is not wise to use *toggleoverview* for window resizing. Use it as a way to see
-where things are and move the active focus, or a window, anything beyond that
-will probably find bugs.
+it is not wise to use *toggleoverview* for window resizing or creating new windows.
+Use it as a way to see where things are and move the active focus, or a window,
+anything beyond that will probably find bugs or **cause compositor crashes**.
 
 
 ## Options
 
 *hyprscroller* currently accepts the following options:
 
-1. `column_default_width`: determines the width of new columns (windows).
+1. `column_default_width`: determines the width of new columns in *row* mode.
 Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
 `maximized`, `floating` (uses the default width set by the application).
 
@@ -233,11 +247,13 @@ bind = $mainMod CTRL, down, scroller:movewindow, d
 bind = $mainMod CTRL, home, scroller:movewindow, begin
 bind = $mainMod CTRL, end, scroller:movewindow, end
 
+# Modes
+bind = $mainMod, semicolon, scroller:setmode, row
+bind = $mainMod, apostrophe, scroller:setmode, col
+
 # Sizing keys
 bind = $mainMod, equal, scroller:cyclesize, next
 bind = $mainMod, minus, scroller:cyclesize, prev
-bind = $mainMod SHIFT, equal, scroller:resetheight
-bind = $mainMod SHIFT, minus, scroller:toggleheight
 
 # Admit/Expel
 bind = $mainMod, I, scroller:admitwindow,
@@ -255,6 +271,10 @@ bind = , right, scroller:alignwindow, r
 bind = , right, submap, reset
 bind = , left, scroller:alignwindow, l
 bind = , left, submap, reset
+bind = , up, scroller:alignwindow, u
+bind = , up, submap, reset
+bind = , down, scroller:alignwindow, d
+bind = , down, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
@@ -275,21 +295,21 @@ bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 
-# Fit width submap
-# will switch to a submap called fitwidth
-bind = $mainMod, W, submap, fitwidth
-# will start a submap called "fitwidth"
-submap = fitwidth
-# sets binds for fitting columns in the screen
-bind = , W, scroller:fitwidth, visible
+# Fit size submap
+# will switch to a submap called fitsize
+bind = $mainMod, W, submap, fitsize
+# will start a submap called "fitsize"
+submap = fitsize
+# sets binds for fitting columns/windows in the screen
+bind = , W, scroller:fitsize, visible
 bind = , W, submap, reset
-bind = , right, scroller:fitwidth, toend
+bind = , right, scroller:fitsize, toend
 bind = , right, submap, reset
-bind = , left, scroller:fitwidth, tobeg
+bind = , left, scroller:fitsize, tobeg
 bind = , left, submap, reset
-bind = , up, scroller:fitwidth, active
+bind = , up, scroller:fitsize, active
 bind = , up, submap, reset
-bind = , down, scroller:fitwidth, all
+bind = , down, scroller:fitsize, all
 bind = , down, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
@@ -318,59 +338,4 @@ bind = $mainMod, tab, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
 ```
-
-
-## Specifications
-
-This is how the plugin should work. Anything different is a bug.
-
-### Creating a window.
-
-The window should be created in a new column, to the right of the active one.
-The window size should be: *width*: `OneHalf` (one half of the monitor's
-available width) or `column_default_width` if set, and *height*: `Auto`
-(uses the monitor's available space).
-
-### Moving focus, moving windows.
-
-When moving focus in a direction, if the focus changes column, it should try
-first to go to the column in that direction if there is one, or if not, to the
-monitor in the same direction (if there is one). If none of the previous
-considerations are true, the focus will cycle to the first/last column/window
-of the workspace, depending on the direction of focus.
-
-When entering a new column, the focus will go to the last active window in
-that column (there is memory).
-
-### Sizes/Resizing
-
-Width and Height of a column are independent.
-
-There are three states for `width`: `OneThird`, `OneHalf` and `TwoThirds`. You
-can cycle forward or backwards among them.
-
-`cyclesize` will resize the width of the active column from the default
-`OneHalf`. When using `resizeactive`, the window will resize from its current
-width, and move the column width state to `Free`.
-
-There are two modes for `height`: `Auto` and `Free`.
-
-`toggleheight` changes mode. The initial, default state is `Auto`. `Auto`
-mode makes a column fit the monitor. Resizing any window will push it against
-the others, so the column doesn't change height.
-
-`Free` mode allows resizing windows independently, and make them at most as
-tall as the monitor. No window is ever taller or wider than the monitor.
-When in `Free` mode, the active window is always visible.
-
-To reset all window sizes in a column, use `resetheight`. It will change the
-`height` mode to `Auto` and split the available monitor height in equal parts
-for each window.
-
-### Standard Dispatchers
-
-Aside from the *hyprscroller* specific ones, the layout supports *maximized*
-and *fullscreen* windows, the *special* workspace, gaps, borders and most
-*Hyprland* features. If something that should work, doesn't, please file an
-issue report.
 

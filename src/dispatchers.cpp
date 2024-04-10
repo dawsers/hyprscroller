@@ -169,6 +169,19 @@ namespace {
 
         g_ScrollerLayout->toggle_overview(workspace);
     }
+    void dispatch_marks(std::string arg) {
+        if (arg == "n" || arg == "next") {
+            g_ScrollerLayout->marks_next();
+        } else if (arg == "p" || arg == "prev" || arg == "previous") {
+            g_ScrollerLayout->marks_prev();
+        } else if (arg == "add") {
+            g_ScrollerLayout->marks_add();
+        } else if (arg == "del" || arg == "delete") {
+            g_ScrollerLayout->marks_del();
+        } else if (arg == "reset") {
+            g_ScrollerLayout->marks_reset();
+        }
+    }
 }
 
 void dispatchers::addDispatchers() {
@@ -181,4 +194,5 @@ void dispatchers::addDispatchers() {
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:marks", dispatch_marks);
 }

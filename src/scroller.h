@@ -46,6 +46,12 @@ public:
     void fit_size(int workspace, FitSize);
     void toggle_overview(int workspace);
 
+    void marks_add();
+    void marks_del();
+    void marks_prev();
+    void marks_next();
+    void marks_reset();
+
 private:
     Row *getRowForWorkspace(int workspace);
     Row *getRowForWindow(CWindow *window);

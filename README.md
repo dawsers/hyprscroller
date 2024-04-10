@@ -95,6 +95,7 @@ The plugin adds the following dispatchers:
 | `scroller:expelwindow`    | Pop the current window out of its column and place it on a new column to the right.                                         |
 | `scroller:fitsize`        | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg` |
 | `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                         |
+| `scroller:marks`          | Marks management. Arguments: `add`, `del`, `next`, `prev`, `reset`                                                          |
 
 
 ## Modes
@@ -205,6 +206,17 @@ toggling back to normal mode, the original window sizes will be restored...so
 it is not wise to use *toggleoverview* for window resizing or creating new windows.
 Use it as a way to see where things are and move the active focus, or a window,
 anything beyond that will probably find bugs or **cause compositor crashes**.
+
+
+## Marks
+
+`scroller:marks` manages *marks*. You can `add` a mark on the active window to
+be able to quickly return to it later on. `del` removes a mark from a window
+(if present). `prev` and `next` change focus to the previous and next marked
+windows. `reset` clears all marks.
+
+Marks reference windows, but are global, they may belong to different
+workspaces, so moving to the *next* or *previous* mark may switch workspaces.
 
 
 ## Options
@@ -337,5 +349,12 @@ bind = $mainMod, tab, scroller:toggleoverview,
 bind = $mainMod, tab, submap, reset
 # will reset the submap, meaning end the current one and return to the global one
 submap = reset
+
+# Marks
+bind = $mainMod, M, scroller:marks, add
+bind = $mainMod SHIFT, M, scroller:marks, del
+bind = $mainMod, period, scroller:marks, next
+bind = $mainMod, comma, scroller:marks, prev
+bind = $mainMod CTRL, M, scroller:marks, reset
 ```
 

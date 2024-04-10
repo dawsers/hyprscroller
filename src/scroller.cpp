@@ -60,6 +60,77 @@ enum class Reorder {
     Lazy
 };
 
+class Mark {
+public:
+    Mark(CWindow *w) : win(w) {}
+    CWindow *window() const { return win; }
+
+private:
+    CWindow *win;
+};
+
+class Marks {
+public:
+    Marks() : active(nullptr) {}
+    ~Marks() { reset(); }
+    void reset() {
+        active = nullptr;
+        marks.clear();
+    }
+    void add(CWindow *w) {
+        for (auto m = marks.first(); m != nullptr; m = m->next()) {
+            if (m->data()->window() == w)
+                return;
+        }
+        // Always insert right after the active mark, or at the end if none
+        auto node = active != nullptr ? active : marks.last();
+        active = marks.emplace_after(node, new Mark(w));
+    }
+    void del(CWindow *w) {
+        for (auto m = marks.first(); m != nullptr; m = m->next()) {
+            if (m->data()->window() == w) {
+                if (m == active) {
+                    active = m->prev() ? m->prev() : m->next();
+                }
+                marks.erase(m);
+                return;
+            }
+        }
+    }
+    // If the window is marked, returns the previous, if not, returns the active
+    CWindow *prev(CWindow *w) {
+        if (marks.size() == 0)
+            return nullptr;
+
+        for (auto m = marks.first(); m != nullptr; m = m->next()) {
+            if (m->data()->window() == w) {
+                active = active->prev() != nullptr ? active->prev() : active;
+                return active->data()->window();
+            }
+        }
+        return active->data()->window();
+    }
+    // If the window is marked, returns the next, if not, returns the active
+    CWindow *next(CWindow *w) {
+        if (marks.size() == 0)
+            return nullptr;
+
+        for (auto m = marks.first(); m != nullptr; m = m->next()) {
+            if (m->data()->window() == w) {
+                active = active->next() != nullptr ? active->next() : active;
+                return active->data()->window();
+            }
+        }
+        return active->data()->window();
+    }
+
+private:
+    ListNode<Mark *> *active;
+    List<Mark *> marks;
+};
+
+static Marks marks;
+
 class Window {
 public:
     Window(CWindow *window, double box_h) : window(window), height(WindowHeight::One), box_h(box_h) {}
@@ -1387,6 +1458,8 @@ void ScrollerLayout::onWindowCreatedTiling(CWindow *window, eDirection)
 */
 void ScrollerLayout::onWindowRemovedTiling(CWindow *window)
 {
+    marks.del(window);
+
     auto s = getRowForWindow(window);
     if (s == nullptr) {
         return;
@@ -1617,6 +1690,7 @@ void ScrollerLayout::replaceWindowDataWith(CWindow *from, CWindow *to)
 }
 
 void ScrollerLayout::onEnable() {
+    marks.reset();
     for (auto& window : g_pCompositor->m_vWindows) {
         if (window->m_bIsFloating || !window->m_bIsMapped || window->isHidden())
             continue;
@@ -1631,6 +1705,7 @@ void ScrollerLayout::onDisable() {
         delete row->data();
     }
     rows.clear();
+    marks.reset();
 }
 
 /*
@@ -1755,4 +1830,47 @@ void ScrollerLayout::toggle_overview(int workspace) {
         return;
     }
     s->toggle_overview();
+}
+
+static int get_workspace_id() {
+    int workspace_id;
+    if (g_pCompositor->m_pLastMonitor->specialWorkspaceID) {
+        workspace_id = g_pCompositor->m_pLastMonitor->specialWorkspaceID;
+    } else {
+        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+    }
+    if (workspace_id == WORKSPACE_INVALID)
+        return -1;
+    if (g_pCompositor->getWorkspaceByID(workspace_id) == nullptr)
+        return -1;
+
+    return workspace_id;
+}
+
+void ScrollerLayout::marks_add() {
+    CWindow *w = getRowForWorkspace(get_workspace_id())->get_active_window();
+    marks.add(w);
+}
+
+void ScrollerLayout::marks_del() {
+    CWindow *w = getRowForWorkspace(get_workspace_id())->get_active_window();
+    marks.del(w);
+}
+
+void ScrollerLayout::marks_prev() {
+    CWindow *w =g_pCompositor->m_pLastWindow;
+    CWindow *window = marks.prev(w);
+    if (window != nullptr)
+        g_pCompositor->focusWindow(window);
+}
+
+void ScrollerLayout::marks_next() {
+    CWindow *w =g_pCompositor->m_pLastWindow;
+    CWindow *window = marks.next(w);
+    if (window != nullptr)
+        g_pCompositor->focusWindow(window);
+}
+
+void ScrollerLayout::marks_reset() {
+    marks.reset();
 }

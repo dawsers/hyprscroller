@@ -773,7 +773,7 @@ private:
 class Row {
 public:
     Row(CWindow *window)
-        : workspace(window->m_iWorkspaceID), mode(Mode::Row), reorder(Reorder::Auto),
+        : workspace(window->workspaceID()), mode(Mode::Row), reorder(Reorder::Auto),
         overview(false), active(nullptr) {
         update_sizes(g_pCompositor->getMonitorFromID(window->m_iMonitorID));
     }
@@ -1140,7 +1140,7 @@ public:
     void toggle_fullscreen_active_window() {
         Column *column = active->data();
         const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(
-            column->get_active_window()->m_iWorkspaceID);
+            column->get_active_window()->workspaceID());
 
         auto fullscreen = active->data()->toggle_fullscreen(full);
         PWORKSPACE->m_bHasFullscreenWindow = fullscreen;
@@ -1445,7 +1445,7 @@ Row *ScrollerLayout::getRowForWindow(CWindow *window) {
 */
 void ScrollerLayout::onWindowCreatedTiling(CWindow *window, eDirection)
 {
-    auto s = getRowForWorkspace(window->m_iWorkspaceID);
+    auto s = getRowForWorkspace(window->workspaceID());
     if (s == nullptr) {
         s = new Row(window);
         rows.push_back(s);
@@ -1512,7 +1512,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
 
     g_pHyprRenderer->damageMonitor(PMONITOR);
 
-    auto PWORKSPACE = g_pCompositor->getWorkspaceByID(PMONITOR->activeWorkspace);
+    auto PWORKSPACE = PMONITOR->activeWorkspace;
     if (!PWORKSPACE)
         return;
 
@@ -1526,8 +1526,8 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
     } else {
         s->recalculate_row_geometry();
     }
-    if (PMONITOR->specialWorkspaceID) {
-        auto sw = getRowForWorkspace(PMONITOR->specialWorkspaceID);
+    if (PMONITOR->activeSpecialWorkspaceID()) {
+        auto sw = getRowForWorkspace(PMONITOR->activeSpecialWorkspaceID());
         if (sw == nullptr) {
             return;
         }
@@ -1579,7 +1579,7 @@ void ScrollerLayout::fullscreenRequestForWindow(CWindow *window,
         return;
     } // assuming window is active for now
 
-    const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(window->m_iWorkspaceID);
+    const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(window->workspaceID());
     switch (fullscreenmode) {
         case eFullscreenMode::FULLSCREEN_FULL:
             if (on == window->m_bIsFullscreen)
@@ -1674,7 +1674,7 @@ CWindow* ScrollerLayout::getNextWindowCandidate(CWindow *old_window)
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
     // new active window is the correct thing.
-    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr)
         return nullptr;
@@ -1716,7 +1716,7 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
     if (!g_pCompositor->m_pLastMonitor)
         return {};
 
-    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr) {
         Vector2D size =g_pCompositor->m_pLastMonitor->vecSize;
@@ -1764,7 +1764,7 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
 
     if (!s->move_focus(direction)) {
         // changed monitor
-        s = getRowForWorkspace(g_pCompositor->m_pLastMonitor->activeWorkspace);
+        s = getRowForWorkspace(g_pCompositor->m_pLastMonitor->activeWorkspaceID());
         if (s == nullptr) {
             // monitor is empty
             return;
@@ -1834,10 +1834,10 @@ void ScrollerLayout::toggle_overview(int workspace) {
 
 static int get_workspace_id() {
     int workspace_id;
-    if (g_pCompositor->m_pLastMonitor->specialWorkspaceID) {
-        workspace_id = g_pCompositor->m_pLastMonitor->specialWorkspaceID;
+    if (g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID()) {
+        workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     } else {
-        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     }
     if (workspace_id == WORKSPACE_INVALID)
         return -1;

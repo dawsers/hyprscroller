@@ -38,14 +38,14 @@ namespace {
             return -1;
 
         int workspace_id;
-        if (g_pCompositor->m_pLastMonitor->specialWorkspaceID) {
-            workspace_id = g_pCompositor->m_pLastMonitor->specialWorkspaceID;
+        if (g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID()) {
+            workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
         } else {
-            workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspace;
+            workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
         }
         if (workspace_id == WORKSPACE_INVALID)
             return -1;
-        auto *workspace = g_pCompositor->getWorkspaceByID(workspace_id);
+        auto workspace = g_pCompositor->getWorkspaceByID(workspace_id);
         if (workspace == nullptr)
             return -1;
         if (workspace->m_bHasFullscreenWindow)

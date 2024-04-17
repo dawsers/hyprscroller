@@ -2,7 +2,7 @@
 
 [Hyprscroller](https://github.com/dawsers/hyprscroller) is a
 [Hyprland](https://hyprland.org) layout plugin that creates a window layout
-similar to PaperWM [PaperWM](https://github.com/paperwm/PaperWM). I initialy
+similar to [PaperWM](https://github.com/paperwm/PaperWM). I initialy
 learned how to write a *Hyprland* plugin from [hyprslidr](https://gitlab.com/magus/hyprslidr),
 which is a similar idea.
 
@@ -22,10 +22,13 @@ that front.
 
 ## Requirements
 
-*hyprscroller* supports the version of *Hyprland* I use (currently v0.35)
-plus the latest tagged one (currently v0.38.1), and you can try your luck with
+*hyprscroller* supports the version of *Hyprland* I use (currently v0.39.1)
+plus the latest tagged one (currently v0.39.1), and you can try your luck with
 the latest `git` changes, but I will be slower to keep up with those, as there
 are too many API changes going on upstream.
+
+Aside from those versions, even though the feature set will be frozen for
+them, *hyprscroller* also supports v0.35 and v0.38.1.
 
 
 ## Building and installing

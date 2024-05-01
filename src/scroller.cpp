@@ -14,6 +14,7 @@
 #endif
 
 #include "scroller.h"
+#include <unordered_map>
 
 extern HANDLE PHANDLE;
 
@@ -60,73 +61,47 @@ enum class Reorder {
     Lazy
 };
 
-class Mark {
-public:
-    Mark(CWindow *w) : win(w) {}
-    CWindow *window() const { return win; }
-
-private:
-    CWindow *win;
-};
 
 class Marks {
 public:
-    Marks() : active(nullptr) {}
+    Marks() {}
     ~Marks() { reset(); }
     void reset() {
-        active = nullptr;
         marks.clear();
     }
-    void add(CWindow *w) {
-        for (auto m = marks.first(); m != nullptr; m = m->next()) {
-            if (m->data()->window() == w)
-                return;
+    // Add a mark with name for window, overwriting any existing one with that name
+    void add(CWindow *window, const std::string &name) {
+        const auto mark = marks.find(name);
+        if (mark != marks.end()) {
+            mark->second = window;
+            return;
         }
-        // Always insert right after the active mark, or at the end if none
-        auto node = active != nullptr ? active : marks.last();
-        active = marks.emplace_after(node, new Mark(w));
+        marks[name] = window;
     }
-    void del(CWindow *w) {
-        for (auto m = marks.first(); m != nullptr; m = m->next()) {
-            if (m->data()->window() == w) {
-                if (m == active) {
-                    active = m->prev() ? m->prev() : m->next();
-                }
-                marks.erase(m);
-                return;
-            }
+    void del(const std::string &name) {
+        const auto mark = marks.find(name);
+        if (mark != marks.end()) {
+            marks.erase(mark);
         }
     }
-    // If the window is marked, returns the previous, if not, returns the active
-    CWindow *prev(CWindow *w) {
-        if (marks.size() == 0)
-            return nullptr;
-
-        for (auto m = marks.first(); m != nullptr; m = m->next()) {
-            if (m->data()->window() == w) {
-                active = active->prev() != nullptr ? active->prev() : active;
-                return active->data()->window();
-            }
+    // Remove window from list of marks (used when a window gets deleted)
+    void remove(CWindow *window) {
+        for(auto it = marks.begin(); it != marks.end(); ++it) {
+            if (it->second == window)
+                marks.erase(it);
         }
-        return active->data()->window();
     }
-    // If the window is marked, returns the next, if not, returns the active
-    CWindow *next(CWindow *w) {
-        if (marks.size() == 0)
-            return nullptr;
-
-        for (auto m = marks.first(); m != nullptr; m = m->next()) {
-            if (m->data()->window() == w) {
-                active = active->next() != nullptr ? active->next() : active;
-                return active->data()->window();
-            }
+    // If the mark exists, returns that window, otherwise it returns null
+    CWindow *visit(const std::string &name) {
+        const auto mark = marks.find(name);
+        if (mark != marks.end()) {
+            return mark->second;
         }
-        return active->data()->window();
+        return nullptr;
     }
 
 private:
-    ListNode<Mark *> *active;
-    List<Mark *> marks;
+    std::unordered_map<std::string, CWindow *> marks;
 };
 
 static Marks marks;
@@ -1462,7 +1437,7 @@ void ScrollerLayout::onWindowCreatedTiling(CWindow *window, eDirection)
 */
 void ScrollerLayout::onWindowRemovedTiling(CWindow *window)
 {
-    marks.del(window);
+    marks.remove(window);
 
     auto s = getRowForWindow(window);
     if (s == nullptr) {
@@ -1866,26 +1841,17 @@ static int get_workspace_id() {
     return workspace_id;
 }
 
-void ScrollerLayout::marks_add() {
+void ScrollerLayout::marks_add(const std::string &name) {
     CWindow *w = getRowForWorkspace(get_workspace_id())->get_active_window();
-    marks.add(w);
+    marks.add(w, name);
 }
 
-void ScrollerLayout::marks_del() {
-    CWindow *w = getRowForWorkspace(get_workspace_id())->get_active_window();
-    marks.del(w);
+void ScrollerLayout::marks_delete(const std::string &name) {
+    marks.del(name);
 }
 
-void ScrollerLayout::marks_prev() {
-    CWindow *w =g_pCompositor->m_pLastWindow;
-    CWindow *window = marks.prev(w);
-    if (window != nullptr)
-        switch_to_window(window);
-}
-
-void ScrollerLayout::marks_next() {
-    CWindow *w =g_pCompositor->m_pLastWindow;
-    CWindow *window = marks.next(w);
+void ScrollerLayout::marks_visit(const std::string &name) {
+    CWindow *window = marks.visit(name);
     if (window != nullptr)
         switch_to_window(window);
 }

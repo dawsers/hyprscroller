@@ -47,10 +47,9 @@ public:
     void fit_size(int workspace, FitSize);
     void toggle_overview(int workspace);
 
-    void marks_add();
-    void marks_del();
-    void marks_prev();
-    void marks_next();
+    void marks_add(const std::string &name);
+    void marks_delete(const std::string &name);
+    void marks_visit(const std::string &name);
     void marks_reset();
 
 private:

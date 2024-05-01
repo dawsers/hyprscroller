@@ -9,7 +9,7 @@ which is a similar idea.
 ![Intro](./videos/hyprscroller.gif)
 
 The plugin is quite feature complete and supports gaps, borders, special
-workspace, full screen modes, overview and installation through `hyprpm`.
+workspace, full screen modes, overview, marks and installation through `hyprpm`.
 
 I use *hyprscroller* on my main machine and will support it for as long as I
 keep on using *Hyprland*. However, I will only add new features that I find
@@ -98,7 +98,10 @@ The plugin adds the following dispatchers:
 | `scroller:expelwindow`    | Pop the current window out of its column and place it on a new column to the right.                                         |
 | `scroller:fitsize`        | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg` |
 | `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                         |
-| `scroller:marks`          | Marks management. Arguments: `add`, `del`, `next`, `prev`, `reset`                                                          |
+| `scroller:marksadd`       | Add a named mark. Argument is the name of the mark                                                                          |
+| `scroller:marksdelete`    | Delete a named mark. Argument is the name of the mark                                                                       |
+| `scroller:marksvisit`     | Visit a named mark. Argument is the name of the mark                                                                        |
+| `scroller:marksreset`     | Delete all marks                                                                                                            |
 
 
 ## Modes
@@ -213,13 +216,25 @@ anything beyond that will probably find bugs or **cause compositor crashes**.
 
 ## Marks
 
-`scroller:marks` manages *marks*. You can `add` a mark on the active window to
-be able to quickly return to it later on. `del` removes a mark from a window
-(if present). `prev` and `next` change focus to the previous and next marked
-windows. `reset` clears all marks.
+You can use *marks* to navigate to frequently used windows, regardless of
+which workspace they are in (it even works for the special workspace windows).
+
+`scroller:marksadd` adds a named mark. Use a *submap* to create bindings for
+several named marks you may want to use. See the configuration example for
+directions.
+
+`scroller:marksdelete` deletes a named mark created with `scroller:marksadd`.
+
+`scroller:marksvisit` moves the focus to a previously created mark.
+
+`scroller:marksreset` clears all marks.
 
 Marks reference windows, but are global, they may belong to different
-workspaces, so moving to the *next* or *previous* mark may switch workspaces.
+workspaces, so visiting a mark may switch workspaces.
+
+You can use any string name for a mark, for example in scripts. But they are
+also very convenient to use with regular key bindings by simply using a letter
+as the name. Again, see the example configuration.
 
 
 ## Options
@@ -268,8 +283,8 @@ bind = $mainMod CTRL, home, scroller:movewindow, begin
 bind = $mainMod CTRL, end, scroller:movewindow, end
 
 # Modes
-bind = $mainMod, semicolon, scroller:setmode, row
-bind = $mainMod, apostrophe, scroller:setmode, col
+bind = $mainMod, bracketleft, scroller:setmode, row
+bind = $mainMod, bracketright, scroller:setmode, col
 
 # Sizing keys
 bind = $mainMod, equal, scroller:cyclesize, next
@@ -359,10 +374,39 @@ bind = $mainMod, tab, submap, reset
 submap = reset
 
 # Marks
-bind = $mainMod, M, scroller:marks, add
-bind = $mainMod SHIFT, M, scroller:marks, del
-bind = $mainMod, period, scroller:marks, next
-bind = $mainMod, comma, scroller:marks, prev
-bind = $mainMod CTRL, M, scroller:marks, reset
+bind = $mainMod, M, submap, marksadd
+submap = marksadd
+bind = , a, scroller:marksadd, a
+bind = , a, submap, reset
+bind = , b, scroller:marksadd, b
+bind = , b, submap, reset
+bind = , c, scroller:marksadd, c
+bind = , c, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+bind = $mainMod SHIFT, M, submap, marksdelete
+submap = marksdelete
+bind = , a, scroller:marksdelete, a
+bind = , a, submap, reset
+bind = , b, scroller:marksdelete, b
+bind = , b, submap, reset
+bind = , c, scroller:marksdelete, c
+bind = , c, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+bind = $mainMod, apostrophe, submap, marksvisit
+submap = marksvisit
+bind = , a, scroller:marksvisit, a
+bind = , a, submap, reset
+bind = , b, scroller:marksvisit, b
+bind = , b, submap, reset
+bind = , c, scroller:marksvisit, c
+bind = , c, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+bind = $mainMod CTRL, M, scroller:marksreset
 ```
 

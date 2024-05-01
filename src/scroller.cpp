@@ -86,9 +86,11 @@ public:
     }
     // Remove window from list of marks (used when a window gets deleted)
     void remove(CWindow *window) {
-        for(auto it = marks.begin(); it != marks.end(); ++it) {
+        for(auto it = marks.begin(); it != marks.end();) {
             if (it->second == window)
-                marks.erase(it);
+                it = marks.erase(it);
+            else
+                it++;
         }
     }
     // If the mark exists, returns that window, otherwise it returns null

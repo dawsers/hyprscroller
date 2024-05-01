@@ -230,12 +230,17 @@ workspaces, so moving to the *next* or *previous* mark may switch workspaces.
 Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
 `maximized`, `floating` (uses the default width set by the application).
 
+2. `focus_wrap`: determines whether focus will *wrap* when at the first or
+last window of a row/column. Possible arguments are: `true`|`1` (default), or
+`false`|`0`.
+
 For example:
 
 ``` conf
 plugin {
     scroller {
         column_default_width = onehalf
+        focus_wrap = false
     }
 }
 ```

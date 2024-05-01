@@ -467,11 +467,12 @@ public:
         auto next = active->next();
         windows.swap(active, next);
     }
-    bool move_focus_up() {
+    bool move_focus_up(bool focus_wrap) {
         if (active == windows.first()) {
             CMonitor *monitor = g_pCompositor->getMonitorInDirection('u');
             if (monitor == nullptr) {
-                active = windows.last();
+                if (focus_wrap)
+                    active = windows.last();
                 return true;
             }
             // use default dispatch for movefocus (change monitor)
@@ -482,11 +483,12 @@ public:
         active = active->prev();
         return true;
     }
-    bool move_focus_down() {
+    bool move_focus_down(bool focus_wrap) {
         if (active == windows.last()) {
             CMonitor *monitor = g_pCompositor->getMonitorInDirection('d');
             if (monitor == nullptr) {
-                active = windows.first();
+                if (focus_wrap)
+                    active = windows.first();
                 return true;
             }
             // use default dispatch for movefocus (change monitor)
@@ -851,23 +853,23 @@ public:
             }
         }
     }
-    bool move_focus(Direction dir) {
+    bool move_focus(Direction dir, bool focus_wrap) {
         reorder = Reorder::Auto;
         switch (dir) {
         case Direction::Left:
-            if (!move_focus_left())
+            if (!move_focus_left(focus_wrap))
                 return false;
             break;
         case Direction::Right:
-            if (!move_focus_right())
+            if (!move_focus_right(focus_wrap))
                 return false;
             break;
         case Direction::Up:
-            if (!active->data()->move_focus_up())
+            if (!active->data()->move_focus_up(focus_wrap))
                 return false;
             break;
         case Direction::Down:
-            if (!active->data()->move_focus_down())
+            if (!active->data()->move_focus_down(focus_wrap))
                 return false;
             break;
         case Direction::Begin:
@@ -884,11 +886,12 @@ public:
     }
 
 private:
-    bool move_focus_left() {
+    bool move_focus_left(bool focus_wrap) {
         if (active == columns.first()) {
             CMonitor *monitor = g_pCompositor->getMonitorInDirection('l');
             if (monitor == nullptr) {
-                active = columns.last();
+                if (focus_wrap)
+                    active = columns.last();
                 return true;
             }
 
@@ -898,11 +901,12 @@ private:
         active = active->prev();
         return true;
     }
-    bool move_focus_right() {
+    bool move_focus_right(bool focus_wrap) {
         if (active == columns.last()) {
             CMonitor *monitor = g_pCompositor->getMonitorInDirection('r');
             if (monitor == nullptr) {
-                active = columns.first();
+                if (focus_wrap)
+                    active = columns.first();
                 return true;
             }
 
@@ -1737,8 +1741,23 @@ void ScrollerLayout::cycle_window_size(int workspace, int step)
     s->resize_active_column(step);
 }
 
+static void switch_to_window(CWindow *window)
+{
+    if (window == g_pCompositor->m_pLastWindow)
+        return;
+
+    g_pInputManager->unconstrainMouse();
+    g_pCompositor->focusWindow(window);
+    g_pCompositor->warpCursorTo(window->middle());
+
+    g_pInputManager->m_pForcedFocus = window;
+    g_pInputManager->simulateMouseMovement();
+    g_pInputManager->m_pForcedFocus = nullptr;
+}
+
 void ScrollerLayout::move_focus(int workspace, Direction direction)
 {
+    static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         // if workspace is empty, use the deault movefocus, which now
@@ -1762,7 +1781,7 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
         return;
     }
 
-    if (!s->move_focus(direction)) {
+    if (!s->move_focus(direction, **focus_wrap == 0 ? false : true)) {
         // changed monitor
         s = getRowForWorkspace(g_pCompositor->m_pLastMonitor->activeWorkspaceID());
         if (s == nullptr) {
@@ -1770,7 +1789,7 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
             return;
         }
     }
-    g_pCompositor->focusWindow(s->get_active_window());
+    switch_to_window(s->get_active_window());
 }
 
 void ScrollerLayout::move_window(int workspace, Direction direction) {
@@ -1780,7 +1799,7 @@ void ScrollerLayout::move_window(int workspace, Direction direction) {
     }
 
     s->move_active_column(direction);
-    g_pCompositor->focusWindow(s->get_active_window());
+    switch_to_window(s->get_active_window());
 }
 
 void ScrollerLayout::align_window(int workspace, Direction direction) {
@@ -1861,14 +1880,14 @@ void ScrollerLayout::marks_prev() {
     CWindow *w =g_pCompositor->m_pLastWindow;
     CWindow *window = marks.prev(w);
     if (window != nullptr)
-        g_pCompositor->focusWindow(window);
+        switch_to_window(window);
 }
 
 void ScrollerLayout::marks_next() {
     CWindow *w =g_pCompositor->m_pLastWindow;
     CWindow *window = marks.next(w);
     if (window != nullptr)
-        g_pCompositor->focusWindow(window);
+        switch_to_window(window);
 }
 
 void ScrollerLayout::marks_reset() {

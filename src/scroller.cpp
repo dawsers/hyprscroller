@@ -1540,8 +1540,12 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
 {
     const auto PWINDOW = window ? window : g_pCompositor->m_pLastWindow;
     auto s = getRowForWindow(PWINDOW);
-    if (s == nullptr)
+    if (s == nullptr) {
+        // Window is not tiled
+        PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize.goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize.goal() + delta).y, 20.0));
+        PWINDOW->updateWindowDecos();
         return;
+    }
 
     s->resize_active_window(delta);
 }
@@ -1556,10 +1560,69 @@ void ScrollerLayout::fullscreenRequestForWindow(CWindow *window,
                                                 bool on)
 {
     auto s = getRowForWindow(window);
-    if (s == nullptr) {
-        return;
-    } // assuming window is active for now
 
+    if (s == nullptr) {
+        // window is not tiled
+        if (!g_pCompositor->windowValidMapped(window))
+            return;
+
+        if (on == window->m_bIsFullscreen)
+            return; // ignore
+
+        const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+        const auto PWORKSPACE = window->m_pWorkspace;
+
+        if (PWORKSPACE->m_bHasFullscreenWindow && on) {
+            // if the window wants to be fullscreen but there already is one,
+            // ignore the request.
+            return;
+        }
+
+        // save position and size if floating
+        if (window->m_bIsFloating && on) {
+            window->m_vLastFloatingSize = window->m_vRealSize.goal();
+            window->m_vLastFloatingPosition = window->m_vRealPosition.goal();
+            window->m_vPosition = window->m_vRealPosition.goal();
+            window->m_vSize = window->m_vRealSize.goal();
+        }
+
+        // otherwise, accept it.
+        window->m_bIsFullscreen = on;
+        PWORKSPACE->m_bHasFullscreenWindow = !PWORKSPACE->m_bHasFullscreenWindow;
+
+        window->updateDynamicRules();
+        window->updateWindowDecos();
+
+        g_pEventManager->postEvent(SHyprIPCEvent{"fullscreen", std::to_string((int)on)});
+        EMIT_HOOK_EVENT("fullscreen", window);
+
+        if (!window->m_bIsFullscreen) {
+            // get back its' dimensions from position and size
+            window->m_vRealPosition = window->m_vLastFloatingPosition;
+            window->m_vRealSize = window->m_vLastFloatingSize;
+
+            window->updateSpecialRenderData();
+        } else {
+            // if it now got fullscreen, make it fullscreen
+
+            PWORKSPACE->m_efFullscreenMode = fullscreenmode;
+
+            // apply new pos and size being monitor's box
+            if (fullscreenmode == FULLSCREEN_FULL) {
+                window->m_vRealPosition = PMONITOR->vecPosition;
+                window->m_vRealSize = PMONITOR->vecSize;
+            }
+        }
+
+        g_pCompositor->updateWindowAnimatedDecorationValues(window);
+        g_pXWaylandManager->setWindowSize(window, window->m_vRealSize.goal());
+        g_pCompositor->changeWindowZOrder(window, true);
+        recalculateMonitor(PMONITOR->ID);
+
+        return;
+    }
+
+    // assuming window is active for now
     const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(window->workspaceID());
     switch (fullscreenmode) {
         case eFullscreenMode::FULLSCREEN_FULL:

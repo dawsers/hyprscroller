@@ -1,0 +1,5 @@
+Debug/
+Release/
+hyprscroller.so
+.cache/
+compile_commands.json

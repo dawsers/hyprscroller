@@ -13,26 +13,26 @@ public:
     virtual void onEnable();
     virtual void onDisable();
 
-    virtual void onWindowCreatedTiling(CWindow *,
+    virtual void onWindowCreatedTiling(PHLWINDOW,
                                        eDirection = DIRECTION_DEFAULT);
-    virtual bool isWindowTiled(CWindow *);
-    virtual void onWindowRemovedTiling(CWindow *);
+    virtual bool isWindowTiled(PHLWINDOW);
+    virtual void onWindowRemovedTiling(PHLWINDOW);
     virtual void recalculateMonitor(const int &monitor_id);
-    virtual void recalculateWindow(CWindow *);
+    virtual void recalculateWindow(PHLWINDOW);
     virtual void resizeActiveWindow(const Vector2D &delta, eRectCorner corner,
-                                    CWindow *pWindow = nullptr);
-    virtual void fullscreenRequestForWindow(CWindow *, eFullscreenMode,
+                                    PHLWINDOW pWindow = nullptr);
+    virtual void fullscreenRequestForWindow(PHLWINDOW, eFullscreenMode,
                                             bool enable_fullscreen);
     virtual std::any layoutMessage(SLayoutMessageHeader header,
                                    std::string content);
-    virtual SWindowRenderLayoutHints requestRenderHints(CWindow *);
-    virtual void switchWindows(CWindow *, CWindow *);
-    virtual void moveWindowTo(CWindow *, const std::string &direction);
-    virtual void alterSplitRatio(CWindow *, float, bool);
+    virtual SWindowRenderLayoutHints requestRenderHints(PHLWINDOW);
+    virtual void switchWindows(PHLWINDOW, PHLWINDOW);
+    virtual void moveWindowTo(PHLWINDOW, const std::string &direction, bool silent = false);
+    virtual void alterSplitRatio(PHLWINDOW, float, bool);
     virtual std::string getLayoutName();
-    virtual CWindow *getNextWindowCandidate(CWindow *);
-    virtual void onWindowFocusChange(CWindow *);
-    virtual void replaceWindowDataWith(CWindow *from, CWindow *to);
+    virtual PHLWINDOW getNextWindowCandidate(PHLWINDOW);
+    virtual void onWindowFocusChange(PHLWINDOW);
+    virtual void replaceWindowDataWith(PHLWINDOW from, PHLWINDOW to);
     virtual Vector2D predictSizeForNewWindowTiled();
 
     // New Dispatchers
@@ -54,7 +54,7 @@ public:
 
 private:
     Row *getRowForWorkspace(int workspace);
-    Row *getRowForWindow(CWindow *window);
+    Row *getRowForWindow(PHLWINDOW window);
 
     List<Row *> rows;
 };

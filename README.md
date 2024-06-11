@@ -28,7 +28,7 @@ latest `git` changes, but I will be slower to keep up with those, as there are
 too many API changes going on upstream.
 
 Aside from those versions, even though the feature set will be frozen for
-them, *hyprscroller* also supports v0.35, v0.38.1 and v0.39.1.
+them, *hyprscroller* also supports v0.35, v0.38.1, v0.39.1 and v0.40.0.
 
 
 ## Building and installing

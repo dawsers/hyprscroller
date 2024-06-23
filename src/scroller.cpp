@@ -5,7 +5,7 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/debug/Log.hpp>
-#include <hyprland/src/helpers/Vector2D.hpp>
+#include <hyprutils/math/Vector2D.hpp>
 #include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>

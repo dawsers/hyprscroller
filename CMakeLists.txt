@@ -10,7 +10,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(DEPS REQUIRED hyprland pixman-1 libdrm)
+pkg_check_modules(HYPRLAND REQUIRED hyprland)
+pkg_check_modules(DEPS REQUIRED pixman-1 libdrm)
 
 # Compile flags
 set(CMAKE_CXX_STANDARD 23)
@@ -27,5 +28,5 @@ add_library(hyprscroller SHARED
 
 add_compile_definitions(WLR_USE_UNSTABLE)
 
-target_include_directories(hyprscroller PRIVATE ${DEPS_INCLUDE_DIRS})
+target_include_directories(hyprscroller PRIVATE ${HYPRLAND_INCLUDE_DIRS} ${HYPRLAND_PREFIX}/hyprland/wlroots-hyprland ${DEPS_INCLUDE_DIRS})
 set_target_properties(hyprscroller PROPERTIES PREFIX "")

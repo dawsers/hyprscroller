@@ -29,5 +29,6 @@ add_compile_definitions(WLR_USE_UNSTABLE)
 
 target_include_directories(hyprscroller PRIVATE ${DEPS_INCLUDE_DIRS} 
             /usr/include/hyprland/wlroots-hyprland/hyprland 
-            /usr/include/hyprland/src)
+            /usr/include/hyprland/src
+)
 set_target_properties(hyprscroller PROPERTIES PREFIX "")

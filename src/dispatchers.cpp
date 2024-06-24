@@ -76,8 +76,12 @@ namespace {
             return;
 
         auto args = CVarList(arg);
+        bool move_cursor = true;
+        if (args[1] == "0" || args[1] == "false" || args[1] == "no") {
+            move_cursor = false;
+        }
         if (auto direction = parse_move_arg(args[0])) {
-            g_ScrollerLayout->move_focus(workspace, *direction);
+            g_ScrollerLayout->move_focus(workspace, *direction, move_cursor);
         }
     }
 

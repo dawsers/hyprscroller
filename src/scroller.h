@@ -37,7 +37,7 @@ public:
 
     // New Dispatchers
     void cycle_window_size(int workspace, int step);
-    void move_focus(int workspace, Direction);
+    void move_focus(int workspace, Direction, bool);
     void move_window(int workspace, Direction);
     void align_window(int workspace, Direction);
     void admit_window_left(int workspace);

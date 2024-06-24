@@ -1788,21 +1788,22 @@ void ScrollerLayout::cycle_window_size(int workspace, int step)
     s->resize_active_column(step);
 }
 
-static void switch_to_window(PHLWINDOW window)
-{
+static void switch_to_window(PHLWINDOW window, bool move_cursor) {
     if (window == g_pCompositor->m_pLastWindow.lock())
         return;
 
     g_pInputManager->unconstrainMouse();
     g_pCompositor->focusWindow(window);
+    if (move_cursor) {
     g_pCompositor->warpCursorTo(window->middle());
+    }
 
     g_pInputManager->m_pForcedFocus = window;
     g_pInputManager->simulateMouseMovement();
     g_pInputManager->m_pForcedFocus.reset();
 }
 
-void ScrollerLayout::move_focus(int workspace, Direction direction)
+void ScrollerLayout::move_focus(int workspace, Direction direction, bool move_cursor)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();
     auto s = getRowForWorkspace(workspace);
@@ -1836,7 +1837,7 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
             return;
         }
     }
-    switch_to_window(s->get_active_window());
+    switch_to_window(s->get_active_window(), move_cursor);
 }
 
 void ScrollerLayout::move_window(int workspace, Direction direction) {
@@ -1846,7 +1847,7 @@ void ScrollerLayout::move_window(int workspace, Direction direction) {
     }
 
     s->move_active_column(direction);
-    switch_to_window(s->get_active_window());
+    switch_to_window(s->get_active_window(), true);
 }
 
 void ScrollerLayout::align_window(int workspace, Direction direction) {
@@ -1925,7 +1926,7 @@ void ScrollerLayout::marks_delete(const std::string &name) {
 void ScrollerLayout::marks_visit(const std::string &name) {
     PHLWINDOW window = marks.visit(name);
     if (window != nullptr)
-        switch_to_window(window);
+        switch_to_window(window, true);
 }
 
 void ScrollerLayout::marks_reset() {

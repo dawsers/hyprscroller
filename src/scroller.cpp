@@ -1072,6 +1072,8 @@ public:
 
         reorder = Reorder::Auto;
         recalculate_row_geometry();
+
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "admitwindow"});
     }
     void expel_window_right() {
         if (active->data()->maximized() ||
@@ -1105,6 +1107,8 @@ public:
 
         reorder = Reorder::Auto;
         recalculate_row_geometry();
+
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "expelwindow"});
     }
     Vector2D predict_window_size() const {
         return Vector2D(0.5 * max.w, max.h);

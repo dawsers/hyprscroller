@@ -1118,7 +1118,7 @@ public:
         auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
         // For now, support only constant CCssGapData
         auto gaps_in = PGAPSIN->top;
-        auto gaps_out = PGAPSOUT->top;
+        auto gaps_out = *PGAPSOUT;
 
         const auto SIZE = monitor->vecSize;
         const auto POS = monitor->vecPosition;
@@ -1126,10 +1126,10 @@ public:
         const auto BOTTOMRIGHT = monitor->vecReservedBottomRight;
 
         full = Box(POS, SIZE);
-        const Box newmax = Box(POS.x + TOPLEFT.x + gaps_out,
-                POS.y + TOPLEFT.y + gaps_out,
-                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - 2 * gaps_out,
-                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - 2 * gaps_out);
+        const Box newmax = Box(POS.x + TOPLEFT.x + gaps_out.left,
+                POS.y + TOPLEFT.y + gaps_out.top,
+                SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - gaps_out.left - gaps_out.right,
+                SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - gaps_out.top - gaps_out.bottom);
         gap = gaps_in;
 
         const Box oldmax = max;

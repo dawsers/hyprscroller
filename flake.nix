@@ -1,7 +1,11 @@
 {
   description = "hyprscroller";
 
-  inputs.hyprland.url = "github:hyprwm/Hyprland";
+  inputs.hyprland = {
+    type = "git";
+    url = "https://github.com/hyprwm/Hyprland";
+    submodules = true;
+  };
 
   outputs =
     { self, hyprland }:

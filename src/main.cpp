@@ -28,6 +28,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:focus_wrap", Hyprlang::INT{1});
 
+    // "default" or "center"
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:default_alignment", Hyprlang::STRING{"default"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:sticky_alignment", Hyprlang::INT{0});
+
     HyprlandAPI::reloadConfig();
 
     return {"hyprscroller", "scrolling window layout", "dawser", "1.0"};

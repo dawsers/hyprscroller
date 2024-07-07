@@ -162,7 +162,7 @@ private:
 class Column {
 public:
     Column(PHLWINDOW cwindow, double maxw, double maxh)
-        : height(WindowHeight::One), reorder(Reorder::Auto), initialized(false), maxdim(false) {
+        : height(WindowHeight::One), reorder(Reorder::Auto), initialized(false), maxdim(false), currentAlignment(Direction::Center) {
         static auto const *column_default_width = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_default_width")->getDataStaticPtr();
         std::string column_width = *column_default_width;
         if (column_width == "onehalf") {
@@ -188,6 +188,14 @@ public:
         geom.h = maxh;
         windows.push_back(window);
         active = windows.first();
+    }
+
+    void move_active_window(Direction dir) {
+        if (dir == Direction::Up) {
+            move_active_up();
+        } else if (dir == Direction::Down) {
+            move_active_down();
+        }
     }
     Column(Window *window, ColumnWidth width, double maxw, double maxh)
         : width(width), height(WindowHeight::One), reorder(Reorder::Auto), initialized(true), maxdim(false) {
@@ -336,98 +344,113 @@ public:
             wactive->m_vRealPosition = wactive->m_vPosition;
             wactive->m_vRealSize = wactive->m_vSize;
         } else {
-            // In theory, every window in the Columm should have the same size,
-            // but the standard layouts don't follow this rule (to make the code
-            // simpler?). Windows close to the border of the monitor will have
-            // their sizes affected by gaps_out vs. gaps_in.
-            // I follow the same rules.
-            // Each window has a gap to its bounding box of "gaps_in + border",
-            // except on the monitor sides, where the gap is "gaps_out + border",
-            // but the window sizes are different because of those different
-            // gaps. So the distance between two window border boundaries is
-            // two times gaps_in (one per window).
             Window *wactive = active->data();
             PHLWINDOW win = wactive->ptr().lock();
             auto gap0 = active == windows.first() ? 0.0 : gap;
             auto gap1 = active == windows.last() ? 0.0 : gap;
             auto border = win->getRealBorderSize();
-            auto a_y0 = std::round(win->m_vPosition.y - border - gap0);
-            auto a_y1 = std::round(win->m_vPosition.y - border - gap0 + wactive->get_geom_h());
-            if (a_y0 < geom.y) {
-                // active starts above, set it on the top edge
+
+            switch (currentAlignment) {
+            case Direction::Center:
+                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, 0.5 * (geom.y + geom.h - wactive->get_geom_h()));
+                break;
+            case Direction::Up:
                 win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
-            } else if (a_y1 > geom.y + geom.h) {
-                // active overflows below the bottom, move to bottom of viewport
+                break;
+            case Direction::Down:
                 win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
-            } else {
-                // active window is inside the viewport
-                if (reorder == Reorder::Auto) {
-                    // The active window should always be completely in the viewport.
-                    // If any of the windows next to it, above or below are already
-                    // in the viewport, keep the current position.
-                    bool keep_current = false;
-                    if (active->prev() != nullptr) {
-                        Window *prev = active->prev()->data();
-                        PHLWINDOW prev_window = prev->ptr().lock();
-                        auto gap0 = active->prev() == windows.first() ? 0.0 : gap;
-                        auto border = prev_window->getRealBorderSize();
-                        auto p_y0 = std::round(prev_window->m_vPosition.y - border - gap0);
-                        auto p_y1 = std::round(prev_window->m_vPosition.y - border - gap0 + prev->get_geom_h());
-                        if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
-                            keep_current = true;
+                break;
+            case Direction::Left:
+                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, win->m_vPosition.y);
+                break;
+            case Direction::Right:
+                win->m_vPosition = Vector2D(geom.x + geom.w - win->m_vSize.x - border - gap_x.y, win->m_vPosition.y);
+                break;
+            default:
+                // For other cases (Left, Right, Begin, End), keep the current position
+                win->m_vPosition.x = geom.x + border + gap_x.x;
+                break;
+            }
+
+            if (reorder == Reorder::Auto) {
+                double y0 = win->m_vPosition.y - border - gap0;
+                double y1 = y0 + wactive->get_geom_h();
+                if (y0 < geom.y) {
+                    // active starts above, set it on the top edge
+                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
+                } else if (y1 > geom.y + geom.h) {
+                    // active overflows below the bottom, move to bottom of viewport
+                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
+                } else {
+                    // active window is inside the viewport
+                    if (reorder == Reorder::Auto) {
+                        // The active window should always be completely in the viewport.
+                        // If any of the windows next to it, above or below are already
+                        // in the viewport, keep the current position.
+                        bool keep_current = false;
+                        if (active->prev() != nullptr) {
+                            Window *prev = active->prev()->data();
+                            PHLWINDOW prev_window = prev->ptr().lock();
+                            auto gap0 = active->prev() == windows.first() ? 0.0 : gap;
+                            auto border = prev_window->getRealBorderSize();
+                            auto p_y0 = std::round(prev_window->m_vPosition.y - border - gap0);
+                            auto p_y1 = std::round(prev_window->m_vPosition.y - border - gap0 + prev->get_geom_h());
+                            if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
+                                keep_current = true;
+                            }
                         }
-                    }
-                    if (!keep_current && active->next() != nullptr) {
-                        Window *next = active->next()->data();
-                        PHLWINDOW next_window = next->ptr().lock();
-                        auto gap0 = active->next() == windows.first() ? 0.0 : gap;
-                        auto border = next_window->getRealBorderSize();
-                        auto p_y0 = std::round(next_window->m_vPosition.y - border - gap0);
-                        auto p_y1 = std::round(next_window->m_vPosition.y - border - gap0 + next->get_geom_h());
-                        if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
-                            keep_current = true;
+                        if (!keep_current && active->next() != nullptr) {
+                            Window *next = active->next()->data();
+                            PHLWINDOW next_window = next->ptr().lock();
+                            auto gap0 = active->next() == windows.first() ? 0.0 : gap;
+                            auto border = next_window->getRealBorderSize();
+                            auto p_y0 = std::round(next_window->m_vPosition.y - border - gap0);
+                            auto p_y1 = std::round(next_window->m_vPosition.y - border - gap0 + next->get_geom_h());
+                            if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
+                                keep_current = true;
+                            }
                         }
-                    }
-                    if (!keep_current) {
-                        // If not:
-                        // We try to fit the window right below it if it fits
-                        // completely, otherwise the one above it. If none of them fit,
-                        // we leave it as it is.
-                        if (active->next() != nullptr) {
-                            if (wactive->get_geom_h() + active->next()->data()->get_geom_h() <= geom.h) {
-                                // set next at the bottom edge of the viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0);
+                        if (!keep_current) {
+                            // If not:
+                            // We try to fit the window right below it if it fits
+                            // completely, otherwise the one above it. If none of them fit,
+                            // we leave it as it is.
+                            if (active->next() != nullptr) {
+                                if (wactive->get_geom_h() + active->next()->data()->get_geom_h() <= geom.h) {
+                                    // set next at the bottom edge of the viewport
+                                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0);
+                                } else if (active->prev() != nullptr) {
+                                    if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
+                                        // set previous at the top edge of the viewport
+                                        win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + gap0);
+                                    } else {
+                                        // none of them fit, leave active as it is (only modify x)
+                                        win->m_vPosition.x = geom.x + border + gap_x.x;
+                                    }
+                                } else {
+                                    // nothing above, move active to top of viewport
+                                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
+                                }
                             } else if (active->prev() != nullptr) {
                                 if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
                                     // set previous at the top edge of the viewport
                                     win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + gap0);
                                 } else {
-                                    // none of them fit, leave active as it is (only modify x)
-                                    win->m_vPosition.x = geom.x + border + gap_x.x;
+                                    // it doesn't fit and nothing above, move active to bottom of viewport
+                                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
                                 }
                             } else {
-                                // nothing above, move active to top of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
-                            }
-                        } else if (active->prev() != nullptr) {
-                            if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
-                                // set previous at the top edge of the viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + gap0);
-                            } else {
-                                // it doesn't fit and nothing above, move active to bottom of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
+                                // nothing on the right or left, the window is in a correct position
+                                win->m_vPosition.x = geom.x + border + gap_x.x;
                             }
                         } else {
-                            // nothing on the right or left, the window is in a correct position
+                            // the window is in a correct position
                             win->m_vPosition.x = geom.x + border + gap_x.x;
                         }
                     } else {
                         // the window is in a correct position
                         win->m_vPosition.x = geom.x + border + gap_x.x;
                     }
-                } else {
-                    // the window is in a correct position
-                    win->m_vPosition.x = geom.x + border + gap_x.x;
                 }
             }
             adjust_windows(active, gap_x, gap);
@@ -502,6 +525,7 @@ public:
         auto border = window->getRealBorderSize();
         auto gap0 = active == windows.first() ? 0.0 : gap;
         auto gap1 = active == windows.last() ? 0.0 : gap;
+        currentAlignment = direction;
         switch (direction) {
         case Direction::Up:
             reorder = Reorder::Lazy;
@@ -751,6 +775,9 @@ public:
         }
     }
 
+public:
+    Direction getCurrentAlignment() const { return currentAlignment; }
+
 private:
     struct Memory {
         Box geom;
@@ -765,13 +792,14 @@ private:
     Box full;        // full screen geometry
     ListNode<Window *> *active;
     List<Window *> windows;
+    Direction currentAlignment;
 };
 
 class Row {
 public:
     Row(PHLWINDOW window)
         : workspace(window->workspaceID()), mode(Mode::Row), reorder(Reorder::Auto),
-        overview(false), active(nullptr) {
+        overview(false), active(nullptr), currentRowAlignment(Direction::Center) {
         update_sizes(g_pCompositor->getMonitorFromID(window->m_iMonitorID));
     }
     ~Row() {
@@ -827,6 +855,12 @@ public:
                     if (columns.empty()) {
                         return false;
                     } else {
+                        if (mode == Mode::Column) {
+                            active->data()->align_window(active->data()->getCurrentAlignment(), gap);
+                            active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
+                        } else {
+                            align_column(currentRowAlignment);
+                        }
                         recalculate_row_geometry();
                         return true;
                     }
@@ -919,12 +953,6 @@ private:
     }
 
     // Calculate lateral gaps for a column
-    Vector2D calculate_gap_x(const ListNode<Column *> *column) const {
-        // First and last columns need a different gap
-        auto gap0 = column == columns.first() ? 0.0 : gap;
-        auto gap1 = column == columns.last() ? 0.0 : gap;
-        return Vector2D(gap0, gap1);
-    }
 
 public:
     void resize_active_column(int step) {
@@ -989,6 +1017,7 @@ public:
         default:
             return;
         }
+        currentRowAlignment = dir;
         reorder = Reorder::Lazy;
         recalculate_row_geometry();
     }
@@ -1054,7 +1083,44 @@ public:
 
         reorder = Reorder::Auto;
         recalculate_row_geometry();
+
+        // Reapply alignment after moving the column
+        if (mode == Mode::Column) {
+            active->data()->align_window(active->data()->getCurrentAlignment(), gap);
+            active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
+        } else {
+            align_column(currentRowAlignment);
+        }
     }
+
+    void move_active_window(Direction dir) {
+        if (dir == Direction::Up || dir == Direction::Down) {
+            active->data()->move_active_window(dir);
+        } else if (dir == Direction::Left) {
+            if (active != columns.first()) {
+                auto prev = active->prev();
+                Window* window = active->data()->expel_active(gap);
+                prev->data()->admit_window(window);
+                active = prev;
+            }
+        } else if (dir == Direction::Right) {
+            if (active != columns.last()) {
+                auto next = active->next();
+                Window* window = active->data()->expel_active(gap);
+                next->data()->admit_window(window);
+                active = next;
+            } else {
+                // Create a new column if moving to the right from the last column
+                Window* window = active->data()->expel_active(gap);
+                ColumnWidth width = active->data()->get_width();
+                active = columns.emplace_after(active, new Column(window, width, max.w, max.h));
+            }
+        }
+
+        reorder = Reorder::Auto;
+        recalculate_row_geometry();
+    }
+
     void admit_window_left() {
         if (active->data()->maximized() ||
             active->data()->fullscreen())
@@ -1439,6 +1505,19 @@ private:
         }
     }
 
+public:
+    Mode getMode() const { return mode; }
+    ListNode<Column *>* getActive() const { return active; }
+    int getGap() const { return gap; }
+    Direction getCurrentRowAlignment() const { return currentRowAlignment; }
+    Vector2D calculate_gap_x(const ListNode<Column *> *column) const {
+        // First and last columns need a different gap
+        auto gap0 = column == columns.first() ? 0.0 : gap;
+        auto gap1 = column == columns.last() ? 0.0 : gap;
+        return Vector2D(gap0, gap1);
+    }
+
+private:
     int workspace;
     Box full;
     Box max;
@@ -1448,6 +1527,7 @@ private:
     Mode mode;
     ListNode<Column *> *active;
     List<Column *> columns;
+    Direction currentRowAlignment;
 };
 
 
@@ -1480,6 +1560,16 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
         rows.push_back(s);
     }
     s->add_active_window(window);
+    
+    if (isStickyAlignment()) {
+        // Apply the current alignment after adding the window
+        if (s->getMode() == Mode::Column) {
+            s->getActive()->data()->align_window(s->getActive()->data()->getCurrentAlignment(), s->getGap());
+            s->getActive()->data()->recalculate_col_geometry(s->calculate_gap_x(s->getActive()), s->getGap());
+        } else {
+            s->align_column(s->getCurrentRowAlignment());
+        }
+    }
 }
 
 /*
@@ -1733,12 +1823,25 @@ void ScrollerLayout::moveWindowTo(PHLWINDOW window, const std::string &direction
         return;
     }
 
+    Direction dir;
     switch (direction.at(0)) {
-        case 'l': s->move_active_column(Direction::Left); break;
-        case 'r': s->move_active_column(Direction::Right); break;
-        case 'u': s->move_active_column(Direction::Up); break;
-        case 'd': s->move_active_column(Direction::Down); break;
-        default: break;
+        case 'l': dir = Direction::Left; break;
+        case 'r': dir = Direction::Right; break;
+        case 'u': dir = Direction::Up; break;
+        case 'd': dir = Direction::Down; break;
+        default: return;
+    }
+
+    s->move_active_column(dir);
+
+    if (isStickyAlignment()) {
+        // Reapply alignment after moving the window
+        if (s->getMode() == Mode::Column) {
+            s->getActive()->data()->align_window(s->getActive()->data()->getCurrentAlignment(), s->getGap());
+            s->getActive()->data()->recalculate_col_geometry(s->calculate_gap_x(s->getActive()), s->getGap());
+        } else {
+            s->align_column(s->getCurrentRowAlignment());
+        }
     }
 
     // "silent" requires to keep focus in the neighborhood of the moved window
@@ -1881,6 +1984,16 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
         }
     }
     switch_to_window(s->get_active_window());
+
+    if (isStickyAlignment()) {
+        // Reapply alignment
+        if (s->getMode() == Mode::Column) {
+            s->getActive()->data()->align_window(s->getActive()->data()->getCurrentAlignment(), s->getGap());
+            s->getActive()->data()->recalculate_col_geometry(s->calculate_gap_x(s->getActive()), s->getGap());
+        } else {
+            s->align_column(s->getCurrentRowAlignment());
+        }
+    }
 }
 
 void ScrollerLayout::move_window(int workspace, Direction direction) {
@@ -1889,8 +2002,28 @@ void ScrollerLayout::move_window(int workspace, Direction direction) {
         return;
     }
 
-    s->move_active_column(direction);
+    switch (direction) {
+        case Direction::Left:
+        case Direction::Right:
+            s->move_active_column(direction);
+            break;
+        case Direction::Up:
+        case Direction::Down:
+            s->move_active_window(direction);
+            break;
+        default:
+            return;
+    }
+
     switch_to_window(s->get_active_window());
+
+    // Reapply alignment after moving the window
+    if (s->getMode() == Mode::Column) {
+        s->getActive()->data()->align_window(s->getActive()->data()->getCurrentAlignment(), s->getGap());
+        s->getActive()->data()->recalculate_col_geometry(s->calculate_gap_x(s->getActive()), s->getGap());
+    } else {
+        s->align_column(s->getCurrentRowAlignment());
+    }
 }
 
 void ScrollerLayout::align_window(int workspace, Direction direction) {
@@ -1974,4 +2107,14 @@ void ScrollerLayout::marks_visit(const std::string &name) {
 
 void ScrollerLayout::marks_reset() {
     marks.reset();
+}
+void ScrollerLayout::recalculateAllMonitors() {
+    for (auto& m : g_pCompositor->m_vMonitors) {
+        recalculateMonitor(m->ID);
+    }
+}
+
+bool ScrollerLayout::isStickyAlignment() const {
+    static auto* const *sticky_alignment = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:sticky_alignment")->getDataStaticPtr();
+    return **sticky_alignment != 0;
 }

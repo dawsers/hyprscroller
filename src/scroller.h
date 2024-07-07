@@ -12,6 +12,7 @@ class ScrollerLayout : public IHyprLayout {
 public:
     virtual void onEnable();
     virtual void onDisable();
+    bool isStickyAlignment() const;
 
     virtual void onWindowCreatedTiling(PHLWINDOW,
                                        eDirection = DIRECTION_DEFAULT);
@@ -51,6 +52,9 @@ public:
     void marks_delete(const std::string &name);
     void marks_visit(const std::string &name);
     void marks_reset();
+
+    void recalculateAllMonitors();
+    void set_default_alignment(const std::string &alignment);
 
 private:
     Row *getRowForWorkspace(int workspace);

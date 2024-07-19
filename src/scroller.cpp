@@ -1694,7 +1694,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
             window->m_vRealPosition = window->m_vLastFloatingPosition;
             window->m_vRealSize = window->m_vLastFloatingSize;
 
-            window->updateSpecialRenderData();
+            window->updateWindowData();
         } else {
             // if it now got fullscreen, make it fullscreen
 

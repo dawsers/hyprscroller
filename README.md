@@ -139,12 +139,11 @@ in a direction or to the beginning or end or the row.
 ## Resizing
 
 `cyclesize` accepts an argument which is either `+1`/`1`/`next`, or
-`-1`/`prev`/`previous`. It cycles forward or backward through three column
-widths (in *row* mode): one third, one half or two thirds of the available
-width of the monitor. In *column* mode, the fractions are relative to the
-height of the monitor, and are: one third, one half, two thirds or one.
-However, using `resizewindow`, you can modify the width or height of
-any window freely.
+`-1`/`prev`/`previous`. It cycles forward or backward through a number of column
+widths (in *row* mode), or window heights (in *column* mode). Those widths or
+heights are a fraction of the width or height of the monitor, and are
+configurable (see *options*). However, using the dispatcher `resizewindow`, you
+can modify the width or height of any window freely.
 
 
 ## Aligning
@@ -249,6 +248,17 @@ Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
+3. `column_widths`: determines the set of column widths *hyprscroler* will
+cycle through when resizing the width of a column in *row* mode. It is a string
+of any number of values chosen among: *onesixth, onefourth, onethird, onehalf,
+twothirds, one*. The default value is: *onehalf twothirds onethird*.
+
+4. `window_heights`: determines the set of window heights *hyprscroler* will
+cycle through when resizing the height of a window in *column* mode. It is a
+string of any number of values chosen among: *onesixth, onefourth, onethird,
+onehalf, twothirds, one*. The default value is: *one onethird onehalf
+twothirds*.
+
 For example:
 
 ``` conf
@@ -256,6 +266,8 @@ plugin {
     scroller {
         column_default_width = onehalf
         focus_wrap = false
+        # ultra-wide monitor
+        column_widths = onefourth onethird onehalf onesixth
     }
 }
 ```

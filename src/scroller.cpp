@@ -1,7 +1,4 @@
-//#define COLORS_IPC
-
 #include <hyprland/src/desktop/Window.hpp>
-//#include <hyprland/src/Window.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/debug/Log.hpp>
@@ -9,12 +6,14 @@
 #include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
+#include <sstream>
 #ifdef COLORS_IPC
 #include <hyprland/src/managers/EventManager.hpp>
 #endif
 
 #include "scroller.h"
 #include <unordered_map>
+#include <vector>
 
 extern HANDLE PHANDLE;
 
@@ -44,20 +43,13 @@ struct Box {
     double x, y, w, h;
 };
 
-enum class ColumnWidth {
-    OneThird = 0,
-    OneHalf,
-    TwoThirds,
-    Number,
-    Free
-};
-
-enum class WindowHeight {
+enum class StandardSize {
+    OneSixth = 0,
+    OneFourth,
     OneThird,
     OneHalf,
     TwoThirds,
     One,
-    Number,
     Free
 };
 
@@ -66,6 +58,66 @@ enum class Reorder {
     Lazy
 };
 
+
+class CycleSizes {
+public:
+    CycleSizes() {}
+    ~CycleSizes() { reset(); }
+    StandardSize get_default() { return sizes[0]; }
+    StandardSize get_next(StandardSize size, int step) {
+        int current = -1;
+        for (size_t i = 0; i < sizes.size(); ++i) {
+            if (sizes[i] == size) {
+                current = i;
+                break;
+            }
+        }
+        if (current == -1) {
+            return sizes[0];
+        }
+        int number = sizes.size();
+        current = (number + current + step) % number;
+        return sizes[current];
+    }
+    void update(const std::string &option) {
+        if (option == str)
+            return;
+        reset();
+        std::string size;
+        std::stringstream stream(option);
+        while (std::getline(stream, size, ' ')) {
+            if (size == "onesixth") {
+                sizes.push_back(StandardSize::OneSixth);
+            } else if (size == "onefourth") {
+                sizes.push_back(StandardSize::OneFourth);
+            } else if (size == "onethird") {
+                sizes.push_back(StandardSize::OneThird);
+            } else if (size == "onehalf") {
+                sizes.push_back(StandardSize::OneHalf);
+            } else if (size == "twothirds") {
+                sizes.push_back(StandardSize::TwoThirds);
+            } else if (size == "one") {
+                sizes.push_back(StandardSize::One);
+            }
+        }
+        // if sizes is wrong, use a default value of onehalf
+        if (sizes.size() == 0)
+            sizes.push_back(StandardSize::OneHalf);
+
+        str = option;
+    }
+
+private:
+    void reset() {
+        sizes.clear();
+    }
+
+    std::string str;
+    std::vector<StandardSize> sizes;
+};
+
+static CycleSizes window_heights;
+static CycleSizes column_widths;
 
 class Marks {
 public:
@@ -115,7 +167,7 @@ static Marks marks;
 
 class Window {
 public:
-    Window(PHLWINDOW window, double box_h) : window(window), height(WindowHeight::One), box_h(box_h) {}
+    Window(PHLWINDOW window, double box_h) : window(window), height(StandardSize::One), box_h(box_h) {}
     PHLWINDOWREF ptr() { return window; }
     double get_geom_h() const { return box_h; }
     void set_geom_h(double geom_h) { box_h = geom_h; }
@@ -127,34 +179,40 @@ public:
         box_h = mem.box_h;
         window.lock()->m_vPosition.y = mem.pos_y;
     }
-    WindowHeight get_height() const { return height; }
-    void update_height(WindowHeight h, double max) {
+    StandardSize get_height() const { return height; }
+    void update_height(StandardSize h, double max) {
         height = h;
         switch (height) {
-        case WindowHeight::One:
+        case StandardSize::One:
             box_h = max;
             break;
-        case WindowHeight::TwoThirds:
+        case StandardSize::TwoThirds:
             box_h = 2.0 * max / 3.0;
             break;
-        case WindowHeight::OneHalf:
+        case StandardSize::OneHalf:
             box_h = 0.5 * max;
             break;
-        case WindowHeight::OneThird:
+        case StandardSize::OneThird:
             box_h = max / 3.0;
+            break;
+        case StandardSize::OneFourth:
+            box_h = max / 4.0;
+            break;
+        case StandardSize::OneSixth:
+            box_h = max / 6.0;
             break;
         default:
             break;
         }
     }
-    void set_height_free() { height = WindowHeight::Free; }
+    void set_height_free() { height = StandardSize::Free; }
 private:
     struct Memory {
         double pos_y;
         double box_h;
     };
     PHLWINDOWREF window;
-    WindowHeight height;
+    StandardSize height;
     double box_h;
     Memory mem;    // memory to store old height and win y when in maximized/overview modes
 };
@@ -162,26 +220,32 @@ private:
 class Column {
 public:
     Column(PHLWINDOW cwindow, double maxw, double maxh)
-        : height(WindowHeight::One), reorder(Reorder::Auto), initialized(false), maxdim(false) {
+        : height(StandardSize::One), reorder(Reorder::Auto), initialized(false), maxdim(false) {
         static auto const *column_default_width = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_default_width")->getDataStaticPtr();
         std::string column_width = *column_default_width;
         if (column_width == "onehalf") {
-            width = ColumnWidth::OneHalf;
+            width = StandardSize::OneHalf;
+        } else if (column_width == "onesixth") {
+            width = StandardSize::OneSixth;
+        } else if (column_width == "onefourth") {
+            width = StandardSize::OneFourth;
         } else if (column_width == "onethird") {
-            width = ColumnWidth::OneThird;
+            width = StandardSize::OneThird;
         } else if (column_width == "twothirds") {
-            width = ColumnWidth::TwoThirds;
+            width = StandardSize::TwoThirds;
+        } else if (column_width == "one") {
+            width = StandardSize::One;
         } else if (column_width == "maximized") {
-            width = ColumnWidth::Free;
+            width = StandardSize::Free;
         } else if (column_width == "floating") {
             if (cwindow->m_vLastFloatingSize.y > 0) {
-                width = ColumnWidth::Free;
+                width = StandardSize::Free;
                 maxw = cwindow->m_vLastFloatingSize.x;
             } else {
-                width = ColumnWidth::OneHalf;
+                width = StandardSize::OneHalf;
             }
         } else {
-            width = ColumnWidth::OneHalf;
+            width = StandardSize::OneHalf;
         }
         Window *window = new Window(cwindow, maxh);
         update_width(width, maxw, maxh);
@@ -189,8 +253,8 @@ public:
         windows.push_back(window);
         active = windows.first();
     }
-    Column(Window *window, ColumnWidth width, double maxw, double maxh)
-        : width(width), height(WindowHeight::One), reorder(Reorder::Auto), initialized(true), maxdim(false) {
+    Column(Window *window, StandardSize width, double maxw, double maxh)
+        : width(width), height(StandardSize::One), reorder(Reorder::Auto), initialized(true), maxdim(false) {
         window->set_geom_h(maxh);
         update_width(width, maxw, maxh);
         geom.h = maxh;
@@ -519,40 +583,13 @@ public:
             break;
         }
     }
-    ColumnWidth get_width() const {
+    StandardSize get_width() const {
         return width;
     }
     // used by Row::fit_width()
     void set_width_free() {
-        width = ColumnWidth::Free;
+        width = StandardSize::Free;
     }
-#ifdef COLORS_IPC
-    // For IPC events
-    std::string get_width_name() const {
-        switch (width) {
-        case ColumnWidth::OneThird:
-            return "OneThird";
-        case ColumnWidth::OneHalf:
-            return "OneHalf";
-        case ColumnWidth::TwoThirds:
-            return "TwoThirds";
-        case ColumnWidth::Free:
-            return "Free";
-        default:
-            return "";
-        }
-    }
-    std::string get_height_name() const {
-        switch (height) {
-        case WindowHeight::Auto:
-            return "Auto";
-        case WindowHeight::Free:
-            return "Free";
-        default:
-            return "";
-        }
-    }
-#endif
     // Update heights according to new maxh
     void update_heights(double maxh) {
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
@@ -560,21 +597,30 @@ public:
             window->update_height(window->get_height(), maxh);
         }
     }
-    void update_width(ColumnWidth cwidth, double maxw, double maxh) {
+    void update_width(StandardSize cwidth, double maxw, double maxh) {
         if (maximized()) {
             geom.w = maxw;
         } else {
             switch (cwidth) {
-            case ColumnWidth::OneThird:
+            case StandardSize::OneSixth:
+                geom.w = maxw / 6.0;
+                break;
+            case StandardSize::OneFourth:
+                geom.w = maxw / 4.0;
+                break;
+            case StandardSize::OneThird:
                 geom.w = maxw / 3.0;
                 break;
-            case ColumnWidth::OneHalf:
+            case StandardSize::OneHalf:
                 geom.w = maxw / 2.0;
                 break;
-            case ColumnWidth::TwoThirds:
+            case StandardSize::TwoThirds:
                 geom.w = 2.0 * maxw / 3.0;
                 break;
-            case ColumnWidth::Free:
+            case StandardSize::One:
+                geom.w = maxw;
+                break;
+            case StandardSize::Free:
                 // Only used when creating a column from an expelled window
                 geom.w = maxw;
             default:
@@ -662,15 +708,16 @@ public:
         }
     }
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap) {
+        static auto const *window_heights_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:window_heights")->getDataStaticPtr();
+        window_heights.update(*window_heights_str);
+
         reorder = Reorder::Auto;
-        WindowHeight height = active->data()->get_height();
-        if (height == WindowHeight::Free) {
-            // When cycle-resizing from Free mode, always move back to One
-            height = WindowHeight::One;
+        StandardSize height = active->data()->get_height();
+        if (height == StandardSize::Free) {
+            // When cycle-resizing from Free mode, always move back to first
+            height = window_heights.get_default();
         } else {
-            int number = static_cast<int>(WindowHeight::Number);
-            height =static_cast<WindowHeight>(
-                    (number + static_cast<int>(height) + step) % number);
+            height = window_heights.get_next(height, step);
         }
         active->data()->update_height(height, geom.h);
         recalculate_col_geometry(gap_x, gap);
@@ -737,7 +784,7 @@ public:
         }
         reorder = Reorder::Auto;
         // Now, resize.
-        width = ColumnWidth::Free;
+        width = StandardSize::Free;
 
         geom.w += delta.x;
         if (std::abs(static_cast<int>(delta.y)) > 0) {
@@ -755,8 +802,8 @@ private:
     struct Memory {
         Box geom;
     };
-    ColumnWidth width;
-    WindowHeight height;
+    StandardSize width;
+    StandardSize height;
     Reorder reorder;
     bool initialized;
     Box geom;        // bbox of column
@@ -935,15 +982,15 @@ public:
             active->data()->cycle_size_active_window(step, calculate_gap_x(active), gap);
             return;
         }
+        static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
+        column_widths.update(*column_widths_str);
 
-        ColumnWidth width = active->data()->get_width();
-        if (width == ColumnWidth::Free) {
-            // When cycle-resizing from Free mode, always move back to OneHalf
-            width = ColumnWidth::OneHalf;
+        StandardSize width = active->data()->get_width();
+        if (width == StandardSize::Free) {
+            // When cycle-resizing from Free mode, always move back to first
+            width = column_widths.get_default();
         } else {
-            int number = static_cast<int>(ColumnWidth::Number);
-            width =static_cast<ColumnWidth>(
-                    (number + static_cast<int>(width) + step) % number);
+            width = column_widths.get_next(width, step);
         }
         active->data()->update_width(width, max.w, max.h);
         reorder = Reorder::Auto;
@@ -999,16 +1046,25 @@ private:
             return;
 
         switch (column->get_width()) {
-        case ColumnWidth::OneThird:
+        case StandardSize::OneSixth:
+            column->set_geom_pos(max.x + 5.0 * max.w / 12.0, max.y);
+            break;
+        case StandardSize::OneFourth:
+            column->set_geom_pos(max.x + 3.0 * max.w / 8.0, max.y);
+            break;
+        case StandardSize::OneThird:
             column->set_geom_pos(max.x + max.w / 3.0, max.y);
             break;
-        case ColumnWidth::OneHalf:
+        case StandardSize::OneHalf:
             column->set_geom_pos(max.x + max.w / 4.0, max.y);
             break;
-        case ColumnWidth::TwoThirds:
+        case StandardSize::TwoThirds:
             column->set_geom_pos(max.x + max.w / 6.0, max.y);
             break;
-        case ColumnWidth::Free:
+        case StandardSize::One:
+            column->set_geom_pos(max.x, max.y);
+            break;
+        case StandardSize::Free:
             column->set_geom_pos(0.5 * (max.w - column->get_geom_w()), max.y);
             break;
         default:
@@ -1084,21 +1140,21 @@ public:
             return;
 
         auto w = active->data()->expel_active(gap);
-        ColumnWidth width = active->data()->get_width();
+        StandardSize width = active->data()->get_width();
         // This code inherits the width of the original column. There is a
         // problem with that when the mode is "Free". The new column may have
         // more reserved space for gaps, and the new window in that column
         // end up having negative size --> crash.
         // There are two options:
         // 1. We don't let column resizing make a column smaller than gap
-        // 2. We compromise and inherit the ColumnWidth attribute unless it is
+        // 2. We compromise and inherit the StandardSize attribute unless it is
         // "Free". In that case, we force OneHalf (the default).
 #if 1
-        double maxw = width == ColumnWidth::Free ? active->data()->get_geom_w() : max.w;
+        double maxw = width == StandardSize::Free ? active->data()->get_geom_w() : max.w;
 #else
         double maxw = max.w;
-        if (width == ColumnWidth::Free)
-            width = ColumnWidth::OneHalf;
+        if (width == StandardSize::Free)
+            width = StandardSize::OneHalf;
 #endif
         active = columns.emplace_after(active, new Column(w, width, maxw, max.h));
         // Initialize the position so it is located after its previous column
@@ -1299,8 +1355,8 @@ public:
         // Redo all columns: widths according to "width" (unless Free)
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
             Column *column = col->data();
-            ColumnWidth width = column->get_width();
-            double maxw = width == ColumnWidth::Free ? column->get_geom_w() : max.w;
+            StandardSize width = column->get_width();
+            double maxw = width == StandardSize::Free ? column->get_geom_w() : max.w;
             column->update_width(width, maxw, max.h);
             // Redo all windows for each column according to "height" (unless Free)
             column->update_heights(max.h);
@@ -1316,17 +1372,6 @@ public:
             active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
             return;
         }
-#ifdef COLORS_IPC
-        // Change border color
-    	static auto *const FREECOLUMN = (CGradientValueData *) HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:col.freecolumn_border")->data.get();
-        static auto *const ACTIVECOL = (CGradientValueData *)g_pConfigManager->getConfigValuePtr("general:col.active_border")->data.get();
-        if (active->data()->get_width() == ColumnWidth::Free) {
-            active->data()->get_active_window()->m_cRealBorderColor = *FREECOLUMN;
-        } else {
-            active->data()->get_active_window()->m_cRealBorderColor = *ACTIVECOL;
-        }
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", active->data()->get_width_name() + "," + active->data()->get_height_name()});
-#endif
         auto a_w = active->data()->get_geom_w();
         double a_x;
         if (active->data()->get_init()) {

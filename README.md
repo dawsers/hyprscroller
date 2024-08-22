@@ -23,12 +23,13 @@ that front.
 ## Requirements
 
 *hyprscroller* supports the version of *Hyprland* I use, which should be the
-same as the Arch Linux `hyprland` package. You can try your luck with the
+same as the Arch Linux `hyprland` package (v0.42.0). You can try your luck with the
 latest `git` changes, but I will be slower to keep up with those, as there are
 too many API changes going on upstream.
 
 Aside from those versions, even though the feature set will be frozen for
-them, *hyprscroller* also supports v0.35, v0.38.1, v0.39.1 and v0.40.0.
+them, *hyprscroller* also supports v0.35, v0.38.1, v0.39.1, v0.40.0 and
+v0.41.2.
 
 
 ## Building and installing

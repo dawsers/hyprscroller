@@ -344,11 +344,11 @@ public:
     }
     bool toggle_fullscreen(const Box &fullbbox) {
         PHLWINDOW wactive = active->data()->ptr().lock();
-        wactive->m_bIsFullscreen = !wactive->m_bIsFullscreen;
-        if (wactive->m_bIsFullscreen) {
+        const eFullscreenMode mode = wactive->m_sFullscreenState.internal;
+        if (mode == FSMODE_FULLSCREEN) {
             full = fullbbox;
         }
-        return wactive->m_bIsFullscreen;
+        return mode == FSMODE_FULLSCREEN;
     }
     // Sets fullscreen even if the active window is not full screen
     // Used in recalculateMonitor
@@ -382,7 +382,7 @@ public:
         }
     }
     bool fullscreen() const {
-        return active->data()->ptr().lock()->m_bIsFullscreen;
+        return active->data()->ptr().lock()->m_sFullscreenState.internal == FSMODE_FULLSCREEN;
     }
     bool maximized() const {
         return maxdim;
@@ -1210,7 +1210,7 @@ public:
         PWORKSPACE->m_bHasFullscreenWindow = fullscreen;
 
         if (fullscreen) {
-            PWORKSPACE->m_efFullscreenMode = eFullscreenMode::FULLSCREEN_FULL;
+            PWORKSPACE->m_efFullscreenMode = eFullscreenMode::FSMODE_FULLSCREEN;
             column->recalculate_col_geometry(calculate_gap_x(active), gap);
         } else {
             recalculate_row_geometry();
@@ -1595,7 +1595,7 @@ void ScrollerLayout::recalculateMonitor(const int &monitor_id)
         return;
 
     Box max = s->update_sizes(PMONITOR);
-    if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FULLSCREEN_FULL) {
+    if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FSMODE_FULLSCREEN) {
         s->set_fullscreen_active_window();
     } else {
         s->update_windows(max);
@@ -1649,91 +1649,69 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
    ignore.
 */
 void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
-                                                eFullscreenMode fullscreenmode,
-                                                bool on)
+                                                const eFullscreenMode CURRENT_EFFECTIVE_MODE,
+                                                const eFullscreenMode EFFECTIVE_MODE)
 {
     auto s = getRowForWindow(window);
 
     if (s == nullptr) {
-        // window is not tiled
-        if (!validMapped(window))
-            return;
-
-        if (on == window->m_bIsFullscreen)
-            return; // ignore
-
-        const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
-        const auto PWORKSPACE = window->m_pWorkspace;
-
-        if (PWORKSPACE->m_bHasFullscreenWindow && on) {
-            // if the window wants to be fullscreen but there already is one,
-            // ignore the request.
-            return;
-        }
-
         // save position and size if floating
-        if (window->m_bIsFloating && on) {
-            window->m_vLastFloatingSize = window->m_vRealSize.goal();
+        if (window->m_bIsFloating && CURRENT_EFFECTIVE_MODE == FSMODE_NONE) {
+            window->m_vLastFloatingSize     = window->m_vRealSize.goal();
             window->m_vLastFloatingPosition = window->m_vRealPosition.goal();
-            window->m_vPosition = window->m_vRealPosition.goal();
-            window->m_vSize = window->m_vRealSize.goal();
+            window->m_vPosition             = window->m_vRealPosition.goal();
+            window->m_vSize                 = window->m_vRealSize.goal();
         }
+        if (EFFECTIVE_MODE == FSMODE_NONE) {
+            // window is not tiled
+            if (window->m_bIsFloating) {
+                // get back its' dimensions from position and size
+                window->m_vRealPosition = window->m_vLastFloatingPosition;
+                window->m_vRealSize     = window->m_vLastFloatingSize;
 
-        // otherwise, accept it.
-        window->m_bIsFullscreen = on;
-        PWORKSPACE->m_bHasFullscreenWindow = !PWORKSPACE->m_bHasFullscreenWindow;
-
-        window->updateDynamicRules();
-        window->updateWindowDecos();
-
-        g_pEventManager->postEvent(SHyprIPCEvent{"fullscreen", std::to_string((int)on)});
-        EMIT_HOOK_EVENT("fullscreen", window);
-
-        if (!window->m_bIsFullscreen) {
-            // get back its' dimensions from position and size
-            window->m_vRealPosition = window->m_vLastFloatingPosition;
-            window->m_vRealSize = window->m_vLastFloatingSize;
-
-            window->updateSpecialRenderData();
+                window->unsetWindowData(PRIORITY_LAYOUT);
+                window->updateWindowData();
+            }
         } else {
-            // if it now got fullscreen, make it fullscreen
-
-            PWORKSPACE->m_efFullscreenMode = fullscreenmode;
-
-            // apply new pos and size being monitor's box
-            if (fullscreenmode == FULLSCREEN_FULL) {
+            // apply new pos and size being monitors' box
+            const auto PMONITOR   = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+            if (EFFECTIVE_MODE == FSMODE_FULLSCREEN) {
                 window->m_vRealPosition = PMONITOR->vecPosition;
-                window->m_vRealSize = PMONITOR->vecSize;
+                window->m_vRealSize     = PMONITOR->vecSize;
+            } else {
+                Box box = { PMONITOR->vecPosition + PMONITOR->vecReservedTopLeft,
+                            PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
+                window->m_vRealPosition = Vector2D(box.x, box.y);
+                window->m_vRealSize = Vector2D(box.w, box.h);
             }
         }
-
-        g_pCompositor->updateWindowAnimatedDecorationValues(window);
-        g_pXWaylandManager->setWindowSize(window, window->m_vRealSize.goal());
-        g_pCompositor->changeWindowZOrder(window, true);
-        recalculateMonitor(PMONITOR->ID);
-
-        return;
-    }
-
-    // assuming window is active for now
-    const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(window->workspaceID());
-    switch (fullscreenmode) {
-        case eFullscreenMode::FULLSCREEN_FULL:
-            if (on == window->m_bIsFullscreen)
-                return;
-
-            // if the window wants to be fullscreen but there already is one, ignore the request.
-            if (PWORKSPACE->m_bHasFullscreenWindow && on)
-                return;
-
-            s->toggle_fullscreen_active_window();
-            break;
-        case eFullscreenMode::FULLSCREEN_MAXIMIZED:
-            s->toggle_maximize_active_column();
-            break;
-        default:
+    } else {
+        if (EFFECTIVE_MODE == CURRENT_EFFECTIVE_MODE)
             return;
+
+        switch (EFFECTIVE_MODE) {
+            case eFullscreenMode::FSMODE_NONE:
+                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_MAXIMIZED) {
+                    s->toggle_maximize_active_column();
+                }
+                else if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_FULLSCREEN)
+                    s->toggle_fullscreen_active_window();
+                break;
+            case eFullscreenMode::FSMODE_FULLSCREEN:
+                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_MAXIMIZED)
+                    s->toggle_maximize_active_column();
+                s->toggle_fullscreen_active_window();
+                break;
+            case eFullscreenMode::FSMODE_MAXIMIZED:
+                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_FULLSCREEN)
+                    s->toggle_fullscreen_active_window();
+                s->toggle_maximize_active_column();
+                break;
+            default:
+                return;
+        }
     }
+    g_pCompositor->changeWindowZOrder(window, true);
 }
 
 /*

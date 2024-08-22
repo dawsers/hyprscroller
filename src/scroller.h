@@ -21,8 +21,9 @@ public:
     virtual void recalculateWindow(PHLWINDOW);
     virtual void resizeActiveWindow(const Vector2D &delta, eRectCorner corner,
                                     PHLWINDOW pWindow = nullptr);
-    virtual void fullscreenRequestForWindow(PHLWINDOW, eFullscreenMode,
-                                            bool enable_fullscreen);
+    virtual void fullscreenRequestForWindow(PHLWINDOW pWindow,
+            const eFullscreenMode CURRENT_EFFECTIVE_MODE,
+            const eFullscreenMode EFFECTIVE_MODE);
     virtual std::any layoutMessage(SLayoutMessageHeader header,
                                    std::string content);
     virtual SWindowRenderLayoutHints requestRenderHints(PHLWINDOW);

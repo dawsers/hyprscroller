@@ -1578,7 +1578,7 @@ bool ScrollerLayout::isWindowTiled(PHLWINDOW window)
     Called when the monitor requires a layout recalculation
     this usually means reserved area changes
 */
-void ScrollerLayout::recalculateMonitor(const int &monitor_id)
+void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
 {
     auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
     if (!PMONITOR)

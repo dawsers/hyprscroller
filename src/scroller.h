@@ -17,7 +17,7 @@ public:
                                        eDirection = DIRECTION_DEFAULT);
     virtual bool isWindowTiled(PHLWINDOW);
     virtual void onWindowRemovedTiling(PHLWINDOW);
-    virtual void recalculateMonitor(const int &monitor_id);
+    virtual void recalculateMonitor(const MONITORID &monitor_id);
     virtual void recalculateWindow(PHLWINDOW);
     virtual void resizeActiveWindow(const Vector2D &delta, eRectCorner corner,
                                     PHLWINDOW pWindow = nullptr);

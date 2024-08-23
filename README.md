@@ -260,6 +260,26 @@ string of any number of values chosen among: *onesixth, onefourth, onethird,
 onehalf, twothirds, one*. The default value is: *one onethird onehalf
 twothirds*.
 
+5. `monitor_modes`: defines the default mode (*row/column*) for each monitor.
+When you create a workspace in that monitor, instead of defaulting to *row* mode,
+it will read the starting mode from this configuration value. If a monitor is
+not on the list (or the list is empty), the default is *row* mode.
+It is a list where each element is separated by ',', and each element is
+defined as MONITOR_NAME=mode, with no spaces. 'MONITOR_NAME' can be inferred by
+running `hyprctl monitors` and using the returned name. For example:
+
+```
+Monitor HDMI-A-1 (ID 0):
+	3840x2160@59.99700 at 0x0
+    ...
+```
+
+means the name you need to use is HDMI-A-1. 'mode' must be 'r' or 'row' for
+*row* mode, or 'c', 'col' or 'column' for *column* mode. For example
+`monitor_modes = DP-2=col,HDMI-A-1=col`
+This is useful if any of your monitors is in portrait mode, so it can default
+to *column* mode.
+
 For example:
 
 ``` conf
@@ -269,6 +289,7 @@ plugin {
         focus_wrap = false
         # ultra-wide monitor
         column_widths = onefourth onethird onehalf onesixth
+        monitor_modes = DP-2=col,HDMI-A-1=col
     }
 }
 ```

@@ -35,6 +35,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // available options: onesixth, onefourth, onethird, onehalf, twothirds, one
     // default: one onethird onehalf twothirds
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:window_heights", Hyprlang::STRING{"one onethird onehalf twothirds"});
+    // a list of values separated by ','. Each value is of the type MONITORID=mode,
+    // where MONITORID is the name of a monitor, and 'mode' is either 'r' or 'row' to assign that monitor
+    // workspaces a default mode of "row", or 'c', 'col', 'column' to assign that monitor
+    // workspaces a default mode of "column"
+    // default: empty, which means every monitor will get "row" mode
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:monitor_modes", Hyprlang::STRING{""});
 
     HyprlandAPI::reloadConfig();
 

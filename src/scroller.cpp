@@ -817,9 +817,31 @@ private:
 class Row {
 public:
     Row(PHLWINDOW window)
-        : workspace(window->workspaceID()), mode(Mode::Row), reorder(Reorder::Auto),
+        : workspace(window->workspaceID()), reorder(Reorder::Auto),
         overview(false), active(nullptr) {
-        update_sizes(g_pCompositor->getMonitorFromID(window->m_iMonitorID));
+        const auto PMONITOR   = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+        static auto const *monitor_modes_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:monitor_modes")->getDataStaticPtr();
+        Mode row_mode = Mode::Row;
+        if (monitor_modes_str != nullptr) {
+            std::string monitor_mode;
+            std::stringstream stream(*monitor_modes_str);
+            while (std::getline(stream, monitor_mode, ',')) {
+                size_t pos = monitor_mode.find("=");
+                if (pos != std::string::npos) {
+                    std::string monitor = monitor_mode.substr(0, pos);
+                    if (PMONITOR->szName == monitor) {
+                        std::string smode = monitor_mode.substr(pos + 1);
+                        if (smode == "r" || smode == "row")
+                            row_mode = Mode::Row;
+                        else if (smode == "c" || smode == "col" || smode == "column")
+                            row_mode = Mode::Column;
+                        break;
+                    }
+                }
+            }
+        }
+        mode = row_mode;
+        update_sizes(PMONITOR);
     }
     ~Row() {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
@@ -842,7 +864,7 @@ public:
         return get_active_window() == window;
     }
     void add_active_window(PHLWINDOW window) {
-        if (mode == Mode::Column) {
+        if (active && mode == Mode::Column) {
             active->data()->add_active_window(window, max.h);
             active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
             return;

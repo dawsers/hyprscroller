@@ -241,26 +241,36 @@ as the name. Again, see the example configuration.
 
 *hyprscroller* currently accepts the following options:
 
-1. `column_default_width`: determines the width of new columns in *row* mode.
+### `column_default_width`
+
+Determines the width of new columns in *row* mode.
 Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
 `maximized`, `floating` (uses the default width set by the application).
 
-2. `focus_wrap`: determines whether focus will *wrap* when at the first or
+### `focus_wrap`
+
+Determines whether focus will *wrap* when at the first or
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
-3. `column_widths`: determines the set of column widths *hyprscroler* will
+### `column_widths`
+
+Determines the set of column widths *hyprscroler* will
 cycle through when resizing the width of a column in *row* mode. It is a string
 of any number of values chosen among: *onesixth, onefourth, onethird, onehalf,
 twothirds, one*. The default value is: *onehalf twothirds onethird*.
 
-4. `window_heights`: determines the set of window heights *hyprscroler* will
+### `window_heights`
+
+Determines the set of window heights *hyprscroler* will
 cycle through when resizing the height of a window in *column* mode. It is a
 string of any number of values chosen among: *onesixth, onefourth, onethird,
 onehalf, twothirds, one*. The default value is: *one onethird onehalf
 twothirds*.
 
-5. `monitor_modes`: defines the default mode (*row/column*) for each monitor.
+### `monitor_modes`
+
+Defines the default mode (*row/column*) for each monitor.
 When you create a workspace in that monitor, instead of defaulting to *row* mode,
 it will read the starting mode from this configuration value. If a monitor is
 not on the list (or the list is empty), the default is *row* mode.
@@ -280,7 +290,8 @@ means the name you need to use is HDMI-A-1. 'mode' must be 'r' or 'row' for
 This is useful if any of your monitors is in portrait mode, so it can default
 to *column* mode.
 
-For example:
+
+### Options Example
 
 ``` conf
 plugin {
@@ -289,6 +300,7 @@ plugin {
         focus_wrap = false
         # ultra-wide monitor
         column_widths = onefourth onethird onehalf onesixth
+        # portrait mode monitors
         monitor_modes = DP-2=col,HDMI-A-1=col
     }
 }

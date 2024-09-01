@@ -8,8 +8,9 @@ which is a similar idea.
 
 ![Intro](./videos/hyprscroller.gif)
 
-The plugin is quite feature complete and supports gaps, borders, special
-workspace, full screen modes, overview, marks and installation through `hyprpm`.
+The plugin is quite feature complete and supports gaps, borders, decorations,
+special workspace, full screen modes, overview, marks and installation through
+`hyprpm`.
 
 I use *hyprscroller* on my main machine and will support it for as long as I
 keep on using *Hyprland*. However, I will only add new features that I find
@@ -244,8 +245,15 @@ as the name. Again, see the example configuration.
 ### `column_default_width`
 
 Determines the width of new columns in *row* mode.
-Possible arguments are: `onehalf` (default), `onethird`, `twothirds`,
-`maximized`, `floating` (uses the default width set by the application).
+Possible arguments are: `onesixth`, `onefourth`, `onethird`, `onehalf` (default),
+`twothirds`, `maximized`, `floating` (uses the default width set by the application).
+
+### `window_default_height`
+
+Determines the default height of a new window. This is useful if you are using
+a monitor in portrait mode and *column* mode.
+Possible arguments are: `onesixth`, `onefourth`, `onethird`, `onehalf`,
+`twothirds`, `one` (default).
 
 ### `focus_wrap`
 

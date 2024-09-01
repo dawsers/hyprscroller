@@ -167,7 +167,27 @@ static Marks marks;
 
 class Window {
 public:
-    Window(PHLWINDOW window, double box_h) : window(window), height(StandardSize::One), box_h(box_h) {}
+    Window(PHLWINDOW window, double box_h) : window(window) {
+        static auto const *window_default_height = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:window_default_height")->getDataStaticPtr();
+        std::string window_height = *window_default_height;
+        StandardSize h;
+        if (window_height == "one") {
+            h = StandardSize::One;
+        } else if (window_height == "onesixth") {
+            h = StandardSize::OneSixth;
+        } else if (window_height == "onefourth") {
+            h = StandardSize::OneFourth;
+        } else if (window_height == "onethird") {
+            h = StandardSize::OneThird;
+        } else if (window_height == "onehalf") {
+            h = StandardSize::OneHalf;
+        } else if (window_height == "twothirds") {
+            h = StandardSize::TwoThirds;
+        } else {
+            h = StandardSize::One;
+        }
+        update_height(h, box_h);
+    }
     PHLWINDOWREF ptr() { return window; }
     double get_geom_h() const { return box_h; }
     void set_geom_h(double geom_h) { box_h = geom_h; }
@@ -322,21 +342,24 @@ public:
         Vector2D height;
         PHLWINDOW first = windows.first()->data()->ptr().lock();
         PHLWINDOW last = windows.last()->data()->ptr().lock();
-        height.x = first->m_vPosition.y - first->getRealBorderSize();
-        height.y = last->m_vPosition.y + last->m_vSize.y + last->getRealBorderSize();
+        SBoxExtents first_reserved = first->getFullWindowReservedArea();
+        SBoxExtents last_reserved = last->getFullWindowReservedArea();
+        height.x = first->m_vPosition.y - first->getRealBorderSize() - first_reserved.topLeft.y;
+        height.y = last->m_vPosition.y + last->m_vSize.y + last->getRealBorderSize() + last_reserved.bottomRight.y;
         return height;
     }
     void scale(const Vector2D &bmin, const Vector2D &start, double scale, double gap) {
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
             win->data()->set_geom_h(win->data()->get_geom_h() * scale);
             PHLWINDOW window = win->data()->ptr().lock();
+            SBoxExtents reserved_area = window->getFullWindowReservedArea();
             auto border = window->getRealBorderSize();
             auto gap0 = win == windows.first() ? 0.0 : gap;
-            window->m_vPosition = start + Vector2D(border, border) + (window->m_vPosition - Vector2D(border, border) - bmin) * scale;
+            window->m_vPosition = start + Vector2D(border, border) + reserved_area.topLeft + (window->m_vPosition - reserved_area.topLeft - Vector2D(border, border) - bmin) * scale;
             window->m_vPosition.y += gap0;
             auto gap1 = win == windows.last() ? 0.0 : gap;
             window->m_vSize.x *= scale;
-            window->m_vSize.y = (window->m_vSize.y + 2.0 * border + gap0 + gap1) * scale - gap0 - gap1 - 2.0 * border;
+            window->m_vSize.y = (window->m_vSize.y + 2.0 * border + reserved_area.topLeft.y + reserved_area.bottomRight.y + gap0 + gap1) * scale - gap0 - gap1 - 2.0 * border - reserved_area.topLeft.y - reserved_area.bottomRight.y;
             window->m_vSize = Vector2D(std::max(window->m_vSize.x, 1.0), std::max(window->m_vSize.y, 1.0));
             window->m_vRealSize = window->m_vSize;
             window->m_vRealPosition = window->m_vPosition;
@@ -412,17 +435,19 @@ public:
             // two times gaps_in (one per window).
             Window *wactive = active->data();
             PHLWINDOW win = wactive->ptr().lock();
+            SBoxExtents reserved_area = win->getFullWindowReservedArea();
+            Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
             auto gap0 = active == windows.first() ? 0.0 : gap;
             auto gap1 = active == windows.last() ? 0.0 : gap;
             auto border = win->getRealBorderSize();
-            auto a_y0 = std::round(win->m_vPosition.y - border - gap0);
-            auto a_y1 = std::round(win->m_vPosition.y - border - gap0 + wactive->get_geom_h());
+            auto a_y0 = std::round(win->m_vPosition.y - border - topL.y - gap0);
+            auto a_y1 = std::round(win->m_vPosition.y - border - topL.y - gap0 + wactive->get_geom_h());
             if (a_y0 < geom.y) {
                 // active starts above, set it on the top edge
-                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
             } else if (a_y1 > geom.y + geom.h) {
                 // active overflows below the bottom, move to bottom of viewport
-                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
             } else {
                 // active window is inside the viewport
                 if (reorder == Reorder::Auto) {
@@ -435,8 +460,10 @@ public:
                         PHLWINDOW prev_window = prev->ptr().lock();
                         auto gap0 = active->prev() == windows.first() ? 0.0 : gap;
                         auto border = prev_window->getRealBorderSize();
-                        auto p_y0 = std::round(prev_window->m_vPosition.y - border - gap0);
-                        auto p_y1 = std::round(prev_window->m_vPosition.y - border - gap0 + prev->get_geom_h());
+                        SBoxExtents reserved_area = prev_window->getFullWindowReservedArea();
+                        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+                        auto p_y0 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0);
+                        auto p_y1 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0 + prev->get_geom_h());
                         if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
                             keep_current = true;
                         }
@@ -446,8 +473,10 @@ public:
                         PHLWINDOW next_window = next->ptr().lock();
                         auto gap0 = active->next() == windows.first() ? 0.0 : gap;
                         auto border = next_window->getRealBorderSize();
-                        auto p_y0 = std::round(next_window->m_vPosition.y - border - gap0);
-                        auto p_y1 = std::round(next_window->m_vPosition.y - border - gap0 + next->get_geom_h());
+                        SBoxExtents reserved_area = next_window->getFullWindowReservedArea();
+                        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+                        auto p_y0 = std::round(next_window->m_vPosition.y - border - topL.y - gap0);
+                        auto p_y1 = std::round(next_window->m_vPosition.y - border - topL.y - gap0 + next->get_geom_h());
                         if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
                             keep_current = true;
                         }
@@ -460,38 +489,38 @@ public:
                         if (active->next() != nullptr) {
                             if (wactive->get_geom_h() + active->next()->data()->get_geom_h() <= geom.h) {
                                 // set next at the bottom edge of the viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0);
+                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0 + topL.y);
                             } else if (active->prev() != nullptr) {
                                 if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
                                     // set previous at the top edge of the viewport
-                                    win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + gap0);
+                                    win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + topL.y + gap0);
                                 } else {
                                     // none of them fit, leave active as it is (only modify x)
-                                    win->m_vPosition.x = geom.x + border + gap_x.x;
+                                    win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                                 }
                             } else {
                                 // nothing above, move active to top of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + border + gap0);
+                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
                             }
                         } else if (active->prev() != nullptr) {
                             if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
                                 // set previous at the top edge of the viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + gap0);
+                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + topL.y + gap0);
                             } else {
                                 // it doesn't fit and nothing above, move active to bottom of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + gap0);
+                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
                             }
                         } else {
                             // nothing on the right or left, the window is in a correct position
-                            win->m_vPosition.x = geom.x + border + gap_x.x;
+                            win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                         }
                     } else {
                         // the window is in a correct position
-                        win->m_vPosition.x = geom.x + border + gap_x.x;
+                        win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                     }
                 } else {
                     // the window is in a correct position
-                    win->m_vPosition.x = geom.x + border + gap_x.x;
+                    win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                 }
             }
             adjust_windows(active, gap_x, gap);
@@ -563,21 +592,23 @@ public:
     }
     void align_window(Direction direction, double gap) {
         PHLWINDOW window = active->data()->ptr().lock();
+        SBoxExtents reserved_area = window->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
         auto border = window->getRealBorderSize();
         auto gap0 = active == windows.first() ? 0.0 : gap;
         auto gap1 = active == windows.last() ? 0.0 : gap;
         switch (direction) {
         case Direction::Up:
             reorder = Reorder::Lazy;
-            window->m_vPosition.y = geom.y + border + gap0;
+            window->m_vPosition.y = geom.y + border + topL.y + gap0;
             break;
         case Direction::Down:
             reorder = Reorder::Lazy;
-            window->m_vPosition.y = geom.y + geom.h - border + gap1;
+            window->m_vPosition.y = geom.y + geom.h - (window->m_vSize.y + border + botR.y + gap1);
             break;
         case Direction::Center:
             reorder = Reorder::Lazy;
-            window->m_vPosition.y = 0.5 * (geom.y + geom.h - (2.0 * border + gap0 + gap1 + window->m_vSize.y));
+            window->m_vPosition.y = geom.y + 0.5 * (geom.h - (botR.y - topL.y + gap1 - gap0 + window->m_vSize.y));
             break;
         default:
             break;
@@ -643,9 +674,11 @@ public:
                 auto gap1 = w == windows.last() ? 0.0 : gap;
                 Window *win = w->data();
                 PHLWINDOW window = win->ptr().lock();
+                SBoxExtents reserved_area = window->getFullWindowReservedArea();
+                Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
                 auto border = window->getRealBorderSize();
-                auto c0 = window->m_vPosition.y - border;
-                auto c1 = window->m_vPosition.y - border - gap0 + win->get_geom_h();
+                auto c0 = window->m_vPosition.y - border - topL.y;
+                auto c1 = window->m_vPosition.y - border - topL.y - gap0 + win->get_geom_h();
                 if (c0 < geom.y + geom.h && c0 >= geom.y ||
                     c1 > geom.y && c1 <= geom.y + geom.h ||
                     //should never happen as windows are never taller than the screen
@@ -659,9 +692,11 @@ public:
                 auto gap1 = w == windows.last() ? 0.0 : gap;
                 Window *win = w->data();
                 PHLWINDOW window = win->ptr().lock();
+                SBoxExtents reserved_area = window->getFullWindowReservedArea();
+                Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
                 auto border = window->getRealBorderSize();
-                auto c0 = window->m_vPosition.y - border;
-                auto c1 = window->m_vPosition.y - border - gap0 + win->get_geom_h();
+                auto c0 = window->m_vPosition.y - border - topL.y;
+                auto c1 = window->m_vPosition.y - border - topL.y - gap0 + win->get_geom_h();
                 if (c0 < geom.y + geom.h && c0 >= geom.y ||
                     c1 > geom.y && c1 <= geom.y + geom.h ||
                     //should never happen as columns are never wider than the screen
@@ -702,7 +737,7 @@ public:
             }
             auto gap0 = from == windows.first() ? 0.0 : gap;
             PHLWINDOW from_window = from->data()->ptr().lock();
-            from_window->m_vPosition.y = geom.y + gap0 + from_window->getRealBorderSize();
+            from_window->m_vPosition.y = geom.y + gap0 + from_window->getRealBorderSize() + from_window->getFullWindowReservedArea().topLeft.y;
 
             adjust_windows(from, gap_x, gap);
         }
@@ -732,7 +767,9 @@ private:
             auto wgap0 = w == windows.first() ? 0.0 : gap;
             auto wborder = ww->getRealBorderSize();
             auto pborder = pw->getRealBorderSize();
-            ww->m_vPosition = Vector2D(geom.x + wborder + gap_x.x, pw->m_vPosition.y - gap - pborder - w->data()->get_geom_h() + wborder + wgap0);
+            auto wreserved = ww->getFullWindowReservedArea();
+            auto preserved = pw->getFullWindowReservedArea();
+            ww->m_vPosition = Vector2D(geom.x + wborder + wreserved.topLeft.x + gap_x.x, pw->m_vPosition.y - gap - pborder - preserved.topLeft.y - w->data()->get_geom_h() + wborder + wreserved.topLeft.y + wgap0);
         }
         // 3. adjust positions of windows below
         for (auto w = win->next(), p = win; w != nullptr; p = w, w = w->next()) {
@@ -741,7 +778,9 @@ private:
             auto pgap0 = p == windows.first() ? 0.0 : gap;
             auto wborder = ww->getRealBorderSize();
             auto pborder = pw->getRealBorderSize();
-            ww->m_vPosition = Vector2D(geom.x + wborder + gap_x.x, pw->m_vPosition.y - pborder - pgap0 + p->data()->get_geom_h() + wborder + gap);
+            auto wreserved = ww->getFullWindowReservedArea();
+            auto preserved = pw->getFullWindowReservedArea();
+            ww->m_vPosition = Vector2D(geom.x + wborder + wreserved.topLeft.x + gap_x.x, pw->m_vPosition.y - pborder - pgap0 - preserved.topLeft.y + p->data()->get_geom_h() + wborder + wreserved.topLeft.y + gap);
         }
         for (auto w = windows.first(); w != nullptr; w = w->next()) {
             PHLWINDOW win = w->data()->ptr().lock();
@@ -749,8 +788,9 @@ private:
             auto gap1 = w == windows.last() ? 0.0 : gap;
             auto border = win->getRealBorderSize();
             auto wh = w->data()->get_geom_h();
+            auto reserved = win->getFullWindowReservedArea();
             //win->m_vSize = Vector2D(geom.w - 2.0 * border - gap_x.x - gap_x.y, wh - 2.0 * border - gap0 - gap1);
-            win->m_vSize = Vector2D(std::max(geom.w - 2.0 * border - gap_x.x - gap_x.y, 1.0), std::max(wh - 2.0 * border - gap0 - gap1, 1.0));
+            win->m_vSize = Vector2D(std::max(geom.w - 2.0 * border - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(wh - 2.0 * border - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
             win->m_vRealPosition = win->m_vPosition;
             win->m_vRealSize = win->m_vSize;
         }
@@ -759,14 +799,17 @@ public:
     void resize_active_window(double maxw, const Vector2D &gap_x, double gap, const Vector2D &delta) {
         // First, check if resize is possible or it would leave any window
         // with an invalid size.
+        PHLWINDOW win = active->data()->ptr().lock();
+        SBoxExtents reserved_area = win->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
 
         // Width check
-        auto border = active->data()->ptr().lock()->getRealBorderSize();
-        auto rwidth = geom.w + delta.x - 2.0 * border - gap_x.x - gap_x.y;
+        auto border = win->getRealBorderSize();
+        auto rwidth = geom.w + delta.x - 2.0 * border - topL.x - botR.x - gap_x.x - gap_x.y;
         // Now we check for a size smaller than the maximum possible gap, so
         // we never get in trouble when a window gets expelled from a column
         // with gaps_out, gaps_in, to a column with gaps_in on both sides.
-        auto mwidth = geom.w + delta.x - 2.0 * (border + std::max(std::max(gap_x.x, gap_x.y), gap));
+        auto mwidth = geom.w + delta.x - topL.x - botR.x - 2.0 * (border + std::max(std::max(gap_x.x, gap_x.y), gap));
         if (mwidth <= 0.0 || rwidth >= maxw)
             return;
 
@@ -774,10 +817,12 @@ public:
             for (auto win = windows.first(); win != nullptr; win = win->next()) {
                 auto gap0 = win == windows.first() ? 0.0 : gap;
                 auto gap1 = win == windows.last() ? 0.0 : gap;
-                auto wh = win->data()->get_geom_h() - gap0 - gap1 - 2.0 * border;
+                SBoxExtents reserved_area = win->data()->ptr().lock()->getFullWindowReservedArea();
+                Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+                auto wh = win->data()->get_geom_h() - gap0 - gap1 - 2.0 * border - topL.y - botR.y;
                 if (win == active)
                     wh += delta.y;
-                if (wh <= 0.0 || wh + 2.0 * win->data()->ptr().lock()->getRealBorderSize() + gap0 + gap1 > geom.h)
+                if (wh <= 0.0 || wh + 2.0 * win->data()->ptr().lock()->getRealBorderSize() + gap0 + gap1 + topL.y + botR.y > geom.h)
                     // geom.h already includes gaps_out
                     return;
             }

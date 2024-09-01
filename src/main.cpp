@@ -23,8 +23,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     dispatchers::addDispatchers();
 
-    // one value out of: { onethird, onehalf (default), twothirds, floating, maximized }
+    // one value out of: { onesixth, onefourth, onethird, onehalf (default), twothirds, floating, maximized }
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:column_default_width", Hyprlang::STRING{"onehalf"});
+    // one value out of: { onesixth, onefourth, onethird, onehalf, twothirds, one (default) }
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:window_default_height", Hyprlang::STRING{"one"});
     // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:focus_wrap", Hyprlang::INT{1});
     // a list of values used as standard widths for cyclesize in row mode, and in the cycling order

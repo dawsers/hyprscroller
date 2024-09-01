@@ -38,6 +38,8 @@
           (substring 6 2 date)
         ]);
       version = "date=${mkDate (self.lastModifiedDate or "19700101")}_${self.shortRev or "dirty"}";
+      rawCommitPins = (builtins.fromTOML (builtins.readFile ./hyprpm.toml)).hyprscroller.commit_pins;
+      commitPins = builtins.listToAttrs (map (p: { name = builtins.head p; value = builtins.elemAt p 1;}) rawCommitPins);
     in
     {
       packages = forAllSystems (
@@ -50,7 +52,10 @@
           hyprscroller = pkgs.stdenv.mkDerivation {
             pname = "hyprscroller";
             inherit version;
-            src = self;
+            src = builtins.fetchGit {
+              url = "https://github.com/dawsers/hyprscroller";
+              rev = commitPins.${hyprland.rev};
+            };
 
             nativeBuildInputs = [
               pkgs.cmake

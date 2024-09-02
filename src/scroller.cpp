@@ -1586,12 +1586,64 @@ Row *ScrollerLayout::getRowForWindow(PHLWINDOW window) {
 */
 void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 {
-    auto s = getRowForWorkspace(window->workspaceID());
+    int wid = window->workspaceID();
+    auto s = getRowForWorkspace(wid);
     if (s == nullptr) {
         s = new Row(window);
         rows.push_back(s);
     }
     s->add_active_window(window);
+
+#if 0
+    // Window rules cannot be defined for plugins yet
+    // https://github.com/hyprwm/Hyprland/issues/7622
+    // To temporarily enable this code, comment out window rule validity
+    // checking in the first parapraph of:
+    // std::optional<std::string> CConfigManager::handleWindowRuleV2(const std::string& command, const std::string& value)
+
+    // Check window rules
+    for (auto &r: window->m_vMatchedRules) {
+        if (r.szRule.starts_with("scroller:movefocus")) {
+            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+            if (dir == "l" || dir == "left") {
+                move_focus(wid, Direction::Left);
+            } else if (dir == "r" || dir == "right") {
+                move_focus(wid, Direction::Right);
+            } else if (dir == "u" || dir == "up") {
+                move_focus(wid, Direction::Up);
+            } else if (dir == "d" || dir == "dn" || dir == "down") {
+                move_focus(wid, Direction::Down);
+            } else if (dir == "b" || dir == "begin" || dir == "beginning") {
+                move_focus(wid, Direction::Begin);
+            } else if (dir == "e" || dir == "end") {
+                move_focus(wid, Direction::End);
+            }
+        } else if (r.szRule.starts_with("scroller:setmode")) {
+            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+            if (dir == "r" || dir == "row") {
+                s->set_mode(Mode::Row);
+            } else if (dir == "c" || dir == "col") {
+                s->set_mode(Mode::Column);
+            }
+        } else if (r.szRule.starts_with("scroller:alignwindow")) {
+            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+            if (dir == "l" || dir == "left") {
+                s->align_column(Direction::Left);
+            } else if (dir == "r" || dir == "right") {
+                s->align_column(Direction::Right);
+            } else if (dir == "u" || dir == "up") {
+                s->align_column(Direction::Up);
+            } else if (dir == "d" || dir == "dn" || dir == "down") {
+                s->align_column(Direction::Down);
+            } else if (dir == "c" || dir == "centre" || dir == "center") {
+                s->align_column(Direction::Center);
+            }
+        } else if (r.szRule.starts_with("scroller:marksadd")) {
+            const auto mark_name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+            marks.add(window, mark_name);
+        }
+    }
+#endif
 }
 
 /*

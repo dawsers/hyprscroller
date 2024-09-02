@@ -894,7 +894,7 @@ public:
         }
         columns.clear();
     }
-    int get_workspace() const { return workspace; }
+    WORKSPACEID get_workspace() const { return workspace; }
     bool has_window(PHLWINDOW window) const {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
             if (col->data()->has_window(window))
@@ -1551,7 +1551,7 @@ private:
         }
     }
 
-    int workspace;
+    WORKSPACEID workspace;
     Box full;
     Box max;
     bool overview;
@@ -1563,7 +1563,7 @@ private:
 };
 
 
-Row *ScrollerLayout::getRowForWorkspace(int workspace) {
+Row *ScrollerLayout::getRowForWorkspace(WORKSPACEID workspace) {
     for (auto row = rows.first(); row != nullptr; row = row->next()) {
         if (row->data()->get_workspace() == workspace)
             return row->data();
@@ -1586,7 +1586,7 @@ Row *ScrollerLayout::getRowForWindow(PHLWINDOW window) {
 */
 void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 {
-    int wid = window->workspaceID();
+    WORKSPACEID wid = window->workspaceID();
     auto s = getRowForWorkspace(wid);
     if (s == nullptr) {
         s = new Row(window);
@@ -1697,7 +1697,7 @@ bool ScrollerLayout::isWindowTiled(PHLWINDOW window)
     Called when the monitor requires a layout recalculation
     this usually means reserved area changes
 */
-void ScrollerLayout::recalculateMonitor(const int &monitor_id)
+void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
 {
     auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
     if (!PMONITOR)
@@ -1911,7 +1911,7 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW old_window)
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
     // new active window is the correct thing.
-    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr)
         return nullptr;
@@ -1953,7 +1953,7 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
     if (!g_pCompositor->m_pLastMonitor)
         return {};
 
-    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr) {
         Vector2D size =g_pCompositor->m_pLastMonitor->vecSize;
@@ -1964,7 +1964,7 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
     return s->predict_window_size();
 }
 
-void ScrollerLayout::cycle_window_size(int workspace, int step)
+void ScrollerLayout::cycle_window_size(WORKSPACEID workspace, int step)
 {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
@@ -1988,7 +1988,7 @@ static void switch_to_window(PHLWINDOW window)
     g_pInputManager->m_pForcedFocus.reset();
 }
 
-void ScrollerLayout::move_focus(int workspace, Direction direction)
+void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();
     auto s = getRowForWorkspace(workspace);
@@ -2025,7 +2025,7 @@ void ScrollerLayout::move_focus(int workspace, Direction direction)
     switch_to_window(s->get_active_window());
 }
 
-void ScrollerLayout::move_window(int workspace, Direction direction) {
+void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2035,7 +2035,7 @@ void ScrollerLayout::move_window(int workspace, Direction direction) {
     switch_to_window(s->get_active_window());
 }
 
-void ScrollerLayout::align_window(int workspace, Direction direction) {
+void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2044,7 +2044,7 @@ void ScrollerLayout::align_window(int workspace, Direction direction) {
     s->align_column(direction);
 }
 
-void ScrollerLayout::admit_window_left(int workspace) {
+void ScrollerLayout::admit_window_left(WORKSPACEID workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2052,7 +2052,7 @@ void ScrollerLayout::admit_window_left(int workspace) {
     s->admit_window_left();
 }
 
-void ScrollerLayout::expel_window_right(int workspace) {
+void ScrollerLayout::expel_window_right(WORKSPACEID workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2060,7 +2060,7 @@ void ScrollerLayout::expel_window_right(int workspace) {
     s->expel_window_right();
 }
 
-void ScrollerLayout::set_mode(int workspace, Mode mode) {
+void ScrollerLayout::set_mode(WORKSPACEID workspace, Mode mode) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2068,7 +2068,7 @@ void ScrollerLayout::set_mode(int workspace, Mode mode) {
     s->set_mode(mode);
 }
 
-void ScrollerLayout::fit_size(int workspace, FitSize fitsize) {
+void ScrollerLayout::fit_size(WORKSPACEID workspace, FitSize fitsize) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2076,7 +2076,7 @@ void ScrollerLayout::fit_size(int workspace, FitSize fitsize) {
     s->fit_size(fitsize);
 }
 
-void ScrollerLayout::toggle_overview(int workspace) {
+void ScrollerLayout::toggle_overview(WORKSPACEID workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2084,8 +2084,8 @@ void ScrollerLayout::toggle_overview(int workspace) {
     s->toggle_overview();
 }
 
-static int get_workspace_id() {
-    int workspace_id;
+static WORKSPACEID get_workspace_id() {
+    WORKSPACEID workspace_id;
     if (g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID()) {
         workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     } else {

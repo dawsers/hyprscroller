@@ -35,16 +35,9 @@ v0.41.2.
 
 ## Building and installing
 
-With Hyprland installed it should be as simple as running
+The easiest and recommended mode to install *hyprscroller* is through `hyprpm`
 
-``` sh
-# builds a shared object hyprscroller.so
-make all
-# installs the shared library in ~/.config/hypr/plugins
-make install
-```
-
-A more automated mode is to use `hyprpm`.
+### hyprpm
 
 ``` sh
 hyprpm add https://github.com/dawsers/hyprscroller
@@ -53,7 +46,42 @@ hyprpm list
 ```
 
 You can enable or disable it via `hyprpm enable hyprscroller` and
-`hyprpm disable hyprscroller`.
+`hyprpm disable hyprscroller` or update it using `hyprpm update hyprscroller`.
+
+Adding `exec-once = hyprpm reload -n` to your `hyprland.conf` will ensure all
+your `hyprpm` managed plugins will be loaded at startup.
+
+### Manually
+
+If you want to build the plugin manually, it should be as simple as running
+
+``` sh
+# builds a shared object hyprscroller.so
+make all
+# installs the shared library in ~/.config/hypr/plugins
+make install
+```
+
+then you can add the plugin to your `hyprland.conf`
+
+``` conf
+# path must be absolute
+plugin = /home/xxxx/.config/hypr/plugins/hyprscroller.so
+```
+
+or load it temporarily using `hyprctl plugin`
+
+``` sh
+# path must be absolute
+hyprctl plugin load /home/xxxx/.config/hypr/plugins/hyprscroller.so
+```
+
+
+### NixOS
+
+I don't use NixOS, so the "flakes" in this repo are maintained by users, and
+may not be up to date. However, it seems *hyprscroller* is now an official
+unstable package in [nixpkgs](https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=hyprlandPlugins.hyprscroller) so you can install it from there.
 
 
 ## Configuration

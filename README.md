@@ -343,6 +343,55 @@ plugin {
 ```
 
 
+## Window Rules
+
+*hyprscroller* supports a number of static Window Rules v2 that can be triggered
+at window creation. [Hyprland's Wiki](https://wiki.hyprland.org/Configuring/Window-Rules/)
+explains what Window Rules are, and how to enable and configure them.
+
+These are rules specific to *hyprscroller*
+
+### group
+
+You may want to keep every window of the same class, type etc. in the same
+column. For example, in [#45](https://github.com/dawsers/hyprscroller/issues/45),
+a user wants to open all the plot windows for a Python script in the same
+column.
+
+**Syntax of rule:** `plugin:scroller:group group_name`
+
+```
+windowrulev2 = plugin:scroller:group python_plots, class:(python3)
+```
+
+### alignwindow
+
+Aligns the new opened window. Works in the same way as the `alignwindow`
+dispatcher.
+
+**Syntax of rule:** `plugin:scroller:alignwindow position`
+
+Center any new Firefox window.
+
+```
+windowrulev2 = plugin:scroller:alignwindow center, class:(firefox)
+```
+
+### marksadd
+
+Add a named mark to a window.
+
+**Syntax of rule:** `plugin:scroller:marksadd name`
+
+Add a mark named `m` to Thunderbird's main window as soon as it's opened. This
+will let you navigate to Thunderbird from wherever you are by using a
+`marksvisit` key binding. I use `Super + ' + m` to set the focus on Thunderbird.
+
+```
+windowrulev2 = plugin:scroller:marksadd m, class:(thunderbird),title:(Mozilla Thunderbird)$
+```
+
+
 ## Key bindings
 
 As an example, you could set some key bindings in your `hyprland.conf` like this:

@@ -7,6 +7,7 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 #include <sstream>
+#include <string>
 #ifdef COLORS_IPC
 #include <hyprland/src/managers/EventManager.hpp>
 #endif
@@ -287,6 +288,8 @@ public:
         }
         windows.clear();
     }
+    std::string get_name() const { return name; }
+    void set_name (const std::string &str) { name = str; }
     bool get_init() const { return initialized; }
     void set_init() { initialized = true; }
     size_t size() {
@@ -857,6 +860,7 @@ private:
     Box full;        // full screen geometry
     ListNode<Window *> *active;
     List<Window *> windows;
+    std::string name;
 };
 
 class Row {
@@ -894,7 +898,7 @@ public:
         }
         columns.clear();
     }
-    WORKSPACEID get_workspace() const { return workspace; }
+    int get_workspace() const { return workspace; }
     bool has_window(PHLWINDOW window) const {
         for (auto col = columns.first(); col != nullptr; col = col->next()) {
             if (col->data()->has_window(window))
@@ -1139,6 +1143,21 @@ private:
         }
     }
 public:
+    void move_active_window_to_group(const std::string &name) {
+        for (auto c = columns.first(); c != nullptr; c = c->next()) {
+            Column *col = c->data();
+            if (col->get_name() == name) {
+                PHLWINDOW window = active->data()->get_active_window();
+                remove_window(window);
+                col->add_active_window(window, max.h);
+                col->recalculate_col_geometry(calculate_gap_x(c), gap);
+                active = c;
+                recalculate_row_geometry();
+                return;
+            }
+        }
+        active->data()->set_name(name);
+    }
     void move_active_column(Direction dir) {
         switch (dir) {
         case Direction::Right:
@@ -1551,7 +1570,7 @@ private:
         }
     }
 
-    WORKSPACEID workspace;
+    int workspace;
     Box full;
     Box max;
     bool overview;
@@ -1563,7 +1582,7 @@ private:
 };
 
 
-Row *ScrollerLayout::getRowForWorkspace(WORKSPACEID workspace) {
+Row *ScrollerLayout::getRowForWorkspace(int workspace) {
     for (auto row = rows.first(); row != nullptr; row = row->next()) {
         if (row->data()->get_workspace() == workspace)
             return row->data();
@@ -1586,7 +1605,7 @@ Row *ScrollerLayout::getRowForWindow(PHLWINDOW window) {
 */
 void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 {
-    WORKSPACEID wid = window->workspaceID();
+    int wid = window->workspaceID();
     auto s = getRowForWorkspace(wid);
     if (s == nullptr) {
         s = new Row(window);
@@ -1594,38 +1613,12 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
     }
     s->add_active_window(window);
 
-#if 0
-    // Window rules cannot be defined for plugins yet
-    // https://github.com/hyprwm/Hyprland/issues/7622
-    // To temporarily enable this code, comment out window rule validity
-    // checking in the first parapraph of:
-    // std::optional<std::string> CConfigManager::handleWindowRuleV2(const std::string& command, const std::string& value)
-
     // Check window rules
     for (auto &r: window->m_vMatchedRules) {
-        if (r.szRule.starts_with("scroller:movefocus")) {
-            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
-            if (dir == "l" || dir == "left") {
-                move_focus(wid, Direction::Left);
-            } else if (dir == "r" || dir == "right") {
-                move_focus(wid, Direction::Right);
-            } else if (dir == "u" || dir == "up") {
-                move_focus(wid, Direction::Up);
-            } else if (dir == "d" || dir == "dn" || dir == "down") {
-                move_focus(wid, Direction::Down);
-            } else if (dir == "b" || dir == "begin" || dir == "beginning") {
-                move_focus(wid, Direction::Begin);
-            } else if (dir == "e" || dir == "end") {
-                move_focus(wid, Direction::End);
-            }
-        } else if (r.szRule.starts_with("scroller:setmode")) {
-            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
-            if (dir == "r" || dir == "row") {
-                s->set_mode(Mode::Row);
-            } else if (dir == "c" || dir == "col") {
-                s->set_mode(Mode::Column);
-            }
-        } else if (r.szRule.starts_with("scroller:alignwindow")) {
+        if (r.szRule.starts_with("plugin:scroller:group")) {
+            const auto name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+            s->move_active_window_to_group(name);
+        } else if (r.szRule.starts_with("plugin:scroller:alignwindow")) {
             const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
             if (dir == "l" || dir == "left") {
                 s->align_column(Direction::Left);
@@ -1638,12 +1631,11 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
             } else if (dir == "c" || dir == "centre" || dir == "center") {
                 s->align_column(Direction::Center);
             }
-        } else if (r.szRule.starts_with("scroller:marksadd")) {
+        } else if (r.szRule.starts_with("plugin:scroller:marksadd")) {
             const auto mark_name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
             marks.add(window, mark_name);
         }
     }
-#endif
 }
 
 /*
@@ -1697,7 +1689,7 @@ bool ScrollerLayout::isWindowTiled(PHLWINDOW window)
     Called when the monitor requires a layout recalculation
     this usually means reserved area changes
 */
-void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
+void ScrollerLayout::recalculateMonitor(const int &monitor_id)
 {
     auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
     if (!PMONITOR)
@@ -1911,7 +1903,7 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW old_window)
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
     // new active window is the correct thing.
-    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr)
         return nullptr;
@@ -1953,7 +1945,7 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
     if (!g_pCompositor->m_pLastMonitor)
         return {};
 
-    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    int workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr) {
         Vector2D size =g_pCompositor->m_pLastMonitor->vecSize;
@@ -1964,7 +1956,7 @@ Vector2D ScrollerLayout::predictSizeForNewWindowTiled() {
     return s->predict_window_size();
 }
 
-void ScrollerLayout::cycle_window_size(WORKSPACEID workspace, int step)
+void ScrollerLayout::cycle_window_size(int workspace, int step)
 {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
@@ -1988,7 +1980,7 @@ static void switch_to_window(PHLWINDOW window)
     g_pInputManager->m_pForcedFocus.reset();
 }
 
-void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
+void ScrollerLayout::move_focus(int workspace, Direction direction)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();
     auto s = getRowForWorkspace(workspace);
@@ -2025,7 +2017,7 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
     switch_to_window(s->get_active_window());
 }
 
-void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
+void ScrollerLayout::move_window(int workspace, Direction direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2035,7 +2027,7 @@ void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
     switch_to_window(s->get_active_window());
 }
 
-void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
+void ScrollerLayout::align_window(int workspace, Direction direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2044,7 +2036,7 @@ void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
     s->align_column(direction);
 }
 
-void ScrollerLayout::admit_window_left(WORKSPACEID workspace) {
+void ScrollerLayout::admit_window_left(int workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2052,7 +2044,7 @@ void ScrollerLayout::admit_window_left(WORKSPACEID workspace) {
     s->admit_window_left();
 }
 
-void ScrollerLayout::expel_window_right(WORKSPACEID workspace) {
+void ScrollerLayout::expel_window_right(int workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2060,7 +2052,7 @@ void ScrollerLayout::expel_window_right(WORKSPACEID workspace) {
     s->expel_window_right();
 }
 
-void ScrollerLayout::set_mode(WORKSPACEID workspace, Mode mode) {
+void ScrollerLayout::set_mode(int workspace, Mode mode) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2068,7 +2060,7 @@ void ScrollerLayout::set_mode(WORKSPACEID workspace, Mode mode) {
     s->set_mode(mode);
 }
 
-void ScrollerLayout::fit_size(WORKSPACEID workspace, FitSize fitsize) {
+void ScrollerLayout::fit_size(int workspace, FitSize fitsize) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2076,7 +2068,7 @@ void ScrollerLayout::fit_size(WORKSPACEID workspace, FitSize fitsize) {
     s->fit_size(fitsize);
 }
 
-void ScrollerLayout::toggle_overview(WORKSPACEID workspace) {
+void ScrollerLayout::toggle_overview(int workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
@@ -2084,8 +2076,8 @@ void ScrollerLayout::toggle_overview(WORKSPACEID workspace) {
     s->toggle_overview();
 }
 
-static WORKSPACEID get_workspace_id() {
-    WORKSPACEID workspace_id;
+static int get_workspace_id() {
+    int workspace_id;
     if (g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID()) {
         workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     } else {

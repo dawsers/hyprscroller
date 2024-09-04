@@ -38,7 +38,7 @@
           (substring 4 2 date)
           (substring 6 2 date)
         ]);
-      rawCommitPins = (builtins.fromTOML (builtins.readFile ./hyprpm.toml)).hyprscroller.commit_pins;
+      rawCommitPins = (builtins.fromTOML (builtins.readFile ./hyprpm.toml)).repository.commit_pins;
       commitPins = builtins.listToAttrs (map (p: { name = builtins.head p; value = builtins.elemAt p 1;}) rawCommitPins);
       selfRev = commitPins.${hyprland.rev};
       version = "date=${mkDate (self.lastModifiedDate or "19700101")}_${self.shortRev or "dirty"}_${selfRev}";

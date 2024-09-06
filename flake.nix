@@ -44,10 +44,11 @@
           value = builtins.elemAt p 1;
         }) rawCommitPins
       );
-      selfRev = "${substring 0 7 commitPins.${hyprland.rev} or "git"}";
+      selfRev = "${commitPins.${hyprland.rev} or "git"}";
+      selfShortRev = substring 0 7 selfRev;
       version = "date=${
         mkDate (self.lastModifiedDate or "19700101")
-      }_${self.shortRev or "dirty"}_${selfRev}";
+      }_${self.shortRev or "dirty"}_${selfShortRev}";
     in
     {
       packages = forAllSystems (

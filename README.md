@@ -2,9 +2,7 @@
 
 [Hyprscroller](https://github.com/dawsers/hyprscroller) is a
 [Hyprland](https://hyprland.org) layout plugin that creates a window layout
-similar to [PaperWM](https://github.com/paperwm/PaperWM). I initialy
-learned how to write a *Hyprland* plugin from [hyprslidr](https://gitlab.com/magus/hyprslidr),
-which is a similar idea.
+similar to [PaperWM](https://github.com/paperwm/PaperWM).
 
 ![Intro](./videos/hyprscroller.gif)
 
@@ -24,13 +22,13 @@ that front.
 ## Requirements
 
 *hyprscroller* supports the version of *Hyprland* I use, which should be the
-same as the Arch Linux `hyprland` package (v0.42.0). You can try your luck with the
+same as the Arch Linux `hyprland` package (v0.43.0). You can try your luck with the
 latest `git` changes, but I will be slower to keep up with those, as there are
 too many API changes going on upstream.
 
 Aside from those versions, even though the feature set will be frozen for
-them, *hyprscroller* also supports v0.35, v0.38.1, v0.39.1, v0.40.0 and
-v0.41.2.
+them, *hyprscroller* also supports v0.35, v0.38.1, v0.39.1, v0.40.0,
+v0.41.2 and v0.42.0.
 
 
 ## Building and installing
@@ -90,7 +88,8 @@ If you are not using `hyprpm`, to make Hyprland load the plugin, add this to
 your configuration.
 
 ``` conf
-plugin = ~/.config/hypr/plugins/hyprscroller.so
+# path must be absolute
+plugin = /home/xxxx/.config/hypr/plugins/hyprscroller.so
 ```
 
 Instead, if you use `hyprpm`, it should be as simple as adding this to
@@ -157,7 +156,7 @@ the default `movefocus`/`movewindow` to
 `scroller:movefocus`/`scroller:movewindow`. The reason is *Hyprland* doesn't
 have the concept (yet) of a workspace that spans more than the space of a
 monitor, and when focusing directionally, it doesn't look for windows that are
-"outside" of that region. If this changes in the future, these two dispatches
+"outside" of that region. If this changes in the future, these two dispatchers
 may become obsolete.
 
 `movefocus` and `movewindow` accept the following directional arguments:

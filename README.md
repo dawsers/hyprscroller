@@ -335,7 +335,9 @@ means the name you need to use is HDMI-A-1.
 
 `monitor_options` is a list with the following format:
 
-`monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))`
+```
+monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
+```
 
 The list of monitors is encapsulated by `()` and separated by `,`. Each
 monitor entry consists of the name of the monitor followed by `=` and a list

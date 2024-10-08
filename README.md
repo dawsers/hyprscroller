@@ -359,7 +359,7 @@ plugin {
         # ultra-wide monitor
         column_widths = onefourth onethird onehalf onesixth
         # portrait mode monitors
-        monitor_modes = DP-2=col,HDMI-A-1=col
+        monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
     }
 }
 ```

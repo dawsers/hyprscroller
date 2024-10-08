@@ -303,15 +303,27 @@ string of any number of values chosen among: *onesixth, onefourth, onethird,
 onehalf, twothirds, one*. The default value is: *one onethird onehalf
 twothirds*.
 
-### `monitor_modes`
+### `monitor_options`
 
-Defines the default mode (*row/column*) for each monitor.
-When you create a workspace in that monitor, instead of defaulting to *row* mode,
-it will read the starting mode from this configuration value. If a monitor is
-not on the list (or the list is empty), the default is *row* mode.
-It is a list where each element is separated by ',', and each element is
-defined as MONITOR_NAME=mode, with no spaces. 'MONITOR_NAME' can be inferred by
-running `hyprctl monitors` and using the returned name. For example:
+**NOTE:** This option **deprecates** `monitor_modes`. Please, update your
+configuration if you are using it.
+
+`monitor_options` can be used to define different default options for each
+monitor. Currently, the supported options are:
+
+1. `mode`: `r/row` for *row* mode and `c/col/column` for *column* mode.
+2. `column_default_width`: Possible values are the same as the global
+   `column_default_width` option.
+3. `window_default_height`: Possible values are the same as the global
+   `window_default_height` option.
+
+When you create a workspace in any monitor, instead of defaulting to the
+global options, it will read them from this configuration value. For any
+monitor or option not defined in this variable, the option will default to the
+global one.
+
+Monitor names can be inferred by running `hyprctl monitors` and using the
+returned names.
 
 ```
 Monitor HDMI-A-1 (ID 0):
@@ -319,11 +331,20 @@ Monitor HDMI-A-1 (ID 0):
     ...
 ```
 
-means the name you need to use is HDMI-A-1. 'mode' must be 'r' or 'row' for
-*row* mode, or 'c', 'col' or 'column' for *column* mode. For example
-`monitor_modes = DP-2=col,HDMI-A-1=col`
-This is useful if any of your monitors is in portrait mode, so it can default
-to *column* mode.
+means the name you need to use is HDMI-A-1.
+
+`monitor_options` is a list with the following format:
+
+`monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))`
+
+The list of monitors is encapsulated by `()` and separated by `,`. Each
+monitor entry consists of the name of the monitor followed by `=` and a list
+of options enclosed by `()`, with each option separated by `;`, as in the
+example above. Spaces are allowed anywhere for better readability.
+
+This option is useful to configure ultra-wide monitors or those in non-standard
+layouts (for example portrait instead of landscape). You can define any
+combination.
 
 
 ### Options Example

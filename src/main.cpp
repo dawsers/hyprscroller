@@ -15,6 +15,14 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
+    const std::string HASH = __hyprland_api_get_hash();
+
+    if (HASH != GIT_COMMIT_HASH) {
+        HyprlandAPI::addNotification(PHANDLE, "[hyprscroller] Failure in initialization: Version mismatch (headers ver is not equal to running hyprland ver)",
+                                     CColor{1.0, 0.2, 0.2, 1.0}, 5000);
+        throw std::runtime_error("[hyprscroller] Version mismatch");
+    }
+
 #ifdef COLORS_IPC
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.freecolumn_border", Hyprlang::CConfigValue(Hyprlang::INT(0xff9e1515)));
 #endif

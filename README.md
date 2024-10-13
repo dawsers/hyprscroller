@@ -273,14 +273,15 @@ as the name. Again, see the example configuration.
 
 Determines the width of new columns in *row* mode.
 Possible arguments are: `onesixth`, `onefourth`, `onethird`, `onehalf` (default),
-`twothirds`, `maximized`, `floating` (uses the default width set by the application).
+`twothirds`, `threequarters`, `fivesixths`, `maximized`, `floating` (uses the
+default width set by the application).
 
 ### `window_default_height`
 
 Determines the default height of a new window. This is useful if you are using
 a monitor in portrait mode and *column* mode.
 Possible arguments are: `onesixth`, `onefourth`, `onethird`, `onehalf`,
-`twothirds`, `one` (default).
+`twothirds`, `threequarters`, `fivesixths`, `one` (default).
 
 ### `focus_wrap`
 
@@ -293,15 +294,16 @@ last window of a row/column. Possible arguments are: `true`|`1` (default), or
 Determines the set of column widths *hyprscroler* will
 cycle through when resizing the width of a column in *row* mode. It is a string
 of any number of values chosen among: *onesixth, onefourth, onethird, onehalf,
-twothirds, one*. The default value is: *onehalf twothirds onethird*.
+twothirds, threequarters, fivesixths, one*. The default value is:
+*onehalf twothirds onethird*.
 
 ### `window_heights`
 
 Determines the set of window heights *hyprscroler* will
 cycle through when resizing the height of a window in *column* mode. It is a
 string of any number of values chosen among: *onesixth, onefourth, onethird,
-onehalf, twothirds, one*. The default value is: *one onethird onehalf
-twothirds*.
+onehalf, twothirds, threequarters, fivesixths, one*. The default value is:
+*one onethird onehalf twothirds*.
 
 ### `monitor_options`
 

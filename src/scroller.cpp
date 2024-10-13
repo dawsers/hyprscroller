@@ -50,6 +50,8 @@ enum class StandardSize {
     OneThird,
     OneHalf,
     TwoThirds,
+    ThreeQuarters,
+    FiveSixths,
     One,
     Free
 };
@@ -97,6 +99,10 @@ public:
                 sizes.push_back(StandardSize::OneHalf);
             } else if (size == "twothirds") {
                 sizes.push_back(StandardSize::TwoThirds);
+            } else if (size == "threequarters") {
+                sizes.push_back(StandardSize::ThreeQuarters);
+            } else if (size == "fivesixths") {
+                sizes.push_back(StandardSize::FiveSixths);
             } else if (size == "one") {
                 sizes.push_back(StandardSize::One);
             }
@@ -126,6 +132,8 @@ enum class ConfigurationSize {
     OneThird,
     OneHalf,
     TwoThirds,
+    ThreeQuarters,
+    FiveSixths,
     One,
     Maximized,
     Floating
@@ -256,6 +264,10 @@ private:
             return ConfigurationSize::OneHalf;
         } else if (window_height == "twothirds") {
             return ConfigurationSize::TwoThirds;
+        } else if (window_height == "threequarters") {
+            return ConfigurationSize::ThreeQuarters;
+        } else if (window_height == "fivesixths") {
+            return ConfigurationSize::FiveSixths;
         } else {
             return ConfigurationSize::One;
         }
@@ -273,9 +285,13 @@ private:
         } else if (column_width == "onefourth") {
             return ConfigurationSize::OneFourth;
         } else if (column_width == "onethird") {
-        return ConfigurationSize::OneThird;
+            return ConfigurationSize::OneThird;
         } else if (column_width == "twothirds") {
             return ConfigurationSize::TwoThirds;
+        } else if (column_width == "threequarters") {
+            return ConfigurationSize::ThreeQuarters;
+        } else if (column_width == "fivesixths") {
+            return ConfigurationSize::FiveSixths;
         } else if (column_width == "one") {
             return ConfigurationSize::One;
         } else if (column_width == "maximized") {
@@ -376,6 +392,10 @@ public:
             h = StandardSize::OneHalf;
         } else if (window_height == ConfigurationSize::TwoThirds) {
             h = StandardSize::TwoThirds;
+        } else if (window_height == ConfigurationSize::ThreeQuarters) {
+            h = StandardSize::ThreeQuarters;
+        } else if (window_height == ConfigurationSize::FiveSixths) {
+            h = StandardSize::FiveSixths;
         } else {
             h = StandardSize::One;
         }
@@ -398,6 +418,12 @@ public:
         switch (height) {
         case StandardSize::One:
             box_h = max;
+            break;
+        case StandardSize::FiveSixths:
+            box_h = 5.0 * max / 6.0;
+            break;
+        case StandardSize::ThreeQuarters:
+            box_h = 3.0 * max / 4.0;
             break;
         case StandardSize::TwoThirds:
             box_h = 2.0 * max / 3.0;
@@ -445,6 +471,10 @@ public:
             width = StandardSize::OneThird;
         } else if (column_width == ConfigurationSize::TwoThirds) {
             width = StandardSize::TwoThirds;
+        } else if (column_width == ConfigurationSize::ThreeQuarters) {
+            width = StandardSize::ThreeQuarters;
+        } else if (column_width == ConfigurationSize::FiveSixths) {
+            width = StandardSize::FiveSixths;
         } else if (column_width == ConfigurationSize::One) {
             width = StandardSize::One;
         } else if (column_width == ConfigurationSize::Maximized) {
@@ -841,6 +871,12 @@ public:
                 break;
             case StandardSize::TwoThirds:
                 geom.w = 2.0 * maxw / 3.0;
+                break;
+            case StandardSize::ThreeQuarters:
+                geom.w = 3.0 * maxw / 4.0;
+                break;
+            case StandardSize::FiveSixths:
+                geom.w = 5.0 * maxw / 6.0;
                 break;
             case StandardSize::One:
                 geom.w = maxw;
@@ -1302,6 +1338,12 @@ private:
             break;
         case StandardSize::TwoThirds:
             column->set_geom_pos(max.x + max.w / 6.0, max.y);
+            break;
+        case StandardSize::ThreeQuarters:
+            column->set_geom_pos(max.x + max.w / 8.0, max.y);
+            break;
+        case StandardSize::FiveSixths:
+            column->set_geom_pos(max.x + max.w / 12.0, max.y);
             break;
         case StandardSize::One:
             column->set_geom_pos(max.x, max.y);

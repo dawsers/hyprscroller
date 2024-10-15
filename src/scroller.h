@@ -53,6 +53,9 @@ public:
     void marks_visit(const std::string &name);
     void marks_reset();
 
+    void pin(WORKSPACEID workspace);
+    void unpin(WORKSPACEID workspace);
+
 private:
     Row *getRowForWorkspace(WORKSPACEID workspace);
     Row *getRowForWindow(PHLWINDOW window);

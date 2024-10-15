@@ -1094,7 +1094,7 @@ class Row {
 public:
     Row(PHLWINDOW window)
         : workspace(window->workspaceID()), reorder(Reorder::Auto),
-        overview(false), active(nullptr) {
+        overview(false), active(nullptr), pinned(nullptr) {
         const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
         mode = scroller_sizes.get_mode(PMONITOR);
         update_sizes(PMONITOR);
@@ -1316,6 +1316,12 @@ public:
         }
         reorder = Reorder::Lazy;
         recalculate_row_geometry();
+    }
+    void pin() {
+        pinned = active;
+    }
+    void unpin() {
+        pinned = nullptr;
     }
 private:
     void center_active_column() {
@@ -1689,6 +1695,96 @@ public:
             // mark column as initialized
             active->data()->set_init();
         }
+        // Pinned will stay in place, with active having second priority to fit in
+        // the screen on either side of pinned.
+        if (pinned != nullptr) {
+            if (a_x < max.x || std::round(a_x + a_w) > max.x + max.w) {
+                // Active doesn't fit, move it next to pinned
+                // Find space
+                auto p_w = pinned->data()->get_geom_w();
+                auto p_x = pinned->data()->get_geom_x();
+                auto const lt = p_x - max.x;
+                auto const rt = max.x + max.w - p_x - p_w;
+                // From pinned to active, try to fit as many columns as possible
+                if (pinned != active) {
+                    int p = 0, a = 0;
+                    int i = 0;
+                    for (auto col = columns.first(); col != nullptr; col = col->next(), ++i) {
+                        if (col == pinned)
+                            p = i;
+                        if (col == active)
+                            a = i;
+                    }
+                    if (p > a) {
+                        // Pinned is after active
+                        // The priority is to keep active before pinned if it fits.
+                        // If it doesn't fit, see if it fits right after, otherwise
+                        // move it to where there is more room, and if equal, leave
+                        // it where it is.
+                        auto w = a_w;
+                        auto swap = active, col = active;
+                        while (col != pinned) {
+                            if (0 <= std::round(lt - w)) {
+                                swap = col;
+                                col = col->next();
+                                w += col->data()->get_geom_w();
+                            } else {
+                                break;
+                            }
+                        }
+                        if (0 <= std::round(lt - a_w)) {
+                            // fits on the left
+                            columns.move_after(swap, pinned);
+                        } else {
+                            if (0 <= std::round(rt - a_w) || rt > lt) {
+                                // fits on the right
+                                columns.move_before(active, pinned);
+                            } else {
+                                // doesn't fit, and there is the same or more
+                                // room on the side where it is now, leave it
+                                // there (right before pinned)
+                                columns.move_after(active, pinned);
+                            }
+                        }
+                    } else {
+                        // Pinned is before active
+                        // The priority is to keep active after pinned if it fits.
+                        // If it doesn't fit, see if it fits right before, otherwise
+                        // move it to where there is more room, and if equal, leave
+                        // it where it is.
+                        auto w = a_w;
+                        auto swap = active, col = active;
+                        while (col != pinned) {
+                            if (0 <= std::round(rt - w)) {
+                                swap = col;
+                                col = col->prev();
+                                w += col->data()->get_geom_w();
+                            } else {
+                                break;
+                            }
+                        }
+                        if (0 <= std::round(rt - a_w)) {
+                            // fits on the right
+                            columns.move_before(swap, pinned);
+                        } else {
+                            if (0 <= std::round(lt - a_w) || lt > rt) {
+                                // fits on the left or there is more room there
+                                columns.move_after(active, pinned);
+                            } else {
+                                // doesn't fit, and there is the same or more
+                                // room on the side where it is now, leave it
+                                // there (right after pinned)
+                                columns.move_before(active, pinned);
+                            }
+                        }
+                    }
+                }
+            }
+            // Now, we know pinned is in the right position (it doesn't move)
+            adjust_columns(pinned);
+            return;
+        }
+
         if (a_x < max.x) {
             // active starts outside on the left
             // set it on the left edge
@@ -1790,6 +1886,7 @@ private:
     int gap;
     Reorder reorder;
     Mode mode;
+    ListNode<Column *> *pinned;
     ListNode<Column *> *active;
     List<Column *> columns;
 };
@@ -2321,4 +2418,22 @@ void ScrollerLayout::marks_visit(const std::string &name) {
 
 void ScrollerLayout::marks_reset() {
     marks.reset();
+}
+
+void ScrollerLayout::pin(WORKSPACEID workspace) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->pin();
+}
+
+void ScrollerLayout::unpin(WORKSPACEID workspace) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->unpin();
 }

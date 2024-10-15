@@ -185,6 +185,20 @@ namespace {
     void dispatch_marksreset(std::string arg) {
         g_ScrollerLayout->marks_reset();
     }
+    void dispatch_pin(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        g_ScrollerLayout->pin(workspace);
+    }
+    void dispatch_unpin(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        g_ScrollerLayout->unpin(workspace);
+    }
 }
 
 void dispatchers::addDispatchers() {
@@ -201,4 +215,6 @@ void dispatchers::addDispatchers() {
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
     HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
+    HyprlandAPI::addDispatcher(PHANDLE, "scroller:unpin", dispatch_unpin);
 }

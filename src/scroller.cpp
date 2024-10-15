@@ -1140,6 +1140,9 @@ public:
             if (col->has_window(window)) {
                 col->remove_window(window);
                 if (col->size() == 0) {
+                    if (c == pinned) {
+                        pinned = nullptr;
+                    }
                     if (c == active) {
                         // make NEXT one active before deleting (like PaperWM)
                         // If active was the only one left, doesn't matter
@@ -1426,6 +1429,8 @@ public:
         auto w = active->data()->expel_active(gap);
         auto prev = active->prev();
         if (active->data()->size() == 0) {
+            if (active == pinned)
+                pinned = nullptr;
             columns.erase(active);
         }
         active = prev;

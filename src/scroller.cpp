@@ -1095,7 +1095,7 @@ public:
     Row(PHLWINDOW window)
         : workspace(window->workspaceID()), reorder(Reorder::Auto),
         overview(false), active(nullptr), pinned(nullptr) {
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview? 1 : 0)});
+        post_event("overview");
         const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
         set_mode(scroller_sizes.get_mode(PMONITOR));
         update_sizes(PMONITOR);
@@ -1289,7 +1289,7 @@ public:
     }
     void set_mode(Mode m) {
         mode = m;
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}", mode == Mode::Row? "row" : "column")});
+        post_event("mode");
     }
     void align_column(Direction dir) {
         if (active->data()->maximized() ||
@@ -1441,7 +1441,7 @@ public:
         reorder = Reorder::Auto;
         recalculate_row_geometry();
 
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "admitwindow"});
+        post_event("admitwindow");
     }
     void expel_window_right() {
         if (active->data()->maximized() ||
@@ -1476,10 +1476,21 @@ public:
         reorder = Reorder::Auto;
         recalculate_row_geometry();
 
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "expelwindow"});
+        post_event("expelwindow");
     }
     Vector2D predict_window_size() const {
         return Vector2D(0.5 * max.w, max.h);
+    }
+    void post_event(const std::string &event) {
+        if (event == "mode") {
+            g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}", mode == Mode::Row? "row" : "column")});
+        } else if (event == "overview") {
+            g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview? 1 : 0)});
+        } else if (event == "admitwindow") {
+            g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "admitwindow"});
+        } else if (event == "expelwindow") {
+            g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "expelwindow"});
+        }
     }
     // Returns the old viewport
     Box update_sizes(CMonitor *monitor) {
@@ -1607,7 +1618,7 @@ public:
     }
     void toggle_overview() {
         overview = !overview;
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview? 1 : 0)});
+        post_event("overview");
         if (overview) {
             // Find the bounding box
             Vector2D bmin(max.x + max.w, max.y + max.h);
@@ -2444,4 +2455,13 @@ void ScrollerLayout::unpin(WORKSPACEID workspace) {
     }
 
     s->unpin();
+}
+
+void ScrollerLayout::post_event(WORKSPACEID workspace, const std::string &event) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->post_event(event);
 }

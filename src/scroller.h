@@ -56,6 +56,8 @@ public:
     void pin(WORKSPACEID workspace);
     void unpin(WORKSPACEID workspace);
 
+    void post_event(WORKSPACEID workspace, const std::string &event);
+
 private:
     Row *getRowForWorkspace(WORKSPACEID workspace);
     Row *getRowForWindow(PHLWINDOW window);

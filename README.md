@@ -288,7 +288,7 @@ column will be seen on the screen as long as it fits on either side of the
 events that trigger a message:
 
 | Message                | Occurs when                | Data                |
-|------------------------|--------------------------------------------------|
+|------------------------|----------------------------|---------------------|
 | `scroller admitwindow` | admitting a window         |                     |
 | `scroller expelwindow` | expelling a window         |                     |
 | `scroller overview`    | toggling overview mode     | `0/1`               |

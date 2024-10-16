@@ -1095,8 +1095,9 @@ public:
     Row(PHLWINDOW window)
         : workspace(window->workspaceID()), reorder(Reorder::Auto),
         overview(false), active(nullptr), pinned(nullptr) {
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview? 1 : 0)});
         const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
-        mode = scroller_sizes.get_mode(PMONITOR);
+        set_mode(scroller_sizes.get_mode(PMONITOR));
         update_sizes(PMONITOR);
     }
     ~Row() {
@@ -1288,6 +1289,7 @@ public:
     }
     void set_mode(Mode m) {
         mode = m;
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}", mode == Mode::Row? "row" : "column")});
     }
     void align_column(Direction dir) {
         if (active->data()->maximized() ||
@@ -1605,6 +1607,7 @@ public:
     }
     void toggle_overview() {
         overview = !overview;
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview? 1 : 0)});
         if (overview) {
             // Find the bounding box
             Vector2D bmin(max.x + max.w, max.y + max.h);

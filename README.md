@@ -281,6 +281,47 @@ column will be seen on the screen as long as it fits on either side of the
 *pinned* column.
 
 
+## IPC
+
+*hyprscroller* sends IPC messages in certain situations, in the same way
+[*hyprland* does](https://wiki.hyprland.org/IPC/). These are currently the
+events that trigger a message:
+
+| Message                | Occurs when                | Data                |
+|------------------------|--------------------------------------------------|
+| `scroller admitwindow` | admitting a window         |                     |
+| `scroller expelwindow` | expelling a window         |                     |
+| `scroller overview`    | toggling overview mode     | `0/1`               |
+| `scroller mode`        | changing mode              | `row/column`        |
+
+You can use these events to show messages, or modify your bar. This simple
+script captures the events and shows a notification each time:
+
+``` bash
+#!/usr/bin/env bash
+
+function handle {
+  if [[ ${1:0:8} == "scroller" ]]; then
+    if [[ ${1:10:11} == "overview, 0" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Normal mode!"
+    elif [[ ${1:10:11} == "overview, 1" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Overview mode!"
+    elif [[ ${1:10:9} == "mode, row" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Row mode!"
+    elif [[ ${1:10:12} == "mode, column" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Column mode!"
+    elif [[ ${1:10:11} == "admitwindow" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Admit Window!"
+    elif [[ ${1:10:11} == "expelwindow" ]]; then
+        hyprctl notify -1 3000 "rgb(ff1ea3)" "Expel Window!"
+    fi
+  fi
+}
+
+socat - "UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" | while read -r line; do handle "$line"; done
+```
+
+
 ## Options
 
 *hyprscroller* currently accepts the following options:

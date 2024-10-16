@@ -31,12 +31,19 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     dispatchers::addDispatchers();
 
-    static auto P = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [](void* self, SCallbackInfo& info, std::any param) {
+    static auto P1 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [](void* self, SCallbackInfo& info, std::any param) {
         if (!g_ScrollerLayout)
             return;
         auto WORKSPACE = std::any_cast<PHLWORKSPACE>(param);
         g_ScrollerLayout->post_event(WORKSPACE->m_iID, "mode");
         g_ScrollerLayout->post_event(WORKSPACE->m_iID, "overview");
+    });
+    static auto P2 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [](void* self, SCallbackInfo& info, std::any param) {
+        if (!g_ScrollerLayout)
+            return;
+        auto monitor = std::any_cast<CMonitor *>(param);
+        g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "mode");
+        g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "overview");
     });
 
     // one value out of: { onesixth, onefourth, onethird, onehalf (default), twothirds, floating, maximized }

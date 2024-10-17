@@ -418,6 +418,12 @@ and a simple `style.css`
 }
 ```
 
+### Using IPC with Waybar
+
+[This comment](https://github.com/dawsers/hyprscroller/issues/57#issuecomment-2418305146)
+by Chen-Yulin provides code to use *hyprscroller's* IPC messages with
+[waybar](https://github.com/Alexays/Waybar).
+
 
 ## Options
 

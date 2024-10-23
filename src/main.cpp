@@ -41,7 +41,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto P2 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [](void* self, SCallbackInfo& info, std::any param) {
         if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
             return;
-        auto monitor = std::any_cast<CMonitor *>(param);
+        auto monitor = std::any_cast<PHLMONITOR>(param);
         g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "mode");
         g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "overview");
     });

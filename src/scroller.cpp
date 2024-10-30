@@ -157,7 +157,7 @@ public:
     }
 
     ConfigurationSize get_window_default_height(PHLWINDOW window) {
-        const auto monitor = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+        const auto monitor = window->m_pMonitor.lock();
         update_sizes(monitor);
         const auto monitor_data = monitors.find(monitor->szName);
         if (monitor_data != monitors.end()) {
@@ -169,7 +169,7 @@ public:
     }
 
     ConfigurationSize get_column_default_width(PHLWINDOW window) {
-        const auto monitor = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+        const auto monitor = window->m_pMonitor.lock();
         update_sizes(monitor);
         const auto monitor_data = monitors.find(monitor->szName);
         if (monitor_data != monitors.end()) {
@@ -1111,7 +1111,7 @@ public:
         : workspace(window->workspaceID()), reorder(Reorder::Auto),
         overview(false), active(nullptr), pinned(nullptr) {
         post_event("overview");
-        const auto PMONITOR = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+        const auto PMONITOR = window->m_pMonitor.lock();
         set_mode(scroller_sizes.get_mode(PMONITOR));
         update_sizes(PMONITOR);
     }
@@ -2040,7 +2040,7 @@ bool ScrollerLayout::isWindowTiled(PHLWINDOW window)
 */
 void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
 {
-    auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
+    const auto PMONITOR = g_pCompositor->getMonitorFromID(monitor_id);
     if (!PMONITOR)
         return;
 
@@ -2134,7 +2134,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
             }
         } else {
             // apply new pos and size being monitors' box
-            const auto PMONITOR   = g_pCompositor->getMonitorFromID(window->m_iMonitorID);
+            const auto PMONITOR   = window->m_pMonitor.lock();
             if (EFFECTIVE_MODE == FSMODE_FULLSCREEN) {
                 window->m_vRealPosition = PMONITOR->vecPosition;
                 window->m_vRealSize     = PMONITOR->vecSize;
@@ -2281,7 +2281,7 @@ void ScrollerLayout::onEnable() {
             continue;
 
         onWindowCreatedTiling(window);
-        recalculateMonitor(window->m_iMonitorID);
+        recalculateMonitor(window->monitorID());
     }
 }
 

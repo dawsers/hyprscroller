@@ -1616,6 +1616,11 @@ public:
             adjust_columns(from);
         }
     }
+
+    bool is_overview() const {
+        return overview;
+    }
+
     void toggle_overview() {
         overview = !overview;
         post_event("overview");
@@ -2464,4 +2469,117 @@ void ScrollerLayout::post_event(WORKSPACEID workspace, const std::string &event)
     }
 
     s->post_event(event);
+}
+
+void ScrollerLayout::swipe_begin(IPointer::SSwipeBeginEvent swipe_event) {
+    WORKSPACEID wid = get_workspace_id();
+    if (wid == -1) {
+        return;
+    }
+
+    swipe_active = false;
+    swipe_direction = Direction::Begin;
+}
+
+void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEvent swipe_event) {
+    WORKSPACEID wid = get_workspace_id();
+    if (wid == -1) {
+        return;
+    }
+
+    auto s = getRowForWorkspace(wid);
+
+    static auto *const *NATURAL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "input:touchpad:natural_scroll")->getDataStaticPtr();
+    static auto *const *SENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable")->getDataStaticPtr();
+    static auto *const *SFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers")->getDataStaticPtr();
+    static auto *const *SDISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance")->getDataStaticPtr();
+    static auto *const *OENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_enable")->getDataStaticPtr();
+    static auto *const *OFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_fingers")->getDataStaticPtr();
+    static auto *const *ODISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_distance")->getDataStaticPtr();
+
+    if (!(**SENABLE && swipe_event.fingers == **SFINGERS) &&
+        !(**OENABLE && swipe_event.fingers == **OFINGERS)) {
+        return;
+    }
+
+    info.cancelled = true;
+    Vector2D delta = swipe_event.delta;
+    delta *= **NATURAL ? -1.0 : 1.0;
+    if (!swipe_active) {
+        gesture_delta = Vector2D(0.0, 0.0);
+    }
+    gesture_delta += delta;
+
+    if (**SENABLE && swipe_event.fingers == **SFINGERS) {
+        if (s == nullptr)
+            return;
+        int steps_x = gesture_delta.x / **SDISTANCE;
+        int steps_y = gesture_delta.y / **SDISTANCE;
+        gesture_delta.x -= steps_x * **SDISTANCE;
+        gesture_delta.y -= steps_y * **SDISTANCE;
+        Direction dir;
+        int steps;
+        if (std::abs(steps_x) > std::abs(steps_y)) {
+            dir = steps_x < 0 ? Direction::Left : Direction::Right;
+            steps = std::abs(steps_x);
+        } else {
+            dir = steps_y < 0 ? Direction::Up : Direction::Down;
+            steps = std::abs(steps_y);
+        }
+        if (swipe_direction != dir) {
+            gesture_delta = Vector2D(0.0, 0.0);
+            swipe_direction = dir;
+        }
+        for (int i = 0; i < steps; ++i) {
+            switch (dir) {
+            case Direction::Left:
+            case Direction::Right:
+            case Direction::Up:
+            case Direction::Down:
+                s->move_focus(dir, false);
+                switch_to_window(s->get_active_window());
+                break;
+            default:
+                break;
+            }
+        }
+        s->recalculate_row_geometry();
+    } else if (**OENABLE && swipe_event.fingers == **OFINGERS) {
+        // Only accept the first update: one swipe, one trigger.
+        if (swipe_active)
+            return;
+        // Undo natural
+        const double distance = (**NATURAL ? -1.0 : 1.0) * **ODISTANCE;
+        if (gesture_delta.y <= -distance) {
+            if (s == nullptr)
+                return;
+            if (!s->is_overview()) {
+                s->toggle_overview();
+            }
+        } else if (gesture_delta.y >= distance) {
+            if (s == nullptr)
+                return;
+            if (s->is_overview()) {
+                s->toggle_overview();
+            }
+        } else if (gesture_delta.x <= -distance) {
+            g_pKeybindManager->m_mDispatchers["workspace"]("-1");
+        } else if (gesture_delta.x >= distance) {
+            g_pKeybindManager->m_mDispatchers["workspace"]("+1");
+        }
+    }
+    swipe_active = true;
+}
+
+void ScrollerLayout::swipe_end(SCallbackInfo &info,
+                               IPointer::SSwipeEndEvent swipe_event) {
+    WORKSPACEID wid = get_workspace_id();
+    if (wid == -1) {
+        return;
+    }
+
+    swipe_active = false;
+    gesture_delta = Vector2D(0.0, 0.0);
+    swipe_direction = Direction::Begin;
+    info.cancelled = true;
 }

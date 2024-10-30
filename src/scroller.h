@@ -1,6 +1,8 @@
 #include <hyprland/src/layout/IHyprLayout.hpp>
 
 #include "list.h"
+#include <hyprland/src/SharedDefs.hpp>
+#include <hyprland/src/devices/IPointer.hpp>
 
 enum class Direction { Left, Right, Up, Down, Begin, End, Center };
 enum class FitSize { Active, Visible, All, ToEnd, ToBeg };
@@ -58,9 +60,17 @@ public:
 
     void post_event(WORKSPACEID workspace, const std::string &event);
 
+    void swipe_begin(IPointer::SSwipeBeginEvent);
+    void swipe_update(SCallbackInfo& info, IPointer::SSwipeUpdateEvent);
+    void swipe_end(SCallbackInfo& info, IPointer::SSwipeEndEvent);
+
 private:
     Row *getRowForWorkspace(WORKSPACEID workspace);
     Row *getRowForWindow(PHLWINDOW window);
 
     List<Row *> rows;
+
+    Vector2D gesture_delta;
+    bool swipe_active;
+    Direction swipe_direction;
 };

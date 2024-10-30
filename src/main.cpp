@@ -1,8 +1,8 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprlang.hpp>
 
 #include "dispatchers.h"
-#include "hyprlang.hpp"
 #include "scroller.h"
 
 HANDLE PHANDLE = nullptr;
@@ -46,6 +46,27 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "overview");
     });
 
+    static auto P3 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [](void* self, SCallbackInfo& info, std::any param) {
+        if (!g_ScrollerLayout)
+            return;
+        auto swipe_event = std::any_cast<IPointer::SSwipeBeginEvent>(param);
+        g_ScrollerLayout->swipe_begin(swipe_event);
+    });
+
+    static auto P4 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeUpdate", [](void* self, SCallbackInfo& info, std::any param) {
+        if (!g_ScrollerLayout)
+            return;
+        auto swipe_event = std::any_cast<IPointer::SSwipeUpdateEvent>(param);
+        g_ScrollerLayout->swipe_update(info, swipe_event);
+    });
+
+    static auto P5 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [](void* self, SCallbackInfo& info, std::any param) {
+        if (!g_ScrollerLayout)
+            return;
+        auto swipe_event = std::any_cast<IPointer::SSwipeEndEvent>(param);
+        g_ScrollerLayout->swipe_end(info, swipe_event);
+    });
+
     // one value out of: { onesixth, onefourth, onethird, onehalf (default), twothirds, floating, maximized }
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:column_default_width", Hyprlang::STRING{"onehalf"});
     // one value out of: { onesixth, onefourth, onethird, onehalf, twothirds, one (default) }
@@ -68,6 +89,13 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // for the rest of the keys
     // monitor_options = ( DP-2 = ( mode = col; column_default_width = onethird; window_default_height = onehalf), HDMI-A-1 = ())
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:monitor_options", Hyprlang::STRING{""});
+    //Enable gestures
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_overview_enable", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_overview_distance", Hyprlang::INT{5});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_overview_fingers", Hyprlang::INT{4});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance", Hyprlang::INT{60});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers", Hyprlang::INT{3});
 
     HyprlandAPI::reloadConfig();
 

@@ -64,12 +64,15 @@ public:
     void swipe_update(SCallbackInfo& info, IPointer::SSwipeUpdateEvent);
     void swipe_end(SCallbackInfo& info, IPointer::SSwipeEndEvent);
 
+    bool is_enabled() const { return enabled; }
+
 private:
     Row *getRowForWorkspace(WORKSPACEID workspace);
     Row *getRowForWindow(PHLWINDOW window);
 
     List<Row *> rows;
 
+    bool enabled;
     Vector2D gesture_delta;
     bool swipe_active;
     Direction swipe_direction;

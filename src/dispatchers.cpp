@@ -13,7 +13,7 @@ extern HANDLE PHANDLE;
 extern std::unique_ptr<ScrollerLayout> g_ScrollerLayout;
 
 
-namespace {
+namespace dispatchers {
     std::optional<Direction> parse_move_arg(std::string arg) {
         if (arg == "l" || arg == "left")
             return Direction::Left;
@@ -199,22 +199,21 @@ namespace {
 
         g_ScrollerLayout->unpin(workspace);
     }
-}
-
-void dispatchers::addDispatchers() {
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:movewindow", dispatch_movewindow);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksadd", dispatch_marksadd);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
-    HyprlandAPI::addDispatcher(PHANDLE, "scroller:unpin", dispatch_unpin);
+    void addDispatchers() {
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:movewindow", dispatch_movewindow);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksadd", dispatch_marksadd);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:unpin", dispatch_unpin);
+    }
 }

@@ -118,8 +118,8 @@ The plugin adds the following dispatchers:
 
 | Dispatcher                | Description                                                                                                                 |
 |---------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`      | A replacement for `movefocus`, takes a direction as argument.                                                               |
-| `scroller:movewindow`     | A replacement for `movewindow`, takes a direction as argument.                                                              |
+| `scroller:movefocus`      | An optional replacement for `movefocus`, takes a direction as argument.                                                     |
+| `scroller:movewindow`     | An optional replacement for `movewindow`, takes a direction as argument.                                                    |
 | `scroller:setmode`        | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.       |
 | `scroller:cyclesize`      | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                  |
 | `scroller:alignwindow`    | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode)         |
@@ -153,13 +153,12 @@ The plugin adds the following dispatchers:
 
 ## Window/Column Focus and Movement
 
-If you want to use *Hyprscroller* you will need to map your key bindings from
-the default `movefocus`/`movewindow` to
-`scroller:movefocus`/`scroller:movewindow`. The reason is *Hyprland* doesn't
-have the concept (yet) of a workspace that spans more than the space of a
-monitor, and when focusing directionally, it doesn't look for windows that are
-"outside" of that region. If this changes in the future, these two dispatchers
-may become obsolete.
+*Hyprscroller* is now compatible with *Hyprland's* default `movefocus`/`movewindow`
+dispatchers and key bindings. But you can also add *Hyprscroller's* own
+`scroller:movefocus`/`scroller:movewindow` for cases unsupported by Hyprland,
+like `beginning` and `end`. Supporting the default dispatcher allows for
+better switching of layouts without needing to modify the configuration, which
+was the case in the past.
 
 `movefocus` and `movewindow` accept the following directional arguments:
 `l` or `left`, `r` or `right`, `u` or `up`, `d` or `dn` or `down`, `b` or
@@ -629,18 +628,18 @@ As an example, you could set some key bindings in your `hyprland.conf` like this
 
 ``` conf
 # Move focus with mainMod + arrow keys
-bind = $mainMod, left, scroller:movefocus, l
-bind = $mainMod, right, scroller:movefocus, r
-bind = $mainMod, up, scroller:movefocus, u
-bind = $mainMod, down, scroller:movefocus, d
+bind = $mainMod, left, movefocus, l
+bind = $mainMod, right, movefocus, r
+bind = $mainMod, up, movefocus, u
+bind = $mainMod, down, movefocus, d
 bind = $mainMod, home, scroller:movefocus, begin
 bind = $mainMod, end, scroller:movefocus, end
 
 # Movement
-bind = $mainMod CTRL, left, scroller:movewindow, l
-bind = $mainMod CTRL, right, scroller:movewindow, r
-bind = $mainMod CTRL, up, scroller:movewindow, u
-bind = $mainMod CTRL, down, scroller:movewindow, d
+bind = $mainMod CTRL, left, movewindow, l
+bind = $mainMod CTRL, right, movewindow, r
+bind = $mainMod CTRL, up, movewindow, u
+bind = $mainMod CTRL, down, movewindow, d
 bind = $mainMod CTRL, home, scroller:movewindow, begin
 bind = $mainMod CTRL, end, scroller:movewindow, end
 
@@ -721,10 +720,10 @@ bind = $mainMod, tab, scroller:toggleoverview
 bind = $mainMod, tab, submap, overview
 # will start a submap called "overview"
 submap = overview
-bind = , right, scroller:movefocus, right
-bind = , left, scroller:movefocus, left
-bind = , up, scroller:movefocus, up
-bind = , down, scroller:movefocus, down
+bind = , right, movefocus, right
+bind = , left, movefocus, left
+bind = , up, movefocus, up
+bind = , down, movefocus, down
 # use reset to go back to the global submap
 bind = , escape, scroller:toggleoverview,
 bind = , escape, submap, reset

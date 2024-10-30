@@ -12,6 +12,7 @@
 #include <hyprland/src/managers/EventManager.hpp>
 #endif
 
+#include "dispatchers.h"
 #include "scroller.h"
 #include <unordered_map>
 #include <vector>
@@ -374,6 +375,20 @@ private:
 };
 
 static Marks marks;
+
+static std::function<SDispatchResult(std::string)> orig_moveFocusTo;
+
+SDispatchResult this_moveFocusTo(std::string args) {
+    dispatchers::dispatch_movefocus(args);
+    return {};
+}
+
+static std::function<SDispatchResult(std::string)> orig_moveActiveTo;
+
+SDispatchResult this_moveActiveTo(std::string args) {
+    dispatchers::dispatch_movewindow(args);
+    return {};
+}
 
 class Window {
 public:
@@ -778,7 +793,7 @@ public:
                 return true;
             }
             // use default dispatch for movefocus (change monitor)
-            g_pKeybindManager->m_mDispatchers["movefocus"]("u");
+            orig_moveFocusTo("u");
             return false;
         }
         reorder = Reorder::Auto;
@@ -794,7 +809,7 @@ public:
                 return true;
             }
             // use default dispatch for movefocus (change monitor)
-            g_pKeybindManager->m_mDispatchers["movefocus"]("d");
+            orig_moveFocusTo("d");
             return false;
         }
         reorder = Reorder::Auto;
@@ -1219,7 +1234,7 @@ private:
                 return true;
             }
 
-            g_pKeybindManager->m_mDispatchers["movefocus"]("l");
+            orig_moveFocusTo("l");
             return false;
         }
         active = active->prev();
@@ -1234,7 +1249,7 @@ private:
                 return true;
             }
 
-            g_pKeybindManager->m_mDispatchers["movefocus"]("r");
+            orig_moveFocusTo("r");
             return false;
         }
         active = active->next();
@@ -2253,6 +2268,13 @@ void ScrollerLayout::replaceWindowDataWith(PHLWINDOW from, PHLWINDOW to)
 }
 
 void ScrollerLayout::onEnable() {
+    // Hijack Hyprland's default dispatchers
+    orig_moveFocusTo = g_pKeybindManager->m_mDispatchers["movefocus"];
+    orig_moveActiveTo = g_pKeybindManager->m_mDispatchers["movewindow"];
+    g_pKeybindManager->m_mDispatchers["movefocus"] = this_moveFocusTo;
+    g_pKeybindManager->m_mDispatchers["movewindow"] = this_moveActiveTo;
+
+    enabled = true;
     marks.reset();
     for (auto& window : g_pCompositor->m_vWindows) {
         if (window->m_bIsFloating || !window->m_bIsMapped || window->isHidden())
@@ -2264,6 +2286,11 @@ void ScrollerLayout::onEnable() {
 }
 
 void ScrollerLayout::onDisable() {
+    // Restore Hyprland's default dispatchers
+    g_pKeybindManager->m_mDispatchers["movefocus"] = orig_moveFocusTo;
+    g_pKeybindManager->m_mDispatchers["movewindow"] = orig_moveActiveTo;
+
+    enabled = false;
     for (auto row = rows.first(); row != nullptr; row = row->next()) {
         delete row->data();
     }
@@ -2323,16 +2350,16 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
         // is "move to another monitor" (pass the direction)
         switch (direction) {
             case Direction::Left:
-                g_pKeybindManager->m_mDispatchers["movefocus"]("l");
+                orig_moveFocusTo("l");
                 break;
             case Direction::Right:
-                g_pKeybindManager->m_mDispatchers["movefocus"]("r");
+                orig_moveFocusTo("r");
                 break;
             case Direction::Up:
-                g_pKeybindManager->m_mDispatchers["movefocus"]("u");
+                orig_moveFocusTo("u");
                 break;
             case Direction::Down:
-                g_pKeybindManager->m_mDispatchers["movefocus"]("d");
+                orig_moveFocusTo("d");
                 break;
             default:
                 break;

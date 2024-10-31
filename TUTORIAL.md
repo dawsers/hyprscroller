@@ -1,11 +1,11 @@
-## Introduction
+# Tutorial
 
 [hyprscroller](https://github.com/dawsers/hyprscroller) is a [Hyprland](https://github.com/hyprwm/Hyprland)
 plugin that creates a window layout similar to [PaperWM](https://github.com/paperwm/PaperWM).
 
 Consult the [README](README.md) for more details beyond this quick tutorial.
 
-### Rows and Columns
+## Rows and Columns
 
 *hyprscroller* supports multiple workspaces per monitor. Each workspace is a
 *row*: a scrollable tiling of columns, where each *column* may contain one or
@@ -30,9 +30,10 @@ mostly in *row* mode. If you are using a monitor in portrait mode, you may
 prefer *column* mode. You can configure each monitor independently through
 available options.
 
-![rows-columns.mp4](videos/rows-columns.mp4)
+[rows-columns.mp4](https://github.com/user-attachments/assets/5b90d308-85e7-46a5-b8da-54e29fdbf46c)
 
-### Window Sizes
+
+## Window Sizes
 
 There are options to define the default width and height of windows. These
 sizes are usually a fraction of the available monitor space so it is easier to
@@ -58,29 +59,29 @@ If you want to quickly fit a series of windows in a column or columns in a
 row, you can use `fitsize`. It will ignore fractions, and re-scale all the
 affected windows to fit in the screen.
 
-![cyclesize-fitview.mp4](videos/cyclesize-fitview.mp4)
+[cyclesize-fitview.mp4](https://github.com/user-attachments/assets/1f51da15-3ef7-413a-8d1d-893a7355a4f1)
 
 
-### Focusing and Alignment
+## Focusing and Alignment
 
 When you change window focus, *hyprscroller* will always show the active
 (focused) window on screen, and intelligently try to fit another adjacent
 window if it can. However, in some cases you may want to decide to align a
 window manually; `alignwindow` does exactly that.
 
-![alignwindow.mp4](videos/alignwindow.mp4)
+[alignwindow.mp4](https://github.com/user-attachments/assets/2650b480-83c5-4e12-b963-13ff9a1df910)
 
 
-### Overview Mode
+## Overview Mode
 
 When you have too many windows in a workspace, it can be hard to know where
 things are. `toggleoverview` helps with that by creating a bird's eye view
 of the whole workspace.
 
-![overview-mode.mp4](videos/overview-mode.mp4)
+[overview-mode.mp4](https://github.com/user-attachments/assets/5ef6d11e-19be-4155-8840-04c63c5e81fa)
 
 
-### Pinning a Column
+## Pinning a Column
 
 Sometimes you want to keep one window static at all times, for example an
 editor with a file you are working on, while letting other windows scroll in
@@ -88,10 +89,10 @@ the rest of the available space. These windows may include terminals or
 documentation browser windows. You can `pin` a column, and it will stay at its
 current location until you call `unpin`.
 
-![pin.mp4](videos/pin.mp4)
+[pin.mp4](https://github.com/user-attachments/assets/13f26203-3ece-47ea-91eb-779c9b2eab73)
 
 
-### Marks
+## Marks
 
 *hyprscroller* supports vim-like marks. You can use marks to quickly navigate
 to frequently used windows, regardless of which workspace they are in. For
@@ -114,13 +115,13 @@ submap = reset
 ```
 
 
-### Touchpad Gestures
+## Touchpad Gestures
 
 By default, *hyprscroller* supports three and four finger touchpad swipe
 gestures to scroll windows, call *overview* and switch workspaces.
 
 
-### Example Configuration
+## Example Configuration
 
 The README includes a simple set of [key bindings](./README.md#key-bindings) to
 minimally configure *hyprscroller*.

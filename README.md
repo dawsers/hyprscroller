@@ -10,6 +10,9 @@ The plugin is quite feature complete and supports gaps, borders, decorations,
 special workspace, full screen modes, overview, marks, pinned columns,
 touchpad gestures and installation through `hyprpm`.
 
+Check the [Tutorial](./TUTORIAL.md) for a quick overview of *hyprscroller's* main
+features.
+
 I use *hyprscroller* on my main machine and will support it for as long as I
 keep on using *Hyprland*. However, I will only add new features that I find
 interesting, and support two *Hyprland* versions: the one my distribution uses,

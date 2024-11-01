@@ -45,7 +45,6 @@ public:
     void align_window(WORKSPACEID workspace, Direction);
     void admit_window_left(WORKSPACEID workspace);
     void expel_window_right(WORKSPACEID workspace);
-    void reset_height(WORKSPACEID workspace);
     void set_mode(WORKSPACEID workspace, Mode);
     void fit_size(WORKSPACEID workspace, FitSize);
     void toggle_overview(WORKSPACEID workspace);

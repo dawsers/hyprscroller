@@ -118,13 +118,6 @@ namespace dispatchers {
 
         g_ScrollerLayout->expel_window_right(workspace);
     }
-    void dispatch_resetheight(std::string arg) {
-        auto workspace = workspace_for_action();
-        if (workspace == -1)
-            return;
-
-        g_ScrollerLayout->reset_height(workspace);
-    }
     void dispatch_setmode(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)

@@ -390,6 +390,54 @@ SDispatchResult this_moveActiveTo(std::string args) {
     return {};
 }
 
+static eFullscreenMode window_fullscreen_state(PHLWINDOW window)
+{
+    return window->m_sFullscreenState.internal;
+}
+
+static void toggle_window_fullscreen_internal(PHLWINDOW window, eFullscreenMode mode)
+{
+    if (window_fullscreen_state(window) != eFullscreenMode::FSMODE_NONE) {
+        g_pCompositor->setWindowFullscreenInternal(window, FSMODE_NONE);
+    } else {
+        g_pCompositor->setWindowFullscreenInternal(window, mode);
+    }
+}
+
+static void force_focus_to_window(PHLWINDOW window) {
+    g_pInputManager->unconstrainMouse();
+    g_pCompositor->focusWindow(window);
+    g_pCompositor->warpCursorTo(window->middle());
+
+    g_pInputManager->m_pForcedFocus = window;
+    g_pInputManager->simulateMouseMovement();
+    g_pInputManager->m_pForcedFocus.reset();
+}
+
+static bool switch_to_window(PHLWINDOW from, PHLWINDOW to/*, eFullscreenMode mode*/)
+{
+    auto fwid = from->workspaceID();
+    auto twid = to->workspaceID();
+    bool change_workspace = fwid != twid;
+    if (from != to) {
+        PHLWORKSPACE workspace = g_pCompositor->getWorkspaceByID(to->workspaceID());
+        eFullscreenMode mode = workspace->m_efFullscreenMode;
+        if (mode != eFullscreenMode::FSMODE_NONE) {
+            if (change_workspace) {
+                auto fwindow = workspace->getLastFocusedWindow(); 
+                toggle_window_fullscreen_internal(fwindow, eFullscreenMode::FSMODE_NONE);
+            } else {
+                toggle_window_fullscreen_internal(from, eFullscreenMode::FSMODE_NONE);
+            }
+        }
+        force_focus_to_window(to);
+        if (mode != eFullscreenMode::FSMODE_NONE) {
+            toggle_window_fullscreen_internal(to, mode);
+        }
+    }
+    return !change_workspace;
+}
+
 class Window {
 public:
     Window(PHLWINDOW window, double box_h) : window(window) {
@@ -474,7 +522,7 @@ private:
 class Column {
 public:
     Column(PHLWINDOW cwindow, double maxw, double maxh)
-        : height(StandardSize::One), reorder(Reorder::Auto), initialized(false), maxdim(false) {
+        : height(StandardSize::One), reorder(Reorder::Auto), initialized(false) {
         ConfigurationSize column_width = scroller_sizes.get_column_default_width(cwindow);
         if (column_width == ConfigurationSize::OneHalf) {
             width = StandardSize::OneHalf;
@@ -505,18 +553,16 @@ public:
             width = StandardSize::OneHalf;
         }
         Window *window = new Window(cwindow, maxh);
-        update_width(width, maxw, maxh);
-        geom.h = maxh;
         windows.push_back(window);
         active = windows.first();
+        update_width(width, maxw, maxh);
     }
     Column(Window *window, StandardSize width, double maxw, double maxh)
-        : width(width), height(StandardSize::One), reorder(Reorder::Auto), initialized(true), maxdim(false) {
+        : width(width), height(StandardSize::One), reorder(Reorder::Auto), initialized(true) {
         window->set_geom_h(maxh);
-        update_width(width, maxw, maxh);
-        geom.h = maxh;
         windows.push_back(window);
         active = windows.first();
+        update_width(width, maxw, maxh);
     }
     ~Column() {
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
@@ -604,21 +650,6 @@ public:
             window->m_vRealPosition = window->m_vPosition;
         }
     }
-    bool toggle_fullscreen(const Box &fullbbox) {
-        PHLWINDOW wactive = active->data()->ptr().lock();
-        const eFullscreenMode mode = wactive->m_sFullscreenState.internal;
-        if (mode == FSMODE_FULLSCREEN) {
-            full = fullbbox;
-        }
-        return mode == FSMODE_FULLSCREEN;
-    }
-    // Sets fullscreen even if the active window is not full screen
-    // Used in recalculateMonitor
-    void set_fullscreen(const Box &fullbbox) {
-        // Leave it like this (without enabling full screen in the window).
-        // If this is called, it won't work unless the window is also set to full screen
-        full = fullbbox;
-    }
     void push_geom() {
         mem.geom = geom;
         for (auto w = windows.first(); w != nullptr; w = w->next()) {
@@ -631,23 +662,29 @@ public:
             w->data()->pop_geom();
         }
     }
-    void toggle_maximized(double maxw, double maxh) {
-        maxdim = !maxdim;
-        if (maxdim) {
-            mem.geom = geom;
-            active->data()->push_geom();
-            geom.w = maxw;
-            active->data()->set_geom_h(maxh);
-        } else {
-            geom = mem.geom;
-            active->data()->pop_geom();
-        }
+    void set_active_window_geometry(const Box &box) {
+        PHLWINDOW wactive = active->data()->ptr().lock();
+        wactive->m_vPosition = Vector2D(box.x, box.y);
+        wactive->m_vSize = Vector2D(box.w, box.h);
+        wactive->m_vRealPosition = wactive->m_vPosition;
+        wactive->m_vRealSize = wactive->m_vSize;
+    }
+    void push_active_window_geometry() {
+        mem.wpos = active->data()->ptr()->m_vPosition;
+        mem.wsize = active->data()->ptr()->m_vSize;
+    }
+    void pop_active_window_geometry() {
+        PHLWINDOW wactive = active->data()->ptr().lock();
+        wactive->m_vPosition = mem.wpos;
+        wactive->m_vSize = mem.wsize;
+        wactive->m_vRealPosition = wactive->m_vPosition;
+        wactive->m_vRealSize = wactive->m_vSize;
     }
     bool fullscreen() const {
-        return active->data()->ptr().lock()->m_sFullscreenState.internal == FSMODE_FULLSCREEN;
+        return window_fullscreen_state(active->data()->ptr().lock())  != eFullscreenMode::FSMODE_NONE;
     }
     bool maximized() const {
-        return maxdim;
+        return window_fullscreen_state(active->data()->ptr().lock())  == eFullscreenMode::FSMODE_MAXIMIZED;
     }
     // Used by auto-centering of columns
     void set_geom_pos(double x, double y) {
@@ -655,115 +692,107 @@ public:
     }
     // Recalculates the geometry of the windows in the column
     void recalculate_col_geometry(const Vector2D &gap_x, double gap) {
-        if (fullscreen()) {
-            PHLWINDOW wactive = active->data()->ptr().lock();
-            wactive->m_vPosition = Vector2D(full.x, full.y);
-            wactive->m_vSize = Vector2D(full.w, full.h);
-            wactive->m_vRealPosition = wactive->m_vPosition;
-            wactive->m_vRealSize = wactive->m_vSize;
+        // In theory, every window in the Columm should have the same size,
+        // but the standard layouts don't follow this rule (to make the code
+        // simpler?). Windows close to the border of the monitor will have
+        // their sizes affected by gaps_out vs. gaps_in.
+        // I follow the same rules.
+        // Each window has a gap to its bounding box of "gaps_in + border",
+        // except on the monitor sides, where the gap is "gaps_out + border",
+        // but the window sizes are different because of those different
+        // gaps. So the distance between two window border boundaries is
+        // two times gaps_in (one per window).
+        Window *wactive = active->data();
+        PHLWINDOW win = wactive->ptr().lock();
+        SBoxExtents reserved_area = win->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+        auto gap0 = active == windows.first() ? 0.0 : gap;
+        auto gap1 = active == windows.last() ? 0.0 : gap;
+        auto border = win->getRealBorderSize();
+        auto a_y0 = std::round(win->m_vPosition.y - border - topL.y - gap0);
+        auto a_y1 = std::round(win->m_vPosition.y - border - topL.y - gap0 + wactive->get_geom_h());
+        if (a_y0 < geom.y) {
+            // active starts above, set it on the top edge
+            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+        } else if (a_y1 > geom.y + geom.h) {
+            // active overflows below the bottom, move to bottom of viewport
+            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
         } else {
-            // In theory, every window in the Columm should have the same size,
-            // but the standard layouts don't follow this rule (to make the code
-            // simpler?). Windows close to the border of the monitor will have
-            // their sizes affected by gaps_out vs. gaps_in.
-            // I follow the same rules.
-            // Each window has a gap to its bounding box of "gaps_in + border",
-            // except on the monitor sides, where the gap is "gaps_out + border",
-            // but the window sizes are different because of those different
-            // gaps. So the distance between two window border boundaries is
-            // two times gaps_in (one per window).
-            Window *wactive = active->data();
-            PHLWINDOW win = wactive->ptr().lock();
-            SBoxExtents reserved_area = win->getFullWindowReservedArea();
-            Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-            auto gap0 = active == windows.first() ? 0.0 : gap;
-            auto gap1 = active == windows.last() ? 0.0 : gap;
-            auto border = win->getRealBorderSize();
-            auto a_y0 = std::round(win->m_vPosition.y - border - topL.y - gap0);
-            auto a_y1 = std::round(win->m_vPosition.y - border - topL.y - gap0 + wactive->get_geom_h());
-            if (a_y0 < geom.y) {
-                // active starts above, set it on the top edge
-                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
-            } else if (a_y1 > geom.y + geom.h) {
-                // active overflows below the bottom, move to bottom of viewport
-                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
-            } else {
-                // active window is inside the viewport
-                if (reorder == Reorder::Auto) {
-                    // The active window should always be completely in the viewport.
-                    // If any of the windows next to it, above or below are already
-                    // in the viewport, keep the current position.
-                    bool keep_current = false;
-                    if (active->prev() != nullptr) {
-                        Window *prev = active->prev()->data();
-                        PHLWINDOW prev_window = prev->ptr().lock();
-                        auto gap0 = active->prev() == windows.first() ? 0.0 : gap;
-                        auto border = prev_window->getRealBorderSize();
-                        SBoxExtents reserved_area = prev_window->getFullWindowReservedArea();
-                        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-                        auto p_y0 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0);
-                        auto p_y1 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0 + prev->get_geom_h());
-                        if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
-                            keep_current = true;
-                        }
+            // active window is inside the viewport
+            if (reorder == Reorder::Auto) {
+                // The active window should always be completely in the viewport.
+                // If any of the windows next to it, above or below are already
+                // in the viewport, keep the current position.
+                bool keep_current = false;
+                if (active->prev() != nullptr) {
+                    Window *prev = active->prev()->data();
+                    PHLWINDOW prev_window = prev->ptr().lock();
+                    auto gap0 = active->prev() == windows.first() ? 0.0 : gap;
+                    auto border = prev_window->getRealBorderSize();
+                    SBoxExtents reserved_area = prev_window->getFullWindowReservedArea();
+                    Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+                    auto p_y0 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0);
+                    auto p_y1 = std::round(prev_window->m_vPosition.y - border - topL.y - gap0 + prev->get_geom_h());
+                    if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
+                        keep_current = true;
                     }
-                    if (!keep_current && active->next() != nullptr) {
-                        Window *next = active->next()->data();
-                        PHLWINDOW next_window = next->ptr().lock();
-                        auto gap0 = active->next() == windows.first() ? 0.0 : gap;
-                        auto border = next_window->getRealBorderSize();
-                        SBoxExtents reserved_area = next_window->getFullWindowReservedArea();
-                        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-                        auto p_y0 = std::round(next_window->m_vPosition.y - border - topL.y - gap0);
-                        auto p_y1 = std::round(next_window->m_vPosition.y - border - topL.y - gap0 + next->get_geom_h());
-                        if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
-                            keep_current = true;
-                        }
+                }
+                if (!keep_current && active->next() != nullptr) {
+                    Window *next = active->next()->data();
+                    PHLWINDOW next_window = next->ptr().lock();
+                    auto gap0 = active->next() == windows.first() ? 0.0 : gap;
+                    auto border = next_window->getRealBorderSize();
+                    SBoxExtents reserved_area = next_window->getFullWindowReservedArea();
+                    Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+                    auto p_y0 = std::round(next_window->m_vPosition.y - border - topL.y - gap0);
+                    auto p_y1 = std::round(next_window->m_vPosition.y - border - topL.y - gap0 + next->get_geom_h());
+                    if (p_y0 >= geom.y && p_y1 <= geom.y + geom.h) {
+                        keep_current = true;
                     }
-                    if (!keep_current) {
-                        // If not:
-                        // We try to fit the window right below it if it fits
-                        // completely, otherwise the one above it. If none of them fit,
-                        // we leave it as it is.
-                        if (active->next() != nullptr) {
-                            if (wactive->get_geom_h() + active->next()->data()->get_geom_h() <= geom.h) {
-                                // set next at the bottom edge of the viewport
-                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0 + topL.y);
-                            } else if (active->prev() != nullptr) {
-                                if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
-                                    // set previous at the top edge of the viewport
-                                    win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + topL.y + gap0);
-                                } else {
-                                    // none of them fit, leave active as it is (only modify x)
-                                    win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
-                                }
-                            } else {
-                                // nothing above, move active to top of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
-                            }
+                }
+                if (!keep_current) {
+                    // If not:
+                    // We try to fit the window right below it if it fits
+                    // completely, otherwise the one above it. If none of them fit,
+                    // we leave it as it is.
+                    if (active->next() != nullptr) {
+                        if (wactive->get_geom_h() + active->next()->data()->get_geom_h() <= geom.h) {
+                            // set next at the bottom edge of the viewport
+                            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() - active->next()->data()->get_geom_h() + border + gap0 + topL.y);
                         } else if (active->prev() != nullptr) {
                             if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
                                 // set previous at the top edge of the viewport
                                 win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + topL.y + gap0);
                             } else {
-                                // it doesn't fit and nothing above, move active to bottom of viewport
-                                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
+                                // none of them fit, leave active as it is (only modify x)
+                                win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                             }
                         } else {
-                            // nothing on the right or left, the window is in a correct position
-                            win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
+                            // nothing above, move active to top of viewport
+                            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+                        }
+                    } else if (active->prev() != nullptr) {
+                        if (active->prev()->data()->get_geom_h() + wactive->get_geom_h() <= geom.h) {
+                            // set previous at the top edge of the viewport
+                            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + active->prev()->data()->get_geom_h() + border + topL.y + gap0);
+                        } else {
+                            // it doesn't fit and nothing above, move active to bottom of viewport
+                            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
                         }
                     } else {
-                        // the window is in a correct position
+                        // nothing on the right or left, the window is in a correct position
                         win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                     }
                 } else {
                     // the window is in a correct position
                     win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                 }
+            } else {
+                // the window is in a correct position
+                win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
             }
-            adjust_windows(active, gap_x, gap);
         }
+        adjust_windows(active, gap_x, gap);
     }
     PHLWINDOW get_active_window() {
         return active->data()->ptr().lock();
@@ -1090,15 +1119,16 @@ public:
 
 private:
     struct Memory {
-        Box geom;
+        Box geom;        // memory of the column's box while in overview mode
+        Vector2D wpos;   // memory of the active window pos
+        Vector2D wsize;  // and size while in fullscreen mode
     };
     StandardSize width;
     StandardSize height;
     Reorder reorder;
     bool initialized;
     Box geom;        // bbox of column
-    bool maxdim;     // maximized?
-    Memory mem;      // memory of the column's box while in maximized/overview mode
+    Memory mem;      // memory
     Box full;        // full screen geometry
     ListNode<Window *> *active;
     List<Window *> windows;
@@ -1136,14 +1166,32 @@ public:
         return get_active_window() == window;
     }
     void add_active_window(PHLWINDOW window) {
+        eFullscreenMode fsmode;
+        if (active != nullptr) {
+            auto awindow = get_active_window();
+            fsmode = window_fullscreen_state(awindow);
+            if (fsmode != eFullscreenMode::FSMODE_NONE) {
+                toggle_window_fullscreen_internal(awindow, eFullscreenMode::FSMODE_NONE);
+            }
+        } else {
+            fsmode = eFullscreenMode::FSMODE_NONE;
+        }
+
         if (active && mode == Mode::Column) {
             active->data()->add_active_window(window, max.h);
-            active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
-            return;
+            if (fsmode == eFullscreenMode::FSMODE_NONE)
+                active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
+        } else {
+            active = columns.emplace_after(active, new Column(window, max.w, max.h));
+            if (fsmode == eFullscreenMode::FSMODE_NONE) {
+                reorder = Reorder::Auto;
+                recalculate_row_geometry();
+            }
         }
-        active = columns.emplace_after(active, new Column(window, max.w, max.h));
-        reorder = Reorder::Auto;
-        recalculate_row_geometry();
+        if (fsmode != eFullscreenMode::FSMODE_NONE) {
+            toggle_window_fullscreen_internal(window, fsmode);
+            force_focus_to_window(window);
+        }
     }
 
     // Remove a window and re-adapt rows and columns, returning
@@ -1193,7 +1241,9 @@ public:
         }
     }
     bool move_focus(Direction dir, bool focus_wrap) {
-        reorder = Reorder::Auto;
+        auto from = get_active_window();
+        eFullscreenMode mode = window_fullscreen_state(from);
+
         switch (dir) {
         case Direction::Left:
             if (!move_focus_left(focus_wrap))
@@ -1220,8 +1270,13 @@ public:
         default:
             return true;
         }
-        recalculate_row_geometry();
-        return true;
+
+        if (mode == eFullscreenMode::FSMODE_NONE) {
+            reorder = Reorder::Auto;
+            recalculate_row_geometry();
+        }
+        auto to = get_active_window();
+        return switch_to_window(from, to);
     }
 
 private:
@@ -1272,7 +1327,7 @@ private:
 
 public:
     void resize_active_column(int step) {
-        if (active->data()->maximized())
+        if (active->data()->fullscreen())
             return;
 
         if (mode == Mode::Column) {
@@ -1295,8 +1350,7 @@ public:
     }
     void resize_active_window(const Vector2D &delta) {
         // If the active window in the active column is fullscreen, ignore.
-        if (active->data()->maximized() ||
-            active->data()->fullscreen())
+        if (active->data()->fullscreen())
             return;
 
         active->data()->resize_active_window(max.w, calculate_gap_x(active), gap, delta);
@@ -1307,8 +1361,7 @@ public:
         post_event("mode");
     }
     void align_column(Direction dir) {
-        if (active->data()->maximized() ||
-            active->data()->fullscreen())
+        if (active->data()->fullscreen())
             return;
 
         switch (dir) {
@@ -1346,7 +1399,7 @@ public:
 private:
     void center_active_column() {
         Column *column = active->data();
-        if (column->maximized())
+        if (column->fullscreen())
             return;
 
         switch (column->get_width()) {
@@ -1389,9 +1442,14 @@ public:
                 PHLWINDOW window = active->data()->get_active_window();
                 remove_window(window);
                 col->add_active_window(window, max.h);
-                col->recalculate_col_geometry(calculate_gap_x(c), gap);
+                if (!window->isFullscreen())
+                    col->recalculate_col_geometry(calculate_gap_x(c), gap);
                 active = c;
-                recalculate_row_geometry();
+                if (!window->isFullscreen())
+                    recalculate_row_geometry();
+                else {
+                    force_focus_to_window(window);
+                }
                 return;
             }
         }
@@ -1432,13 +1490,16 @@ public:
         case Direction::Center:
             return;
         }
-
-        reorder = Reorder::Auto;
-        recalculate_row_geometry();
+ 
+        auto window = active->data()->get_active_window();
+        eFullscreenMode mode = window_fullscreen_state(window);
+        if (mode == eFullscreenMode::FSMODE_NONE) {
+            reorder = Reorder::Auto;
+            recalculate_row_geometry();
+        }
     }
     void admit_window_left() {
-        if (active->data()->maximized() ||
-            active->data()->fullscreen())
+        if (active->data()->fullscreen())
             return;
         if (active == columns.first())
             return;
@@ -1459,8 +1520,7 @@ public:
         post_event("admitwindow");
     }
     void expel_window_right() {
-        if (active->data()->maximized() ||
-            active->data()->fullscreen())
+        if (active->data()->fullscreen())
             return;
         if (active->data()->size() == 1)
             // nothing to expel
@@ -1534,34 +1594,49 @@ public:
         max = newmax;
         return oldmax;
     }
-    void set_fullscreen_active_window() {
-        active->data()->set_fullscreen(full);
-        // Parameters here don't matter
-        active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
-    }
-    void toggle_fullscreen_active_window() {
+    void set_fullscreen_mode_windows(eFullscreenMode mode) {
         Column *column = active->data();
-        const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(
-            column->get_active_window()->workspaceID());
-
-        auto fullscreen = active->data()->toggle_fullscreen(full);
-        PWORKSPACE->m_bHasFullscreenWindow = fullscreen;
-
-        if (fullscreen) {
-            PWORKSPACE->m_efFullscreenMode = eFullscreenMode::FSMODE_FULLSCREEN;
-            column->recalculate_col_geometry(calculate_gap_x(active), gap);
-        } else {
-            recalculate_row_geometry();
+        switch (mode) {
+        case eFullscreenMode::FSMODE_NONE:
+            break;
+        case eFullscreenMode::FSMODE_FULLSCREEN:
+            column->set_active_window_geometry(full);
+            break;
+        case eFullscreenMode::FSMODE_MAXIMIZED:
+            column->set_active_window_geometry(max);
+            break;
+        default:
+            break;
         }
     }
-    void toggle_maximize_active_column() {
-        Column *column = active->data();
-        column->toggle_maximized(max.w, max.h);
+
+    void set_fullscreen_mode(eFullscreenMode cur_mode, eFullscreenMode new_mode) {
         reorder = Reorder::Auto;
-        recalculate_row_geometry();
+        Column *column = active->data();
+        switch (new_mode) {
+        case eFullscreenMode::FSMODE_NONE:
+            column->pop_active_window_geometry();
+            set_fullscreen_mode_windows(eFullscreenMode::FSMODE_NONE);
+            break;
+        case eFullscreenMode::FSMODE_FULLSCREEN:
+            if (cur_mode == eFullscreenMode::FSMODE_NONE)
+                column->push_active_window_geometry();
+            set_fullscreen_mode_windows(eFullscreenMode::FSMODE_FULLSCREEN);
+            break;
+        case eFullscreenMode::FSMODE_MAXIMIZED:
+            if (cur_mode == eFullscreenMode::FSMODE_NONE)
+                column->push_active_window_geometry();
+            set_fullscreen_mode_windows(eFullscreenMode::FSMODE_MAXIMIZED);
+            break;
+        default:
+            return;
+        }
     }
 
     void fit_size(FitSize fitsize) {
+        if (active->data()->fullscreen()) {
+            return;
+        }
         if (mode == Mode::Column) {
             active->data()->fit_size(fitsize, calculate_gap_x(active), gap);
             return;
@@ -1640,6 +1715,12 @@ public:
         overview = !overview;
         post_event("overview");
         if (overview) {
+            // Turn off fullscreen mode if enabled
+            auto window = get_active_window();
+            preoverview_fsmode = window_fullscreen_state(window);
+            if (preoverview_fsmode != eFullscreenMode::FSMODE_NONE) {
+                toggle_window_fullscreen_internal(window, preoverview_fsmode);
+            }
             // Find the bounding box
             Vector2D bmin(max.x + max.w, max.y + max.h);
             Vector2D bmax(max.x, max.y);
@@ -1684,6 +1765,11 @@ public:
                 acolumn->set_geom_pos(max.x + max.w - acolumn->get_geom_w(), max.y);
             }
             adjust_columns(active);
+            // Turn fullscreen mode back on if enabled
+            auto window = get_active_window();
+            if (preoverview_fsmode != eFullscreenMode::FSMODE_NONE) {
+                toggle_window_fullscreen_internal(window, preoverview_fsmode);
+            }
         }
     }
 
@@ -1713,7 +1799,6 @@ public:
             return;
 
         if (active->data()->fullscreen()) {
-            active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
             return;
         }
         auto a_w = active->data()->get_geom_w();
@@ -1737,6 +1822,16 @@ public:
         // Pinned will stay in place, with active having second priority to fit in
         // the screen on either side of pinned.
         if (pinned != nullptr) {
+            // If pinned got kicked out of the screen (overview, for example),
+            // bring it back in
+            auto p_w = pinned->data()->get_geom_w();
+            auto p_x = pinned->data()->get_geom_x();
+            if (p_x < max.x) {
+                pinned->data()->set_geom_pos(max.x, max.y);
+            } else if (std::round(p_x + p_w) > max.x + max.w) {
+                // pin overflows to the right, move to end of viewport
+                pinned->data()->set_geom_pos(max.x + max.w - p_w, max.y);
+            }
             if (a_x < max.x || std::round(a_x + a_w) > max.x + max.w) {
                 // Active doesn't fit, move it next to pinned
                 // Find space
@@ -1922,6 +2017,7 @@ private:
     Box full;
     Box max;
     bool overview;
+    eFullscreenMode preoverview_fsmode;
     int gap;
     Reorder reorder;
     Mode mode;
@@ -2055,8 +2151,8 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
         return;
 
     Box max = s->update_sizes(PMONITOR);
-    if (PWORKSPACE->m_bHasFullscreenWindow && PWORKSPACE->m_efFullscreenMode == FSMODE_FULLSCREEN) {
-        s->set_fullscreen_active_window();
+    if (PWORKSPACE->m_bHasFullscreenWindow) {
+        s->set_fullscreen_mode_windows(PWORKSPACE->m_efFullscreenMode);
     } else {
         s->update_windows(max);
     }
@@ -2148,28 +2244,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
     } else {
         if (EFFECTIVE_MODE == CURRENT_EFFECTIVE_MODE)
             return;
-
-        switch (EFFECTIVE_MODE) {
-            case eFullscreenMode::FSMODE_NONE:
-                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_MAXIMIZED) {
-                    s->toggle_maximize_active_column();
-                }
-                else if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_FULLSCREEN)
-                    s->toggle_fullscreen_active_window();
-                break;
-            case eFullscreenMode::FSMODE_FULLSCREEN:
-                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_MAXIMIZED)
-                    s->toggle_maximize_active_column();
-                s->toggle_fullscreen_active_window();
-                break;
-            case eFullscreenMode::FSMODE_MAXIMIZED:
-                if (CURRENT_EFFECTIVE_MODE == eFullscreenMode::FSMODE_FULLSCREEN)
-                    s->toggle_fullscreen_active_window();
-                s->toggle_maximize_active_column();
-                break;
-            default:
-                return;
-        }
+        s->set_fullscreen_mode(CURRENT_EFFECTIVE_MODE, EFFECTIVE_MODE);
     }
     g_pCompositor->changeWindowZOrder(window, true);
 }
@@ -2327,20 +2402,6 @@ void ScrollerLayout::cycle_window_size(WORKSPACEID workspace, int step)
     s->resize_active_column(step);
 }
 
-static void switch_to_window(PHLWINDOW window)
-{
-    if (window == g_pCompositor->m_pLastWindow.lock())
-        return;
-
-    g_pInputManager->unconstrainMouse();
-    g_pCompositor->focusWindow(window);
-    g_pCompositor->warpCursorTo(window->middle());
-
-    g_pInputManager->m_pForcedFocus = window;
-    g_pInputManager->simulateMouseMovement();
-    g_pInputManager->m_pForcedFocus.reset();
-}
-
 void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();
@@ -2375,7 +2436,6 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
             return;
         }
     }
-    switch_to_window(s->get_active_window());
 }
 
 void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
@@ -2385,7 +2445,6 @@ void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
     }
 
     s->move_active_column(direction);
-    switch_to_window(s->get_active_window());
 }
 
 void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
@@ -2452,9 +2511,13 @@ static WORKSPACEID get_workspace_id() {
     return workspace_id;
 }
 
+PHLWINDOW ScrollerLayout::getActiveWindow(WORKSPACEID workspace) {
+    return getRowForWorkspace(workspace)->get_active_window();
+}
+
 void ScrollerLayout::marks_add(const std::string &name) {
-    PHLWINDOW w = getRowForWorkspace(get_workspace_id())->get_active_window();
-    marks.add(w, name);
+    PHLWINDOW window = getActiveWindow(get_workspace_id());
+    marks.add(window, name);
 }
 
 void ScrollerLayout::marks_delete(const std::string &name) {
@@ -2462,9 +2525,11 @@ void ScrollerLayout::marks_delete(const std::string &name) {
 }
 
 void ScrollerLayout::marks_visit(const std::string &name) {
-    PHLWINDOW window = marks.visit(name);
-    if (window != nullptr)
-        switch_to_window(window);
+    PHLWINDOW from = getActiveWindow(get_workspace_id());
+    PHLWINDOW to = marks.visit(name);
+    if (to != nullptr) {
+        switch_to_window(from, to);
+    }
 }
 
 void ScrollerLayout::marks_reset() {
@@ -2564,7 +2629,8 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
             case Direction::Up:
             case Direction::Down:
                 s->move_focus(dir, false);
-                switch_to_window(s->get_active_window());
+                // To avoid going to the next monitor, stays in s
+                force_focus_to_window(s->get_active_window());
                 break;
             default:
                 break;

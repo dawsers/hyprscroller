@@ -48,8 +48,6 @@ namespace dispatchers {
         auto workspace = g_pCompositor->getWorkspaceByID(workspace_id);
         if (workspace == nullptr)
             return -1;
-        if (workspace->m_bHasFullscreenWindow)
-            return -1;
 
         return workspace_id;
     }

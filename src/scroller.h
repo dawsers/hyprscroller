@@ -68,6 +68,7 @@ public:
 private:
     Row *getRowForWorkspace(WORKSPACEID workspace);
     Row *getRowForWindow(PHLWINDOW window);
+    PHLWINDOW getActiveWindow(WORKSPACEID workspace);
 
     List<Row *> rows;
 

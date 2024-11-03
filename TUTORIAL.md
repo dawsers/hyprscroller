@@ -121,6 +121,15 @@ By default, *hyprscroller* supports three and four finger touchpad swipe
 gestures to scroll windows, call *overview* and switch workspaces.
 
 
+## Working in Full Screen Mode
+
+Overview can be very helpful when you work in `fullscreen` mode. You can keep all your windows
+maximized or in full screen mode, and toggle `overview` on/off to see your full desktop, and quickly
+focus on a different application.
+
+[fullscreen.mp4](https://github.com/user-attachments/assets/1afa3c37-905e-408d-8d44-6230c7e1edec)
+
+
 ## Example Configuration
 
 The README includes a simple set of [key bindings](./README.md#key-bindings) to

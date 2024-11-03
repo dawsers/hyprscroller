@@ -2056,6 +2056,11 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
         s = new Row(window);
         rows.push_back(s);
     }
+
+    // Undo possible modifications from general options.
+    window->unsetWindowData(PRIORITY_LAYOUT);
+    window->updateWindowData();
+
     s->add_active_window(window);
 
     // Check window rules

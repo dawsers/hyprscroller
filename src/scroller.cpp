@@ -2115,6 +2115,21 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 }
 
 /*
+    Called when a floating window is removed (unmapped)
+*/
+void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW window)
+{
+    WORKSPACEID workspaceID = window->workspaceID();
+    if (g_pCompositor->isWorkspaceSpecial(workspaceID)) {
+        if (workspaceID) {
+            auto s = getRowForWorkspace(workspaceID);
+            if (s != nullptr)
+                force_focus_to_window(s->get_active_window());
+        }
+    }
+}
+
+/*
     Internal: called when window focus changes
 */
 void ScrollerLayout::onWindowFocusChange(PHLWINDOW window)

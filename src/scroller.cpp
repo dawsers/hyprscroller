@@ -2097,6 +2097,9 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 
     auto s = getRowForWindow(window);
     if (s == nullptr) {
+        s = getRowForWorkspace(window->workspaceID());
+        if (s != nullptr)
+            force_focus_to_window(s->get_active_window());
         return;
     }
     if (!s->remove_window(window)) {
@@ -2147,6 +2150,21 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
 
     g_pHyprRenderer->damageMonitor(PMONITOR);
 
+    WORKSPACEID specialID = PMONITOR->activeSpecialWorkspaceID();
+    if (specialID) {
+        auto sw = getRowForWorkspace(specialID);
+        if (sw == nullptr) {
+            return;
+        }
+        Box max = sw->update_sizes(PMONITOR);
+        auto PWORKSPACESPECIAL = PMONITOR->activeSpecialWorkspace;
+        if (PWORKSPACESPECIAL->m_bHasFullscreenWindow) {
+            sw->set_fullscreen_mode_windows(PWORKSPACESPECIAL->m_efFullscreenMode);
+        } else {
+            sw->update_windows(max);
+        }
+    }
+
     auto PWORKSPACE = PMONITOR->activeWorkspace;
     if (!PWORKSPACE)
         return;
@@ -2160,14 +2178,6 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
         s->set_fullscreen_mode_windows(PWORKSPACE->m_efFullscreenMode);
     } else {
         s->update_windows(max);
-    }
-    if (PMONITOR->activeSpecialWorkspaceID()) {
-        auto sw = getRowForWorkspace(PMONITOR->activeSpecialWorkspaceID());
-        if (sw == nullptr) {
-            return;
-        }
-        Box max = sw->update_sizes(PMONITOR);
-        sw->update_windows(max);
     }
 }
 

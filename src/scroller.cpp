@@ -414,13 +414,13 @@ static void force_focus_to_window(PHLWINDOW window) {
     g_pInputManager->m_pForcedFocus.reset();
 }
 
-static bool switch_to_window(PHLWINDOW from, PHLWINDOW to/*, eFullscreenMode mode*/)
+static bool switch_to_window(PHLWINDOW from, PHLWINDOW to)
 {
     auto fwid = from->workspaceID();
     auto twid = to->workspaceID();
     bool change_workspace = fwid != twid;
     if (from != to) {
-        PHLWORKSPACE workspace = g_pCompositor->getWorkspaceByID(to->workspaceID());
+        const PHLWORKSPACE workspace = to->m_pWorkspace;
         eFullscreenMode mode = workspace->m_efFullscreenMode;
         if (mode != eFullscreenMode::FSMODE_NONE) {
             if (change_workspace) {

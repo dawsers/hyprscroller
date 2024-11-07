@@ -239,11 +239,10 @@ columns or windows affected.
 
 `scroller:toggleoverview` toggles a bird's eye view of the current workspace where
 all the windows are scaled to fit the current monitor. You can still interact
-with them normally (change focus, move windows, type in them etc.). When
-toggling back to normal mode, the original window sizes will be restored...so
-it is not wise to use *toggleoverview* for window resizing or creating new windows.
-Use it as a way to see where things are and move the active focus, or a window,
-anything beyond that will probably find bugs or **cause compositor crashes**.
+with the windows normally (change focus, move windows, create or destroy them,
+type in them etc.). Use it as a way to see where things are and move the active
+focus, or reposition windows. You can even have all your windows in full screen
+mode and use *overview* to navigate among them quickly.
 
 
 ## Marks
@@ -718,24 +717,6 @@ submap = reset
 # overview keys
 # bind key to toggle overview (normal)
 bind = $mainMod, tab, scroller:toggleoverview
-# overview submap
-# will switch to a submap called overview
-bind = $mainMod, tab, submap, overview
-# will start a submap called "overview"
-submap = overview
-bind = , right, movefocus, right
-bind = , left, movefocus, left
-bind = , up, movefocus, up
-bind = , down, movefocus, down
-# use reset to go back to the global submap
-bind = , escape, scroller:toggleoverview,
-bind = , escape, submap, reset
-bind = , return, scroller:toggleoverview,
-bind = , return, submap, reset
-bind = $mainMod, tab, scroller:toggleoverview,
-bind = $mainMod, tab, submap, reset
-# will reset the submap, meaning end the current one and return to the global one
-submap = reset
 
 # Marks
 bind = $mainMod, M, submap, marksadd

@@ -712,11 +712,21 @@ public:
         auto a_y0 = std::round(win->m_vPosition.y - border - topL.y - gap0);
         auto a_y1 = std::round(win->m_vPosition.y - border - topL.y - gap0 + wactive->get_geom_h());
         if (a_y0 < geom.y) {
-            // active starts above, set it on the top edge
-            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+            // active starts above, set it on the top edge, unless it is the last one and there are more,
+            // then move it to the bottom
+            if (active == windows.last() && active->prev() != nullptr) {
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
+            } else {
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+            }
         } else if (a_y1 > geom.y + geom.h) {
-            // active overflows below the bottom, move to bottom of viewport
-            win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
+            // active overflows below the bottom, move to bottom of viewport, unless it is the first window
+            // and there are more, then move it to the top
+            if (active == windows.first() && active->next() != nullptr) {
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+            } else {
+                win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
+            }
         } else {
             // active window is inside the viewport
             if (reorder == Reorder::Auto) {
@@ -784,14 +794,33 @@ public:
                         win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
                     }
                 } else {
-                    // the window is in a correct position
-                    win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
+                    // if the window is first or last, ensure it is at the edge
+                    if (active == windows.first()) {
+                        win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + border + topL.y + gap0);
+                    } else if (active == windows.last()) {
+                        win->m_vPosition = Vector2D(geom.x + border + topL.x + gap_x.x, geom.y + geom.h - wactive->get_geom_h() + border + topL.y + gap0);
+                    } else {
+                        // the window is in a correct position
+                        win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
+                    }
                 }
             } else {
                 // the window is in a correct position
                 win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
             }
         }
+        adjust_windows(active, gap_x, gap);
+    }
+    // Recalculates the geometry of the windows in the column for overview mode
+    void recalculate_col_geometry_overview(const Vector2D &gap_x, double gap) {
+        Window *wactive = active->data();
+        PHLWINDOW win = wactive->ptr().lock();
+        SBoxExtents reserved_area = win->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+        auto gap0 = active == windows.first() ? 0.0 : gap;
+        auto border = win->getRealBorderSize();
+         // the window is in a correct position
+        win->m_vPosition.x = geom.x + border + topL.x + gap_x.x;
         adjust_windows(active, gap_x, gap);
     }
     PHLWINDOW get_active_window() {
@@ -1166,6 +1195,10 @@ public:
         return get_active_window() == window;
     }
     void add_active_window(PHLWINDOW window) {
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
+
         eFullscreenMode fsmode;
         if (active != nullptr) {
             auto awindow = get_active_window();
@@ -1192,12 +1225,18 @@ public:
             toggle_window_fullscreen_internal(window, fsmode);
             force_focus_to_window(window);
         }
+        if (overview_on)
+            toggle_overview();
     }
 
     // Remove a window and re-adapt rows and columns, returning
     // true if successful, or false if this is the last row
     // so the layout can remove it.
     bool remove_window(PHLWINDOW window) {
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
+
         reorder = Reorder::Auto;
         for (auto c = columns.first(); c != nullptr; c = c->next()) {
             Column *col = c->data();
@@ -1220,14 +1259,17 @@ public:
                         return false;
                     } else {
                         recalculate_row_geometry();
-                        return true;
+                        break;
                     }
                 } else {
                     c->data()->recalculate_col_geometry(calculate_gap_x(c), gap);
-                    return true;
+                    break;
                 }
             }
         }
+        if(overview_on)
+            toggle_overview();
+
         return true;
     }
     void focus_window(PHLWINDOW window) {
@@ -1330,27 +1372,35 @@ public:
         if (active->data()->fullscreen())
             return;
 
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
+
         if (mode == Mode::Column) {
             active->data()->cycle_size_active_window(step, calculate_gap_x(active), gap);
-            return;
-        }
-        static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
-        column_widths.update(*column_widths_str);
-
-        StandardSize width = active->data()->get_width();
-        if (width == StandardSize::Free) {
-            // When cycle-resizing from Free mode, always move back to first
-            width = column_widths.get_default();
         } else {
-            width = column_widths.get_next(width, step);
+            static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
+            column_widths.update(*column_widths_str);
+
+            StandardSize width = active->data()->get_width();
+            if (width == StandardSize::Free) {
+                // When cycle-resizing from Free mode, always move back to first
+                width = column_widths.get_default();
+            } else {
+                width = column_widths.get_next(width, step);
+            }
+            active->data()->update_width(width, max.w, max.h);
+            reorder = Reorder::Auto;
+            recalculate_row_geometry();
         }
-        active->data()->update_width(width, max.w, max.h);
-        reorder = Reorder::Auto;
-        recalculate_row_geometry();
+        if(overview_on)
+            toggle_overview();
     }
     void resize_active_window(const Vector2D &delta) {
         // If the active window in the active column is fullscreen, ignore.
         if (active->data()->fullscreen())
+            return;
+        if (overview)
             return;
 
         active->data()->resize_active_window(max.w, calculate_gap_x(active), gap, delta);
@@ -1362,6 +1412,8 @@ public:
     }
     void align_column(Direction dir) {
         if (active->data()->fullscreen())
+            return;
+        if (overview)
             return;
 
         switch (dir) {
@@ -1456,6 +1508,10 @@ public:
         active->data()->set_name(name);
     }
     void move_active_column(Direction dir) {
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
+
         switch (dir) {
         case Direction::Right:
             if (active != columns.last()) {
@@ -1497,12 +1553,19 @@ public:
             reorder = Reorder::Auto;
             recalculate_row_geometry();
         }
+
+        if(overview_on)
+            toggle_overview();
     }
     void admit_window_left() {
         if (active->data()->fullscreen())
             return;
         if (active == columns.first())
             return;
+
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
 
         auto w = active->data()->expel_active(gap);
         auto prev = active->prev();
@@ -1518,6 +1581,9 @@ public:
         recalculate_row_geometry();
 
         post_event("admitwindow");
+
+        if(overview_on)
+            toggle_overview();
     }
     void expel_window_right() {
         if (active->data()->fullscreen())
@@ -1525,6 +1591,10 @@ public:
         if (active->data()->size() == 1)
             // nothing to expel
             return;
+
+        bool overview_on = overview;
+        if (overview)
+            toggle_overview();
 
         auto w = active->data()->expel_active(gap);
         StandardSize width = active->data()->get_width();
@@ -1552,6 +1622,9 @@ public:
         recalculate_row_geometry();
 
         post_event("expelwindow");
+
+        if(overview_on)
+            toggle_overview();
     }
     Vector2D predict_window_size() const {
         return Vector2D(0.5 * max.w, max.h);
@@ -1635,6 +1708,9 @@ public:
 
     void fit_size(FitSize fitsize) {
         if (active->data()->fullscreen()) {
+            return;
+        }
+        if (overview) {
             return;
         }
         if (mode == Mode::Column) {
@@ -1750,7 +1826,7 @@ public:
                 Vector2D start(offset.x + max.x, offset.y + max.y);
                 col->scale(bmin, start, scale, gap);
             }
-            adjust_columns(columns.first());
+            adjust_overview_columns();
         } else {
             for (auto c = columns.first(); c != nullptr; c = c->next()) {
                 Column *col = c->data();
@@ -1799,6 +1875,10 @@ public:
             return;
 
         if (active->data()->fullscreen()) {
+            return;
+        }
+        if (overview) {
+            adjust_overview_columns();
             return;
         }
         auto a_w = active->data()->get_geom_w();
@@ -1980,7 +2060,14 @@ public:
                     }
                 } else {
                     // the window is in a correct position
-                    active->data()->set_geom_pos(a_x, max.y);
+                    // if the window is first or last, ensure it is at the edge
+                    if (active == columns.first()) {
+                        active->data()->set_geom_pos(max.x, max.y);
+                    } else if (active == columns.last()) {
+                        active->data()->set_geom_pos(max.x + max.w - a_w, max.y);
+                    } else {
+                        active->data()->set_geom_pos(a_x, max.y);
+                    }
                 }
             } else {  // lazy
                 // Try to avoid moving the active column unless it is out of the screen.
@@ -2010,6 +2097,24 @@ private:
             auto gap0 = col == columns.first() ? 0.0 : gap;
             auto gap1 = col == columns.last() ? 0.0 : gap;
             col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap);
+        }
+    }
+    // Adjust all the columns in the overview
+    void adjust_overview_columns() {
+        auto column = columns.first();
+        // Should be at the left edge
+        column->data()->set_geom_pos(max.x, max.y);
+        // Adjust the positions of the columns to the right
+        for (auto col = column->next(), prev = column; col != nullptr; prev = col, col = col->next()) {
+            col->data()->set_geom_pos(prev->data()->get_geom_x() + prev->data()->get_geom_w(), max.y);
+        }
+
+        // Apply column geometry
+        for (auto col = columns.first(); col != nullptr; col = col->next()) {
+            // First and last columns need a different gap
+            auto gap0 = col == columns.first() ? 0.0 : gap;
+            auto gap1 = col == columns.last() ? 0.0 : gap;
+            col->data()->recalculate_col_geometry_overview(Vector2D(gap0, gap1), gap);
         }
     }
 

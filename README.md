@@ -29,8 +29,8 @@ same as the Arch Linux `hyprland` package (v0.45.0). You can try your luck with 
 latest `git` changes, but I will be slower to keep up with those, as there are
 too many API changes going on upstream.
 
-Aside from those versions, even though the feature set will be frozen for
-them, *hyprscroller* also supports most official Hyprland releases fromm v0.35
+Aside from those two versions, even though the feature set will be frozen for
+them, *hyprscroller* also supports most official Hyprland releases from v0.35
 to v0.44.1.
 
 

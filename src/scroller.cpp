@@ -2224,14 +2224,13 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 */
 void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW window)
 {
-    WORKSPACEID workspaceID = window->workspaceID();
-    if (g_pCompositor->isWorkspaceSpecial(workspaceID)) {
-        if (workspaceID) {
-            auto s = getRowForWorkspace(workspaceID);
-            if (s != nullptr)
-                force_focus_to_window(s->get_active_window());
-        }
+    WORKSPACEID workspace_id = window->m_pMonitor->activeSpecialWorkspaceID();
+    if (!workspace_id) {
+        workspace_id = window->workspaceID();
     }
+    auto s = getRowForWorkspace(workspace_id);
+    if (s != nullptr)
+        force_focus_to_window(s->get_active_window());
 }
 
 /*
@@ -2462,7 +2461,10 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW old_window)
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
     // new active window is the correct thing.
-    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+    if (!workspace_id) {
+        workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+    }
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr)
         return nullptr;

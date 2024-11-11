@@ -44,6 +44,8 @@ The easiest and recommended mode to install *hyprscroller* is through `hyprpm`
 hyprpm add https://github.com/dawsers/hyprscroller
 # verify it installed correctly
 hyprpm list
+# enable hyprscroller
+hyprpm enable hyprscroller
 ```
 
 You can enable or disable it via `hyprpm enable hyprscroller` and

@@ -244,6 +244,13 @@ type in them etc.). Use it as a way to see where things are and move the active
 focus, or reposition windows. You can even have all your windows in full screen
 mode and use *overview* to navigate among them quickly.
 
+*Overview* is affected by the option `overview_scale_content`, which is by
+default `true`, meaning the windows' content will be scaled in the same
+proportion as the windows. If your system doesn't support this (currently only
+supported on x86_64 -Intel/AMD CPUs), the default value will be `false`. If
+you simply want to have the content at the original size, you can also turn
+this option manually to `false`.
+
 
 ## Marks
 
@@ -463,6 +470,12 @@ Possible arguments are: `onesixth`, `onefourth`, `onethird`, `onehalf`,
 
 Determines whether focus will *wrap* when at the first or
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
+`false`|`0`.
+
+### `overview_scale_content`
+
+Scales the content of the windows in overview mode, like GNOME/MacOS/Windows
+overview mode. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
 ### `column_widths`

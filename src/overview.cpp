@@ -296,10 +296,6 @@ Overview::~Overview()
         g_pVisibleOnMonitorHook = nullptr;
     }
 
-    if (overviews != nullptr) {
-        delete overviews;
-        overviews = nullptr;
-    }
     initialized = false;
 }
 

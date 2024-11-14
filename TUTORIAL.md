@@ -78,7 +78,7 @@ When you have too many windows in a workspace, it can be hard to know where
 things are. `toggleoverview` helps with that by creating a bird's eye view
 of the whole workspace.
 
-[overview-mode.mp4](https://github.com/user-attachments/assets/5ef6d11e-19be-4155-8840-04c63c5e81fa)
+[overview-mode.mp4](https://github.com/user-attachments/assets/5f43ba62-ef97-4677-aa81-cf6169168bff)
 
 
 ## Pinning a Column

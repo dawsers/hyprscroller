@@ -810,13 +810,13 @@ public:
     Vector2D predict_window_size() const;
     void post_event(const std::string &event);
     // Returns the old viewport
-    Box update_sizes(PHLMONITOR monitor);
+    bool update_sizes(PHLMONITOR monitor);
     void set_fullscreen_mode_windows(eFullscreenMode mode);
     void set_fullscreen_mode(eFullscreenMode cur_mode, eFullscreenMode new_mode);
     void fit_size(FitSize fitsize);
     bool is_overview() const;
     void toggle_overview();
-    void update_windows(const Box &oldmax);
+    void update_windows(const Box &oldmax, bool force);
     void recalculate_row_geometry();
 
 private:
@@ -1862,8 +1862,8 @@ void Row::post_event(const std::string &event)
     }
 }
 
-// Returns the old viewport
-Box Row::update_sizes(PHLMONITOR monitor)
+// Returns true/false if columns/windows need to be recalculated
+bool Row::update_sizes(PHLMONITOR monitor)
 {
     // for gaps outer
     static auto PGAPSINDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_in");
@@ -1884,11 +1884,14 @@ Box Row::update_sizes(PHLMONITOR monitor)
                            POS.y + TOPLEFT.y + gaps_out.top,
                            SIZE.x - TOPLEFT.x - BOTTOMRIGHT.x - gaps_out.left - gaps_out.right,
                            SIZE.y - TOPLEFT.y - BOTTOMRIGHT.y - gaps_out.top - gaps_out.bottom);
+    bool changed = gap != gaps_in;
     gap = gaps_in;
 
-    const Box oldmax = max;
+    if (max != newmax)
+        changed = true;
+
     max = newmax;
-    return oldmax;
+    return changed;
 }
 
 void Row::set_fullscreen_mode_windows(eFullscreenMode mode)
@@ -2111,13 +2114,13 @@ void Row::toggle_overview()
     }
 }
 
-void Row::update_windows(const Box &oldmax)
+void Row::update_windows(const Box &oldmax, bool force)
 {
-    if (oldmax == max)
+    if (!force)
         return;
 
     // Update active column position
-    if (active) {
+    if (active && oldmax != max) {
         double posx = max.x + max.w * (active->data()->get_geom_x() - oldmax.x) / oldmax.w;
         double posy = max.y + max.h * (active->data()->get_geom_vy() - oldmax.y) / oldmax.h;
         active->data()->set_geom_pos(posx, posy);
@@ -2515,12 +2518,13 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
         if (sw == nullptr) {
             return;
         }
-        Box max = sw->update_sizes(PMONITOR);
+        const Box oldmax = sw->get_max();
+        const bool force = sw->update_sizes(PMONITOR);
         auto PWORKSPACESPECIAL = PMONITOR->activeSpecialWorkspace;
         if (PWORKSPACESPECIAL->m_bHasFullscreenWindow) {
             sw->set_fullscreen_mode_windows(PWORKSPACESPECIAL->m_efFullscreenMode);
         } else {
-            sw->update_windows(max);
+            sw->update_windows(oldmax, force);
         }
     }
 
@@ -2532,11 +2536,12 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
     if (s == nullptr)
         return;
 
-    Box max = s->update_sizes(PMONITOR);
+    const Box oldmax = s->get_max();
+    const bool force = s->update_sizes(PMONITOR);
     if (PWORKSPACE->m_bHasFullscreenWindow) {
         s->set_fullscreen_mode_windows(PWORKSPACE->m_efFullscreenMode);
     } else {
-        s->update_windows(max);
+        s->update_windows(oldmax, force);
     }
 }
 

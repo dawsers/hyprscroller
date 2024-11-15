@@ -477,14 +477,12 @@ public:
     void set_geom_x(double x, const Vector2D &gap_x) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        window->m_vPosition.x = x + border + topL.x + gap_x.x;
+        window->m_vPosition.x = x + topL.x + gap_x.x;
     }
     double get_geom_y(double gap0) const {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        return window->m_vPosition.y - border - topL.y - gap0;
+        return window->m_vPosition.y - topL.y - gap0;
     }
     void push_geom() {
         PHLWINDOW w = window.lock();
@@ -553,11 +551,10 @@ public:
     void scale(const Vector2D &bmin, const Vector2D &start, double scale, double gap0, double gap1) {
         set_geom_h(get_geom_h() * scale);
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
-        auto border = window->getRealBorderSize();
-        window->m_vPosition = start + Vector2D(border, border) + reserved_area.topLeft + (window->m_vPosition - reserved_area.topLeft - Vector2D(border, border) - bmin) * scale;
+        window->m_vPosition = start + reserved_area.topLeft + (window->m_vPosition - reserved_area.topLeft - bmin) * scale;
         window->m_vPosition.y += gap0;
         window->m_vSize.x *= scale;
-        window->m_vSize.y = (window->m_vSize.y + 2.0 * border + reserved_area.topLeft.y + reserved_area.bottomRight.y + gap0 + gap1) * scale - gap0 - gap1 - 2.0 * border - reserved_area.topLeft.y - reserved_area.bottomRight.y;
+        window->m_vSize.y = (window->m_vSize.y + reserved_area.topLeft.y + reserved_area.bottomRight.y + gap0 + gap1) * scale - gap0 - gap1 - reserved_area.topLeft.y - reserved_area.bottomRight.y;
         window->m_vSize = Vector2D(std::max(window->m_vSize.x, 1.0), std::max(window->m_vSize.y, 1.0));
         window->m_vRealSize = window->m_vSize;
         window->m_vRealPosition = window->m_vPosition;
@@ -566,33 +563,28 @@ public:
     void move_to_bottom(double x, const Box &max, const Vector2D &gap_x, double gap) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        window->m_vPosition = Vector2D(x + border + topL.x + gap_x.x, max.y + max.h - get_geom_h() + border + topL.y + gap);
+        window->m_vPosition = Vector2D(x + topL.x + gap_x.x, max.y + max.h - get_geom_h() + topL.y + gap);
     }
     void move_to_top(double x, const Box &max, const Vector2D &gap_x, double gap) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        window->m_vPosition = Vector2D(x + border + topL.x + gap_x.x, max.y + border + topL.y + gap);
+        window->m_vPosition = Vector2D(x + topL.x + gap_x.x, max.y + topL.y + gap);
     }
     void move_to_center(double x, const Box &max, const Vector2D &gap_x, double gap0, double gap1) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        window->m_vPosition = Vector2D(x + border + topL.x + gap_x.x, max.y + 0.5 * (max.h - (botR.y - topL.y + gap1 - gap0 + window->m_vSize.y)));
+        window->m_vPosition = Vector2D(x + topL.x + gap_x.x, max.y + 0.5 * (max.h - (botR.y - topL.y + gap1 - gap0 + window->m_vSize.y)));
     }
     void move_to_pos(double x, double y, const Vector2D &gap_x, double gap) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        window->m_vPosition = Vector2D(x + border + topL.x + gap_x.x, y + border + gap + topL.y);
+        window->m_vPosition = Vector2D(x + topL.x + gap_x.x, y + gap + topL.y);
     }
 
     void update_window(double w, const Vector2D &gap_x, double gap0, double gap1) {
-        auto border = window->getRealBorderSize();
         auto reserved = window->getFullWindowReservedArea();
-        //win->m_vSize = Vector2D(w - 2.0 * border - gap_x.x - gap_x.y, wh - 2.0 * border - gap0 - gap1);
-        window->m_vSize = Vector2D(std::max(w - 2.0 * border - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(get_geom_h() - 2.0 * border - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
+        //win->m_vSize = Vector2D(w - gap_x.x - gap_x.y, wh - gap0 - gap1);
+        window->m_vSize = Vector2D(std::max(w - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(get_geom_h() - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
         window->m_vRealPosition = window->m_vPosition;
         window->m_vRealSize = window->m_vSize;
     }
@@ -601,14 +593,12 @@ public:
         // with an invalid size.
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-
         // Width check
-        auto border = window->getRealBorderSize();
-        auto rwidth = geomw + deltax - 2.0 * border - topL.x - botR.x - gap_x.x - gap_x.y;
+        auto rwidth = geomw + deltax - topL.x - botR.x - gap_x.x - gap_x.y;
         // Now we check for a size smaller than the maximum possible gap, so
         // we never get in trouble when a window gets expelled from a column
         // with gaps_out, gaps_in, to a column with gaps_in on both sides.
-        auto mwidth = geomw + deltax - topL.x - botR.x - 2.0 * (border + std::max(std::max(gap_x.x, gap_x.y), gap));
+        auto mwidth = geomw + deltax - topL.x - botR.x - 2.0 * std::max(std::max(gap_x.x, gap_x.y), gap);
         if (mwidth <= 0.0 || rwidth >= maxw)
             return false;
 
@@ -617,13 +607,11 @@ public:
     bool can_resize_height(double maxh, bool active, double gap0, double gap1, double deltay) {
         SBoxExtents reserved_area = window->getFullWindowReservedArea();
         const Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
-        auto border = window->getRealBorderSize();
-        auto wh = get_geom_h() - gap0 - gap1 - 2.0 * border - topL.y - botR.y;
+        auto wh = get_geom_h() - gap0 - gap1 - topL.y - botR.y;
         if (active)
             wh += deltay;
-        if (wh <= 0.0 || wh + 2.0 * border + gap0 + gap1 + topL.y + botR.y > maxh)
+        if (wh <= 0.0 || wh + gap0 + gap1 + topL.y + botR.y > maxh)
             return false;
-
         return true;
     }
 

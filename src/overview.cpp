@@ -11,6 +11,7 @@ inline CFunctionHook* g_pRenderSoftwareCursorsForHook = nullptr;
 inline CFunctionHook* g_pGetMonitorFromVectorHook = nullptr;
 inline CFunctionHook* g_pClosestValidHook = nullptr;
 inline CFunctionHook* g_pRenderMonitorHook = nullptr;
+inline CFunctionHook* g_pGetCursorPosForMonitorHook = nullptr;
 
 Overview *overviews = nullptr;
 
@@ -21,6 +22,7 @@ typedef void (*origRenderSoftwareCursorsFor)(void *thisptr, PHLMONITOR pMonitor,
 typedef Vector2D (*origClosestValid)(void *thisptr, const Vector2D &pos);
 typedef PHLMONITOR (*origGetMonitorFromVector)(void *thisptr, const Vector2D& point);
 typedef void (*origRenderMonitor)(void *thisptr, PHLMONITOR pMonitor);
+typedef Vector2D (*origGetCursorPosForMonitor)(void *thisptr, PHLMONITOR pMonitor);
 
 // Needed to show windows that are outside of the viewport
 static bool hookVisibleOnMonitor(void *thisptr, PHLMONITOR monitor) {
@@ -31,6 +33,7 @@ static bool hookVisibleOnMonitor(void *thisptr, PHLMONITOR monitor) {
     return ((origVisibleOnMonitor)(g_pVisibleOnMonitorHook->m_pOriginal))(thisptr, monitor);
 }
 
+// Needed to undo the monitor scale to render layers at the original scale
 static void hookRenderLayer(void *thisptr, PHLLS layer, PHLMONITOR monitor, timespec* time, bool popups) {
     WORKSPACEID workspace = monitor->activeSpecialWorkspaceID();
     if (!workspace)
@@ -51,6 +54,9 @@ static void hookRenderLayer(void *thisptr, PHLLS layer, PHLMONITOR monitor, time
 // Needed to scale the range of the cursor in overview mode to cover the whole area.
 static CBox hookLogicalBox(void *thisptr) {
     CMonitor *monitor = static_cast<CMonitor *>(thisptr);
+    if (g_pCompositor->m_pLastMonitor.get() != monitor)
+        return CBox();
+
     WORKSPACEID workspace = monitor->activeSpecialWorkspaceID();
     if (!workspace)
         workspace = monitor->activeWorkspaceID();
@@ -64,6 +70,23 @@ static CBox hookLogicalBox(void *thisptr) {
         monitor->vecSize = monitor_size;
     }
     return box;
+}
+
+// Needed to render the HW cursor at the right position
+static Vector2D hookGetCursorPosForMonitor(void *thisptr, PHLMONITOR monitor) {
+    WORKSPACEID workspace = monitor->activeSpecialWorkspaceID();
+    if (!workspace)
+        workspace = monitor->activeWorkspaceID();
+    bool overview_enabled = overviews->overview_enabled(workspace);
+    double monitor_scale = monitor->scale;
+    if (overview_enabled) {
+        monitor->scale *= overviews->get_scale(workspace);
+    }
+    Vector2D pos = ((origGetCursorPosForMonitor)(g_pGetCursorPosForMonitorHook->m_pOriginal))(thisptr, monitor);
+    if (overview_enabled) {
+        monitor->scale = monitor_scale;
+    }
+    return pos;
 }
 
 // Needed to render the software cursor only on the correct monitors.
@@ -97,7 +120,7 @@ static void hookRenderSoftwareCursorsFor(void *thisptr, PHLMONITOR monitor, time
     } else if (overview_enabled) {
         return;
     }
-    ((origRenderSoftwareCursorsFor)(g_pRenderSoftwareCursorsForHook->m_pOriginal))(thisptr, monitor, now, damage, overridePos);   
+    ((origRenderSoftwareCursorsFor)(g_pRenderSoftwareCursorsForHook->m_pOriginal))(thisptr, monitor, now, damage, overridePos);
 }
 
 // Needed to fake an overview monitor's desktop contains all its windows
@@ -253,6 +276,16 @@ Overview::Overview() : initialized(false)
         return;
     }
 
+    auto FNS4 = HyprlandAPI::findFunctionsByName(PHANDLE, "getCursorPosForMonitor");
+    if (!FNS4.empty()) {
+        g_pGetCursorPosForMonitorHook = HyprlandAPI::createFunctionHook(PHANDLE, FNS4[0].address, (bool *)hookGetCursorPosForMonitor);
+        if (g_pGetCursorPosForMonitorHook == nullptr) {
+            return;
+        }
+    } else {
+        return;
+    }
+
     initialized = true;
 }
 
@@ -261,6 +294,12 @@ Overview::~Overview()
     if (overview_enabled()) {
         disable_hooks();
     }
+
+    if (g_pGetCursorPosForMonitorHook != nullptr) {
+        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pGetCursorPosForMonitorHook);
+        g_pGetCursorPosForMonitorHook = nullptr;
+    }
+
     if (g_pRenderMonitorHook != nullptr) {
         bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderMonitorHook);
         g_pRenderMonitorHook = nullptr;
@@ -378,6 +417,7 @@ bool Overview::overview_enabled() const
 bool Overview::enable_hooks()
 {
     if (initialized &&
+        g_pGetCursorPosForMonitorHook != nullptr && g_pGetCursorPosForMonitorHook->hook() &&
         g_pRenderMonitorHook != nullptr && g_pRenderMonitorHook->hook() &&
         g_pVisibleOnMonitorHook != nullptr && g_pVisibleOnMonitorHook->hook() &&
         g_pRenderLayerHook != nullptr && g_pRenderLayerHook->hook() &&
@@ -395,6 +435,7 @@ void Overview::disable_hooks()
     if (!initialized)
         return;
 
+    if (g_pGetCursorPosForMonitorHook != nullptr) g_pGetCursorPosForMonitorHook->unhook();
     if (g_pRenderMonitorHook != nullptr) g_pRenderMonitorHook->unhook();
     if (g_pVisibleOnMonitorHook != nullptr) g_pVisibleOnMonitorHook->unhook();
     if (g_pRenderLayerHook != nullptr) g_pRenderLayerHook->unhook();

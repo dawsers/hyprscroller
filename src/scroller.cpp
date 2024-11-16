@@ -2463,7 +2463,7 @@ void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW window)
     }
     auto s = getRowForWorkspace(workspace_id);
     if (s != nullptr)
-        force_focus_to_window(s->get_active_window());
+        g_pCompositor->focusWindow(s->get_active_window());
 }
 
 /*

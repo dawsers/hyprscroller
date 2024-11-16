@@ -1039,7 +1039,7 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
                 // if the window is first or last, and some windows don't fit,
                 // ensure it is at the edge
                 const Vector2D h = get_height();
-                if (std::round(h.y - h.x > max.h)) {
+                if (std::round(h.y - h.x) >= max.h) {
                     if (active == windows.first()) {
                         active->data()->move_to_top(geom.x, max, gap_x, gap0);
                     } else if (active == windows.last()) {
@@ -1753,6 +1753,8 @@ void Row::move_active_column(Direction dir)
     if (mode == eFullscreenMode::FSMODE_NONE) {
         reorder = Reorder::Auto;
         recalculate_row_geometry();
+        // Now the columns are in the right order, recalculate again
+        recalculate_row_geometry();
     }
 
     if (overview_on)
@@ -2308,7 +2310,7 @@ void Row::recalculate_row_geometry()
                 for (auto col = columns.first(); col != nullptr; col = col->next()) {
                     w += col->data()->get_geom_w();
                 }
-                if (std::round(w) > max.w) {
+                if (std::round(w) >= max.w) {
                     if (active == columns.first()) {
                         active->data()->set_geom_pos(max.x, max.y);
                     } else if (active == columns.last()) {

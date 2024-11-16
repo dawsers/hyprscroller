@@ -588,7 +588,7 @@ calling the dispatcher to switch to a different workspace. Read [Workspaces](htt
 in the Hyprland wiki to understand in detail what each prefix means.
 
 The *prefix* value will be concatenated to `+1` or `-1` to change workspace
-when swiping to one side of the other. For example:
+when swiping to one side or the other. For example:
 
 ``` conf
 # Default: swith to the next/previous workspace, regardless of monitor

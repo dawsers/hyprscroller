@@ -2714,12 +2714,45 @@ void ScrollerLayout::replaceWindowDataWith(PHLWINDOW from, PHLWINDOW to)
 {
 }
 
+static SP<HOOK_CALLBACK_FN> workspaceHookCallback;
+static SP<HOOK_CALLBACK_FN> focusedMonHookCallback;
+static SP<HOOK_CALLBACK_FN> swipeBeginHookCallback;
+static SP<HOOK_CALLBACK_FN> swipeUpdateHookCallback;
+static SP<HOOK_CALLBACK_FN> swipeEndHookCallback;
+
 void ScrollerLayout::onEnable() {
     // Hijack Hyprland's default dispatchers
     orig_moveFocusTo = g_pKeybindManager->m_mDispatchers["movefocus"];
     orig_moveActiveTo = g_pKeybindManager->m_mDispatchers["movewindow"];
     g_pKeybindManager->m_mDispatchers["movefocus"] = this_moveFocusTo;
     g_pKeybindManager->m_mDispatchers["movewindow"] = this_moveActiveTo;
+
+    // Register dynamic callbacks for events
+    workspaceHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [&](void* self, SCallbackInfo& info, std::any param) {
+        auto WORKSPACE = std::any_cast<PHLWORKSPACE>(param);
+        post_event(WORKSPACE->m_iID, "mode");
+        post_event(WORKSPACE->m_iID, "overview");
+    });
+    focusedMonHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [&](void* self, SCallbackInfo& info, std::any param) {
+        auto monitor = std::any_cast<PHLMONITOR>(param);
+        post_event(monitor->activeWorkspaceID(), "mode");
+        post_event(monitor->activeWorkspaceID(), "overview");
+    });
+
+    swipeBeginHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [&](void* self, SCallbackInfo& info, std::any param) {
+        auto swipe_event = std::any_cast<IPointer::SSwipeBeginEvent>(param);
+        swipe_begin(swipe_event);
+    });
+
+    swipeUpdateHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeUpdate", [&](void* self, SCallbackInfo& info, std::any param) {
+        auto swipe_event = std::any_cast<IPointer::SSwipeUpdateEvent>(param);
+        swipe_update(info, swipe_event);
+    });
+
+    swipeEndHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [&](void* self, SCallbackInfo& info, std::any param) {
+        auto swipe_event = std::any_cast<IPointer::SSwipeEndEvent>(param);
+        swipe_end(info, swipe_event);
+    });
 
     enabled = true;
     overviews = new Overview;
@@ -2737,6 +2770,28 @@ void ScrollerLayout::onDisable() {
     // Restore Hyprland's default dispatchers
     g_pKeybindManager->m_mDispatchers["movefocus"] = orig_moveFocusTo;
     g_pKeybindManager->m_mDispatchers["movewindow"] = orig_moveActiveTo;
+
+    // Unregister dynamic callbacks for events
+    if (workspaceHookCallback != nullptr) {
+        workspaceHookCallback.reset();
+        workspaceHookCallback = nullptr;
+    }
+    if (focusedMonHookCallback != nullptr) {
+        focusedMonHookCallback.reset();
+        focusedMonHookCallback = nullptr;
+    }
+    if (swipeBeginHookCallback != nullptr) {
+        swipeBeginHookCallback.reset();
+        swipeBeginHookCallback = nullptr;
+    }
+    if (swipeUpdateHookCallback != nullptr) {
+        swipeUpdateHookCallback.reset();
+        swipeUpdateHookCallback = nullptr;
+    }
+    if (swipeEndHookCallback != nullptr) {
+        swipeEndHookCallback.reset();
+        swipeEndHookCallback = nullptr;
+    }
 
     if (overviews != nullptr) {
         delete overviews;
@@ -2956,6 +3011,9 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
 
     auto s = getRowForWorkspace(wid);
 
+    static auto *const *HS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe")->getDataStaticPtr();
+    static auto *const *HSFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_fingers")->getDataStaticPtr();
+    static auto *const *HSFINGERSMIN = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_min_fingers")->getDataStaticPtr();
     static auto *const *NATURAL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "input:touchpad:natural_scroll")->getDataStaticPtr();
     static auto *const *SENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable")->getDataStaticPtr();
     static auto *const *SFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers")->getDataStaticPtr();
@@ -2963,6 +3021,14 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     static auto *const *OENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_enable")->getDataStaticPtr();
     static auto *const *OFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_fingers")->getDataStaticPtr();
     static auto *const *ODISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_distance")->getDataStaticPtr();
+    static auto const *WPREFIX = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_prefix")->getDataStaticPtr();
+
+    if (**HS &&
+        (**HSFINGERS == swipe_event.fingers ||
+         (**HSFINGERSMIN && swipe_event.fingers >= **HSFINGERS))) {
+        info.cancelled = true; 
+        return;
+    }
 
     if (!(**SENABLE && swipe_event.fingers == **SFINGERS) &&
         !(**OENABLE && swipe_event.fingers == **OFINGERS)) {
@@ -3031,9 +3097,11 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
                 s->toggle_overview();
             }
         } else if (gesture_delta.x <= -distance) {
-            g_pKeybindManager->m_mDispatchers["workspace"]("-1");
+            std::string offset(*WPREFIX);
+            g_pKeybindManager->m_mDispatchers["workspace"](offset + "-1");
         } else if (gesture_delta.x >= distance) {
-            g_pKeybindManager->m_mDispatchers["workspace"]("+1");
+            std::string offset(*WPREFIX);
+            g_pKeybindManager->m_mDispatchers["workspace"](offset + "+1");
         }
     }
     swipe_active = true;

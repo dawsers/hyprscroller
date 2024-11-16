@@ -31,42 +31,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     dispatchers::addDispatchers();
 
-    static auto P1 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [](void* self, SCallbackInfo& info, std::any param) {
-        if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
-            return;
-        auto WORKSPACE = std::any_cast<PHLWORKSPACE>(param);
-        g_ScrollerLayout->post_event(WORKSPACE->m_iID, "mode");
-        g_ScrollerLayout->post_event(WORKSPACE->m_iID, "overview");
-    });
-    static auto P2 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [](void* self, SCallbackInfo& info, std::any param) {
-        if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
-            return;
-        auto monitor = std::any_cast<PHLMONITOR>(param);
-        g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "mode");
-        g_ScrollerLayout->post_event(monitor->activeWorkspaceID(), "overview");
-    });
-
-    static auto P3 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [](void* self, SCallbackInfo& info, std::any param) {
-        if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
-            return;
-        auto swipe_event = std::any_cast<IPointer::SSwipeBeginEvent>(param);
-        g_ScrollerLayout->swipe_begin(swipe_event);
-    });
-
-    static auto P4 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeUpdate", [](void* self, SCallbackInfo& info, std::any param) {
-        if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
-            return;
-        auto swipe_event = std::any_cast<IPointer::SSwipeUpdateEvent>(param);
-        g_ScrollerLayout->swipe_update(info, swipe_event);
-    });
-
-    static auto P5 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [](void* self, SCallbackInfo& info, std::any param) {
-        if (!g_ScrollerLayout || !g_ScrollerLayout->is_enabled())
-            return;
-        auto swipe_event = std::any_cast<IPointer::SSwipeEndEvent>(param);
-        g_ScrollerLayout->swipe_end(info, swipe_event);
-    });
-
     // one value out of: { onesixth, onefourth, onethird, onehalf (default), twothirds, floating, maximized }
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:column_default_width", Hyprlang::STRING{"onehalf"});
     // one value out of: { onesixth, onefourth, onethird, onehalf, twothirds, one (default) }
@@ -98,6 +62,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable", Hyprlang::INT{1});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance", Hyprlang::INT{60});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers", Hyprlang::INT{3});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_prefix", Hyprlang::STRING{""});
 
     HyprlandAPI::reloadConfig();
 

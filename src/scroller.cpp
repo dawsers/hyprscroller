@@ -3015,6 +3015,7 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     static auto *const *HSFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_fingers")->getDataStaticPtr();
     static auto *const *HSFINGERSMIN = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_min_fingers")->getDataStaticPtr();
     static auto *const *NATURAL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "input:touchpad:natural_scroll")->getDataStaticPtr();
+    static auto *const *HSINVERT = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_invert")->getDataStaticPtr();
     static auto *const *SENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable")->getDataStaticPtr();
     static auto *const *SFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers")->getDataStaticPtr();
     static auto *const *SDISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance")->getDataStaticPtr();
@@ -3098,10 +3099,10 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
             }
         } else if (delta.x <= -**ODISTANCE) {
             std::string offset(*WPREFIX);
-            g_pKeybindManager->m_mDispatchers["workspace"](offset + "-1");
+            g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "+1" : offset + "-1");
         } else if (delta.x >= **ODISTANCE) {
             std::string offset(*WPREFIX);
-            g_pKeybindManager->m_mDispatchers["workspace"](offset + "+1");
+            g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "-1" : offset + "+1");
         }
     }
     swipe_active = true;

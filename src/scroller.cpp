@@ -3083,23 +3083,23 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
         if (swipe_active)
             return;
         // Undo natural
-        const double distance = (**NATURAL ? -1.0 : 1.0) * **ODISTANCE;
-        if (gesture_delta.y <= -distance) {
+        const Vector2D delta = gesture_delta * (**NATURAL ? -1.0 : 1.0);
+        if (delta.y <= -**ODISTANCE) {
             if (s == nullptr)
                 return;
             if (!s->is_overview()) {
                 s->toggle_overview();
             }
-        } else if (gesture_delta.y >= distance) {
+        } else if (delta.y >= **ODISTANCE) {
             if (s == nullptr)
                 return;
             if (s->is_overview()) {
                 s->toggle_overview();
             }
-        } else if (gesture_delta.x <= -distance) {
+        } else if (delta.x <= -**ODISTANCE) {
             std::string offset(*WPREFIX);
             g_pKeybindManager->m_mDispatchers["workspace"](offset + "-1");
-        } else if (gesture_delta.x >= distance) {
+        } else if (delta.x >= **ODISTANCE) {
             std::string offset(*WPREFIX);
             g_pKeybindManager->m_mDispatchers["workspace"](offset + "+1");
         }

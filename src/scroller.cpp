@@ -2435,7 +2435,12 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 
     auto s = getRowForWindow(window);
     if (s == nullptr) {
-        s = getRowForWorkspace(window->workspaceID());
+        // Second call, window is no longer in any Row
+        WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+        if (!workspace_id) {
+            workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+        }
+        s = getRowForWorkspace(workspace_id);
         if (s != nullptr)
             force_focus_to_window(s->get_active_window());
         return;
@@ -2457,9 +2462,9 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 */
 void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW window)
 {
-    WORKSPACEID workspace_id = window->m_pMonitor->activeSpecialWorkspaceID();
+    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     if (!workspace_id) {
-        workspace_id = window->workspaceID();
+        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     }
     auto s = getRowForWorkspace(workspace_id);
     if (s != nullptr)

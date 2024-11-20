@@ -160,6 +160,13 @@ public:
     }
 
     ConfigurationSize get_window_default_height(PHLWINDOW window) {
+        // Check window rules
+        for (auto &r: window->m_vMatchedRules) {
+            if (r.szRule.starts_with("plugin:scroller:windowheight")) {
+                const auto window_height = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+                return get_window_default_height_fron_string(window_height);
+            }
+        }
         const auto monitor = window->m_pMonitor.lock();
         update_sizes(monitor);
         const auto monitor_data = monitors.find(monitor->szName);
@@ -172,6 +179,13 @@ public:
     }
 
     ConfigurationSize get_column_default_width(PHLWINDOW window) {
+        // Check window rules
+        for (auto &r: window->m_vMatchedRules) {
+            if (r.szRule.starts_with("plugin:scroller:columnwidth")) {
+                const auto column_width = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+                return get_column_default_width_fron_string(column_width);
+            }
+        }
         const auto monitor = window->m_pMonitor.lock();
         update_sizes(monitor);
         const auto monitor_data = monitors.find(monitor->szName);
@@ -446,7 +460,7 @@ static void switch_to_window(PHLWINDOW from, PHLWINDOW to)
 
 class Window {
 public:
-    Window(PHLWINDOW window, double box_h) : window(window) {
+    Window(PHLWINDOW window, double maxy, double box_h) : window(window) {
         ConfigurationSize window_height =  scroller_sizes.get_window_default_height(window);
         StandardSize h;
         if (window_height == ConfigurationSize::One) {
@@ -468,6 +482,7 @@ public:
         } else {
             h = StandardSize::One;
         }
+        window->m_vPosition.y = maxy;
         update_height(h, box_h);
     }
     PHLWINDOW get_window() { return window.lock(); }
@@ -639,7 +654,7 @@ public:
         return windows.size();
     }
     bool has_window(PHLWINDOW window) const;
-    void add_active_window(PHLWINDOW window, double maxh);
+    void add_active_window(PHLWINDOW window);
     void remove_window(PHLWINDOW window);
     void focus_window(PHLWINDOW window);
     double get_geom_x() const {
@@ -726,7 +741,7 @@ public:
         width = StandardSize::Free;
     }
     // Update heights according to new maxh
-    void update_heights(double maxh);
+    void update_heights();
     void update_width(StandardSize cwidth, double maxw);
     void fit_size(FitSize fitsize, const Vector2D &gap_x, double gap);
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
@@ -867,7 +882,7 @@ Column::Column(PHLWINDOW cwindow, double maxw, const Row *row)
         width = StandardSize::OneHalf;
     }
     const Box &max = row->get_max();
-    Window *window = new Window(cwindow, max.h);
+    Window *window = new Window(cwindow, max.y, max.h);
     windows.push_back(window);
     active = windows.first();
     update_width(width, maxw);
@@ -909,10 +924,10 @@ bool Column::has_window(PHLWINDOW window) const
     return false;
 }
 
-void Column::add_active_window(PHLWINDOW window, double maxh)
+void Column::add_active_window(PHLWINDOW window)
 {
     reorder = Reorder::Auto;
-    active = windows.emplace_after(active, new Window(window, maxh));
+    active = windows.emplace_after(active, new Window(window, row->get_max().y, row->get_max().h));
 }
 
 void Column::remove_window(PHLWINDOW window)
@@ -1031,8 +1046,8 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
                         active->data()->move_to_bottom(geom.x, max, gap_x, gap0);
                     }
                 } else {
-                    // nothing on the right or left, the window is in a correct position
-                    active->data()->set_geom_x(geom.x, gap_x);
+                    // nothing on the right or left, move to the top
+                    active->data()->move_to_top(geom.x, max, gap_x, gap0);
                 }
             } else {
                 // the window is in a correct position, but
@@ -1162,11 +1177,11 @@ void Column::align_window(Direction direction, const Vector2D &gap_x, double gap
 }
 
 // Update heights according to new maxh
-void Column::update_heights(double maxh)
+void Column::update_heights()
 {
     for (auto win = windows.first(); win != nullptr; win = win->next()) {
         Window *window = win->data();
-        window->update_height(window->get_height(), maxh);
+        window->update_height(window->get_height(), row->get_max().h);
     }
 }
 
@@ -1384,7 +1399,7 @@ void Row::add_active_window(PHLWINDOW window)
     }
 
     if (active && mode == Mode::Column) {
-        active->data()->add_active_window(window, max.h);
+        active->data()->add_active_window(window);
         if (fsmode == eFullscreenMode::FSMODE_NONE)
             active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
     } else {
@@ -1692,7 +1707,7 @@ void Row::move_active_window_to_group(const std::string &name)
         if (col->get_name() == name) {
             PHLWINDOW window = active->data()->get_active_window();
             remove_window(window);
-            col->add_active_window(window, max.h);
+            col->add_active_window(window);
             if (!window->isFullscreen())
                 col->recalculate_col_geometry(calculate_gap_x(c), gap);
             active = c;
@@ -2122,7 +2137,7 @@ void Row::update_windows(const Box &oldmax, bool force)
         double maxw = width == StandardSize::Free ? column->get_geom_w() : max.w;
         column->update_width(width, maxw);
         // Redo all windows for each column according to "height" (unless Free)
-        column->update_heights(max.h);
+        column->update_heights();
     }
     recalculate_row_geometry();
 }
@@ -2767,7 +2782,9 @@ void ScrollerLayout::onEnable() {
             continue;
 
         onWindowCreatedTiling(window);
-        recalculateMonitor(window->monitorID());
+    }
+    for (auto &monitor : g_pCompositor->m_vMonitors) {
+        recalculateMonitor(monitor->ID);
     }
 }
 

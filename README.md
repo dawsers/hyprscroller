@@ -666,6 +666,30 @@ will let you navigate to Thunderbird from wherever you are by using a
 windowrulev2 = plugin:scroller:marksadd m, class:(thunderbird),title:(Mozilla Thunderbird)$
 ```
 
+### columnwidth
+
+Overrides the default width of the column containing the window.
+
+**Syntax of rule:** `plugin:scroller:columnwidth width`
+
+Open any Firefox window with a width of `twothirds`
+
+```
+windowrulev2 = plugin:scroller:columnwidth twothirds, class:(firefox)
+```
+
+### windowheight
+
+Overrides the default height of the new window.
+
+**Syntax of rule:** `plugin:scroller:windowheight height`
+
+Open any Firefox window with a height of `onehalf`
+
+```
+windowrulev2 = plugin:scroller:windowheight onehalf, class:(firefox)
+```
+
 
 ## Key bindings
 

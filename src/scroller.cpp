@@ -685,6 +685,11 @@ public:
 
     bool is_selected() const { return selected; }
 
+    void move_to_workspace(PHLWORKSPACE workspace) {
+        window->moveToWorkspace(workspace);
+        window->m_pMonitor = workspace->m_pMonitor;
+    }
+
 private:
     struct Memory {
         double pos_y;
@@ -1618,7 +1623,7 @@ Column *Column::selection_get(const Row *row)
     while (win != nullptr) {
         auto next = win->next();
         if (win->data()->is_selected()) {
-            win->data()->get_window()->moveToWorkspace(workspace);
+            win->data()->move_to_workspace(workspace);
             selection.push_back(win->data());
             if (active == win) {
                 active = active != windows.last() ? active->next() : active->prev();
@@ -1993,6 +1998,10 @@ bool Row::selection_exists() const
 
 void Row::selection_get(const Row *row, List<Column *> &selection)
 {
+    bool overview_on = overview;
+    if (overview)
+        toggle_overview();
+
     auto col = columns.first();
     while (col != nullptr) {
         auto next = col->next();
@@ -2001,12 +2010,18 @@ void Row::selection_get(const Row *row, List<Column *> &selection)
             selection.push_back(column);
             if (col->data()->size() == 0) {
                 // Removed all windows
+                if (col == active) {
+                    active = active != columns.last() ? active->next() : active->prev();
+                }
                 columns.erase(col);
                 delete col->data();
             }
         }
         col = next;
     }
+
+    if (overview_on)
+        toggle_overview();
 }
 
 void Row::center_active_column()
@@ -3410,7 +3425,6 @@ void ScrollerLayout::selection_move(WORKSPACEID workspace, Direction direction) 
     }
 
     s->selection_move(columns, direction);
-    g_pCompositor->focusWindow(s->get_active_window());
 
     // Now delete those rows that may have become empty,
     // and recalculate the rest
@@ -3421,10 +3435,13 @@ void ScrollerLayout::selection_move(WORKSPACEID workspace, Direction direction) 
             rows.erase(row);
             delete row->data();
         } else {
+            g_pCompositor->focusWindow(row->data()->get_active_window());
             row->data()->recalculate_row_geometry();
         }
         row = next;
     }
+
+    g_pCompositor->focusWindow(s->get_active_window());
     // Reset selection
     selection_reset();
 

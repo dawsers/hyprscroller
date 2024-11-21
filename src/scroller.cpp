@@ -708,11 +708,8 @@ SelectionBorders::~SelectionBorders() {
 }
 
 SDecorationPositioningInfo SelectionBorders::getPositioningInfo() {
-    const auto BORDERSIZE = m_pWindow->getRealBorderSize();
-    m_seExtents           = {{BORDERSIZE, BORDERSIZE}, {BORDERSIZE, BORDERSIZE}};
-
-    if (doesntWantBorders())
-        m_seExtents = {{}, {}};
+    // Avoid duplicating the border, we will draw over it
+    m_seExtents = {{}, {}};
 
     SDecorationPositioningInfo info;
     info.priority       = 10000;

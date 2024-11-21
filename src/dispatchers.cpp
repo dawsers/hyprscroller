@@ -183,13 +183,6 @@ namespace dispatchers {
 
         g_ScrollerLayout->pin(workspace);
     }
-    void dispatch_unpin(std::string arg) {
-        auto workspace = workspace_for_action();
-        if (workspace == -1)
-            return;
-
-        g_ScrollerLayout->unpin(workspace);
-    }
     void dispatch_selectiontoggle(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
@@ -225,7 +218,6 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:unpin", dispatch_unpin);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);

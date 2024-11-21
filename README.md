@@ -134,8 +134,7 @@ The plugin adds the following dispatchers:
 | `scroller:marksdelete`    | Delete a named mark. Argument is the name of the mark                                                                       |
 | `scroller:marksvisit`     | Visit a named mark. Argument is the name of the mark                                                                        |
 | `scroller:marksreset`     | Delete all marks                                                                                                            |
-| `scroller:pin`            | Pin a column to its current position. The rest will adapt when changing focus etc.                                          |
-| `scroller:unpin`          | Unpin the currently pinned column                                                                                           |
+| `scroller:pin`            | Toggle pin a column to its current position. The rest will adapt when changing focus etc.                                   |
 | `scroller:selectiontoggle`| Toggle on/off the selection status of a window                                                                              |
 | `scroller:selectionreset` | Resets selection (deselects all windows)                                                                                    |
 | `scroller:selectionmove`  | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)  |
@@ -280,10 +279,15 @@ as the name. Again, see the example configuration.
 
 ## Pinning a Column
 
-`scroller:pin` and `scroller:unpin` manage *pinned* columns. Having a column
-*pinned* is useful to keep some column as an immovable reference; for example
-some documentation or important code you want to always have available while
-changing focus to other columns.
+`scroller:pin` manages *pinned* columns (toggles *pinned* status). Having a
+column *pinned* is useful to keep some column as an immovable reference; for
+example some documentation or important code you want to always have available
+while changing focus to other columns.
+
+`scroller:pin` will *pin* a column if none is *pinned*, otherwise will *unpin*
+the *pinned* one. So to move the *pin* from one column to another, call
+`scroller:pin` twice, one to *unpin* the currently *pinned* one, and the
+second to *pin* the active column.
 
 There can only be one *pinned* column per workspace. The column will stay in
 place while the flag is on. That means the rest of the columns (even the
@@ -854,9 +858,8 @@ submap = reset
 
 bind = $mainMod CTRL, M, scroller:marksreset
 
-# Pin and Unpin
+# Pin
 bind = $mainMod, P, scroller:pin,
-bind = $mainMod SHIFT, P, scroller:unpin,
 
 # Window copy/paste
 bind = $mainMod, Insert, scroller:selectiontoggle,

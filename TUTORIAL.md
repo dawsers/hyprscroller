@@ -87,7 +87,9 @@ Sometimes you want to keep one window static at all times, for example an
 editor with a file you are working on, while letting other windows scroll in
 the rest of the available space. These windows may include terminals or
 documentation browser windows. You can `pin` a column, and it will stay at its
-current location until you call `unpin`.
+current location until you call `pin` again. To change the pinned column,
+call `pin` twice; once to unpin the currently pinned column, and the second to
+pin the active one.
 
 [pin.mp4](https://github.com/user-attachments/assets/13f26203-3ece-47ea-91eb-779c9b2eab73)
 

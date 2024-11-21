@@ -56,7 +56,6 @@ public:
     void marks_reset();
 
     void pin(WORKSPACEID workspace);
-    void unpin(WORKSPACEID workspace);
 
     void selection_toggle(WORKSPACEID workspace);
     void selection_reset();

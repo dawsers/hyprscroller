@@ -1013,7 +1013,6 @@ public:
     void set_mode(Mode m);
     void align_column(Direction dir);
     void pin();
-    void unpin();
     void selection_toggle();
     void selection_reset();
     void selection_move(const List<Column *> &columns, Direction direction);
@@ -1927,12 +1926,11 @@ void Row::align_column(Direction dir)
 
 void Row::pin()
 {
-    pinned = active;
-}
-
-void Row::unpin()
-{
-    pinned = nullptr;
+    if (pinned != nullptr) {
+        pinned = nullptr;
+    } else {
+        pinned = active;
+    }
 }
 
 void Row::selection_toggle()
@@ -3352,15 +3350,6 @@ void ScrollerLayout::pin(WORKSPACEID workspace) {
     }
 
     s->pin();
-}
-
-void ScrollerLayout::unpin(WORKSPACEID workspace) {
-    auto s = getRowForWorkspace(workspace);
-    if (s == nullptr) {
-        return;
-    }
-
-    s->unpin();
 }
 
 void ScrollerLayout::selection_toggle(WORKSPACEID workspace) {

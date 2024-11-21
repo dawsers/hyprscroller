@@ -190,6 +190,26 @@ namespace dispatchers {
 
         g_ScrollerLayout->unpin(workspace);
     }
+    void dispatch_selectiontoggle(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        g_ScrollerLayout->selection_toggle(workspace);
+    }
+    void dispatch_selectionreset(std::string arg) {
+        g_ScrollerLayout->selection_reset();
+    }
+    void dispatch_selectionmove(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        auto args = CVarList(arg);
+        if (auto direction = parse_move_arg(args[0])) {
+            g_ScrollerLayout->selection_move(workspace, *direction);
+        }
+    }
     void addDispatchers() {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
@@ -206,5 +226,8 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:unpin", dispatch_unpin);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);
     }
 }

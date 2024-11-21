@@ -23,9 +23,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hyprscroller] Version mismatch");
     }
 
-#ifdef COLORS_IPC
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.freecolumn_border", Hyprlang::CConfigValue(Hyprlang::INT(0xff9e1515)));
-#endif
     g_ScrollerLayout = std::make_unique<ScrollerLayout>();
     HyprlandAPI::addLayout(PHANDLE, "scroller", g_ScrollerLayout.get());
 
@@ -63,6 +60,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance", Hyprlang::INT{60});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers", Hyprlang::INT{3});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_prefix", Hyprlang::STRING{""});
+
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.selection_border", Hyprlang::INT{0xff9e1515});
 
     HyprlandAPI::reloadConfig();
 

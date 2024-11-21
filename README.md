@@ -8,7 +8,7 @@ similar to [PaperWM](https://github.com/paperwm/PaperWM).
 
 The plugin is quite feature complete and supports gaps, borders, decorations,
 special workspace, full screen modes, overview, marks, pinned columns,
-touchpad gestures and installation through `hyprpm`.
+touchpad gestures, copying/pasting windows and installation through `hyprpm`.
 
 Check the [Tutorial](./TUTORIAL.md) for a quick overview of *hyprscroller's* main
 features.
@@ -136,6 +136,9 @@ The plugin adds the following dispatchers:
 | `scroller:marksreset`     | Delete all marks                                                                                                            |
 | `scroller:pin`            | Pin a column to its current position. The rest will adapt when changing focus etc.                                          |
 | `scroller:unpin`          | Unpin the currently pinned column                                                                                           |
+| `scroller:selectiontoggle`| Toggle on/off the selection status of a window                                                                              |
+| `scroller:selectionreset` | Resets selection (deselects all windows)                                                                                    |
+| `scroller:selectionmove`  | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)  |
 
 
 ## Modes
@@ -287,6 +290,30 @@ place while the flag is on. That means the rest of the columns (even the
 active one) will not perturb that position. When changing focus, the *active* 
 column will be seen on the screen as long as it fits on either side of the
 *pinned* column.
+
+
+## Window Copying/Pasting
+
+`scroller:selectiontoggle` and `scroller:selectionreset` manage window/column
+selections. You can select several windows at a time, even in different
+workspaces and/or from overview mode. Those windows will change the border
+color to the one specified in the option `plugin:scroller:col.selection_border`.
+
+Once you have made a selection, you can move those windows to a different
+workspace or location in the same workspace using `scroller:selectionmove`.
+The selection order and column/window configuration will be maintained.
+
+`scroller:selectionmove` accepts a direction as parameter. Valid directions
+are:
+
+1. `r` or `right`: Move the selection to the current workspace, locating it
+   right of the active column.
+2. `l` or `left`: Move the selection to the current workspace, locating it
+   left of the active column.
+3. `b`, `begin`, or `beginning`: Move the selection to the current workspace,
+   locating it at the beginning (first column).
+4. `e` or `end`: Move the selection to the current workspace, locating it at
+   the end (last column).
 
 
 ## Touchpad Gestures
@@ -487,6 +514,11 @@ last window of a row/column. Possible arguments are: `true`|`1` (default), or
 Scales the content of the windows in overview mode, like GNOME/MacOS/Windows
 overview mode. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
+
+### `col.selection_border`
+
+It is the color of the border of selected windows. The default value is
+`0xff9e1515`, which is `red`.
 
 ### `column_widths`
 
@@ -784,6 +816,7 @@ submap = reset
 # overview keys
 # bind key to toggle overview (normal)
 bind = $mainMod, tab, scroller:toggleoverview
+bind = ,mouse:275, scroller:toggleoverview
 
 # Marks
 bind = $mainMod, M, submap, marksadd
@@ -824,5 +857,10 @@ bind = $mainMod CTRL, M, scroller:marksreset
 # Pin and Unpin
 bind = $mainMod, P, scroller:pin,
 bind = $mainMod SHIFT, P, scroller:unpin,
+
+# Window copy/paste
+bind = $mainMod, Insert, scroller:selectiontoggle,
+bind = $mainMod CTRL, Insert, scroller:selectionreset,
+bind = $mainMod SHIFT, Insert, scroller:selectionmove, right
 ```
 

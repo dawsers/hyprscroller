@@ -92,6 +92,17 @@ current location until you call `unpin`.
 [pin.mp4](https://github.com/user-attachments/assets/13f26203-3ece-47ea-91eb-779c9b2eab73)
 
 
+## Copying/Pasting (Moving) Windows
+
+To be able to re-organize windows and columns more easily, you can use
+`selectiontoggle` to select windows. Those windows can be in any workspace,
+and can also be selected from *overview* mode. After you are done with your
+selection, go to the place where you want to move them (same or different
+workspace), and call `selectionmove`. `selectionmove` needs an argument,
+`right` is usually the most intuitive choice, because it will locate the
+selection right of the active window of the current workspace.
+
+
 ## Marks
 
 *hyprscroller* supports vim-like marks. You can use marks to quickly navigate

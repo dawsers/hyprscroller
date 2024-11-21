@@ -458,6 +458,38 @@ static void switch_to_window(PHLWINDOW from, PHLWINDOW to)
     return;
 }
 
+class Window;
+
+class SelectionBorders : public IHyprWindowDecoration {
+  public:
+    SelectionBorders(Window *);
+    virtual ~SelectionBorders();
+
+    virtual SDecorationPositioningInfo getPositioningInfo();
+    virtual void                       onPositioningReply(const SDecorationPositioningReply& reply);
+    virtual void                       draw(PHLMONITOR, float const& a);
+    virtual eDecorationType            getDecorationType();
+    virtual void                       updateWindow(PHLWINDOW);
+    virtual void                       damageEntire();
+    virtual eDecorationLayer           getDecorationLayer();
+    virtual uint64_t                   getDecorationFlags();
+    virtual std::string                getDisplayName();
+
+  private:
+    const Window *window;
+
+    SBoxExtents  m_seExtents;
+    SBoxExtents  m_seReportedExtents;
+    PHLWINDOWREF m_pWindow;
+    Vector2D     m_vLastWindowPos;
+    Vector2D     m_vLastWindowSize;
+    CBox         m_bAssignedGeometry = {0};
+    int          m_iLastBorderSize = -1;
+    CBox         assignedBoxGlobal();
+    bool         doesntWantBorders();
+};
+
+
 class Window {
 public:
     Window(PHLWINDOW window, double maxy, double box_h) : window(window) {
@@ -484,6 +516,12 @@ public:
         }
         window->m_vPosition.y = maxy;
         update_height(h, box_h);
+        std::unique_ptr<SelectionBorders> deco = std::make_unique<SelectionBorders>(this);
+        decoration = deco.get();
+        HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(deco));
+    }
+    ~Window() {
+        window->removeWindowDeco(decoration);
     }
     PHLWINDOW get_window() { return window.lock(); }
     double get_geom_h() const { return box_h; }
@@ -630,6 +668,23 @@ public:
         return true;
     }
 
+    CGradientValueData get_border_color() const {
+        static auto *const *SELECTEDCOL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:col.selection_border")->getDataStaticPtr();
+        static CColor selected_col = **SELECTEDCOL;
+        return selected ? selected_col : window->m_cRealBorderColor;
+    }
+
+    void selection_toggle() {
+        selected = !selected;
+    }
+
+    void selection_reset() {
+        if (selected)
+            selection_toggle();
+    }
+
+    bool is_selected() const { return selected; }
+
 private:
     struct Memory {
         double pos_y;
@@ -641,16 +696,162 @@ private:
     StandardSize height;
     double box_h;
     Memory mem;    // memory to store old height and win y when in maximized/overview modes
+    bool selected;
+    SelectionBorders *decoration;
 };
+
+SelectionBorders::SelectionBorders(Window *window) : IHyprWindowDecoration(window->get_window()), window(window) {
+    m_pWindow = window->get_window();
+}
+
+SelectionBorders::~SelectionBorders() {
+}
+
+SDecorationPositioningInfo SelectionBorders::getPositioningInfo() {
+    const auto BORDERSIZE = m_pWindow->getRealBorderSize();
+    m_seExtents           = {{BORDERSIZE, BORDERSIZE}, {BORDERSIZE, BORDERSIZE}};
+
+    if (doesntWantBorders())
+        m_seExtents = {{}, {}};
+
+    SDecorationPositioningInfo info;
+    info.priority       = 10000;
+    info.policy         = DECORATION_POSITION_STICKY;
+    info.desiredExtents = m_seExtents;
+    info.reserved       = true;
+    info.edges          = DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP;
+
+    m_seReportedExtents = m_seExtents;
+    return info;
+}
+
+void SelectionBorders::onPositioningReply(const SDecorationPositioningReply& reply) {
+    m_bAssignedGeometry = reply.assignedGeometry;
+}
+
+CBox SelectionBorders::assignedBoxGlobal() {
+    CBox box = m_bAssignedGeometry;
+    box.translate(g_pDecorationPositioner->getEdgeDefinedPoint(DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP, m_pWindow.lock()));
+
+    const auto PWORKSPACE = m_pWindow->m_pWorkspace;
+
+    if (!PWORKSPACE)
+        return box;
+
+    const auto WORKSPACEOFFSET = PWORKSPACE && !m_pWindow->m_bPinned ? PWORKSPACE->m_vRenderOffset.value() : Vector2D();
+    return box.translate(WORKSPACEOFFSET);
+}
+
+void SelectionBorders::draw(PHLMONITOR pMonitor, float const& a) {
+    if (doesntWantBorders())
+        return;
+
+    if (m_bAssignedGeometry.width < m_seExtents.topLeft.x + 1 || m_bAssignedGeometry.height < m_seExtents.topLeft.y + 1)
+        return;
+
+    CBox windowBox = assignedBoxGlobal().translate(-pMonitor->vecPosition + m_pWindow->m_vFloatingOffset).expand(-m_pWindow->getRealBorderSize()).scale(pMonitor->scale).round();
+
+    if (windowBox.width < 1 || windowBox.height < 1)
+        return;
+
+    auto       grad     = window->get_border_color();
+    const bool ANIMATED = m_pWindow->m_fBorderFadeAnimationProgress.isBeingAnimated();
+    float      a1       = a * (ANIMATED ? m_pWindow->m_fBorderFadeAnimationProgress.value() : 1.f);
+
+    if (m_pWindow->m_fBorderAngleAnimationProgress.getConfig()->pValues->internalEnabled) {
+        grad.m_fAngle += m_pWindow->m_fBorderAngleAnimationProgress.value() * M_PI * 2;
+        grad.m_fAngle = normalizeAngleRad(grad.m_fAngle);
+    }
+
+    int        borderSize = m_pWindow->getRealBorderSize();
+    const auto ROUNDING   = m_pWindow->rounding() * pMonitor->scale;
+
+    g_pHyprOpenGL->renderBorder(&windowBox, grad, ROUNDING, borderSize, a1);
+
+    if (ANIMATED) {
+        float a2 = a * (1.f - m_pWindow->m_fBorderFadeAnimationProgress.value());
+        g_pHyprOpenGL->renderBorder(&windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2);
+    }
+}
+
+eDecorationType SelectionBorders::getDecorationType() {
+    return DECORATION_BORDER;
+}
+
+void SelectionBorders::updateWindow(PHLWINDOW) {
+    auto borderSize = m_pWindow->getRealBorderSize();
+
+    if (borderSize == m_iLastBorderSize)
+        return;
+
+    if (borderSize <= 0 && m_iLastBorderSize <= 0)
+        return;
+
+    m_iLastBorderSize = borderSize;
+
+    g_pDecorationPositioner->repositionDeco(this);
+}
+
+void SelectionBorders::damageEntire() {
+    if (!validMapped(m_pWindow))
+        return;
+
+    auto       surfaceBox   = m_pWindow->getWindowMainSurfaceBox();
+    const auto ROUNDING     = m_pWindow->rounding();
+    const auto ROUNDINGSIZE = ROUNDING - M_SQRT1_2 * ROUNDING + 2;
+    const auto BORDERSIZE   = m_pWindow->getRealBorderSize() + 1;
+
+    const auto PWINDOWWORKSPACE = m_pWindow->m_pWorkspace;
+    if (PWINDOWWORKSPACE && PWINDOWWORKSPACE->m_vRenderOffset.isBeingAnimated() && !m_pWindow->m_bPinned)
+        surfaceBox.translate(PWINDOWWORKSPACE->m_vRenderOffset.value());
+    surfaceBox.translate(m_pWindow->m_vFloatingOffset);
+
+    CBox surfaceBoxExpandedBorder = surfaceBox;
+    surfaceBoxExpandedBorder.expand(BORDERSIZE);
+    CBox surfaceBoxShrunkRounding = surfaceBox;
+    surfaceBoxShrunkRounding.expand(-ROUNDINGSIZE);
+
+    CRegion borderRegion(surfaceBoxExpandedBorder);
+    borderRegion.subtract(surfaceBoxShrunkRounding);
+
+    for (auto const& m : g_pCompositor->m_vMonitors) {
+        if (!g_pHyprRenderer->shouldRenderWindow(m_pWindow.lock(), m)) {
+            const CRegion monitorRegion({m->vecPosition, m->vecSize});
+            borderRegion.subtract(monitorRegion);
+        }
+    }
+
+    g_pHyprRenderer->damageRegion(borderRegion);
+}
+
+eDecorationLayer SelectionBorders::getDecorationLayer() {
+    return DECORATION_LAYER_OVER;
+}
+
+uint64_t SelectionBorders::getDecorationFlags() {
+    static auto PPARTOFWINDOW = CConfigValue<Hyprlang::INT>("general:border_part_of_window");
+
+    return *PPARTOFWINDOW && !doesntWantBorders() ? DECORATION_PART_OF_MAIN_WINDOW : 0;
+}
+
+std::string SelectionBorders::getDisplayName() {
+    return "Border";
+}
+
+bool SelectionBorders::doesntWantBorders() {
+    return m_pWindow->m_sWindowData.noBorder.valueOrDefault() || m_pWindow->m_bX11DoesntWantBorders || m_pWindow->getRealBorderSize() == 0;
+}
 
 
 class Column {
 public:
     Column(PHLWINDOW cwindow, double maxw, const Row *row);
     Column(Window *window, StandardSize width, double maxw, const Row *row);
-    ~Column();    std::string get_name() const { return name; }
+    Column(const Row *row, const Column *column, List<Window *> &windows);
+    ~Column();
+    std::string get_name() const { return name; }
     void set_name (const std::string &str) { name = str; }
-    size_t size() {
+    size_t size() const {
         return windows.size();
     }
     bool has_window(PHLWINDOW window) const;
@@ -746,6 +947,10 @@ public:
     void fit_size(FitSize fitsize, const Vector2D &gap_x, double gap);
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
     void resize_active_window(double maxw, const Vector2D &gap_x, double gap, const Vector2D &delta);
+    void selection_toggle();
+    void selection_reset();
+    Column *selection_get(const Row *row);
+    bool selection_exists() const;
 
 private:
     // Adjust all the windows in the column using 'window' as anchor
@@ -772,8 +977,11 @@ private:
 
 class Row {
 public:
-    Row(PHLWINDOW window);
+    Row(WORKSPACEID workspace);
     ~Row();
+    size_t size() const {
+        return columns.size();
+    }
     WORKSPACEID get_workspace() const { return workspace; }
     const Box &get_max() const { return max; }
     bool has_window(PHLWINDOW window) const {
@@ -806,6 +1014,11 @@ public:
     void align_column(Direction dir);
     void pin();
     void unpin();
+    void selection_toggle();
+    void selection_reset();
+    void selection_move(const List<Column *> &columns, Direction direction);
+    void selection_get(const Row *row, List<Column *> &selection);
+    bool selection_exists() const;
     void move_active_window_to_group(const std::string &name);
     void move_active_column(Direction dir);
     void admit_window_left();
@@ -907,6 +1120,21 @@ Column::Column(Window *window, StandardSize width, double maxw, const Row *row)
     update_width(width, maxw);
 }
 
+Column::Column(const Row *pRow, const Column *column, List<Window *> &pWindows)
+{
+    width = column->width;
+    height = column->height;
+    reorder = column->reorder;
+    geom = column->geom;
+    mem = column->mem;
+    for (auto win = pWindows.first(); win != nullptr; win = win->next()) {
+        windows.push_back(win->data());
+    }
+    active = windows.first();
+    name = column->name;
+    row = pRow;
+}
+
 Column::~Column()
 {
     for (auto win = windows.first(); win != nullptr; win = win->next()) {
@@ -944,6 +1172,7 @@ void Column::remove_window(PHLWINDOW window)
                 active = active != windows.last() ? active->next() : active->prev();
             }
             windows.erase(win);
+            delete win->data();
             return;
         }
     }
@@ -1363,12 +1592,57 @@ void Column::adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, doub
     }
 }
 
-Row::Row(PHLWINDOW window)
-    : workspace(window->workspaceID()), reorder(Reorder::Auto),
+void Column::selection_toggle()
+{
+    active->data()->selection_toggle();
+}
+
+void Column::selection_reset()
+{
+    for (auto win = windows.first(); win != nullptr; win = win->next()) {
+        win->data()->selection_reset();
+    }
+}
+
+bool Column::selection_exists() const
+{
+    for (auto win = windows.first(); win != nullptr; win = win->next()) {
+        if (win->data()->is_selected())
+            return true;
+    }
+    return false;
+}
+
+Column *Column::selection_get(const Row *row)
+{
+    Column *column = nullptr;
+    List<Window *> selection;
+    ListNode<Window *> *win = windows.first();
+    PHLWORKSPACE workspace = g_pCompositor->getWorkspaceByID(row->get_workspace());
+    while (win != nullptr) {
+        auto next = win->next();
+        if (win->data()->is_selected()) {
+            win->data()->get_window()->moveToWorkspace(workspace);
+            selection.push_back(win->data());
+            if (active == win) {
+                active = active != windows.last() ? active->next() : active->prev();
+            }
+            windows.erase(win);
+        }
+        win = next;
+    }
+    if (selection.size() > 0) {
+        column = new Column(row, this, selection);
+    }
+    return column;
+}
+
+Row::Row(WORKSPACEID workspace)
+    : workspace(workspace), reorder(Reorder::Auto),
       overview(false), active(nullptr), pinned(nullptr)
 {
     post_event("overview");
-    const auto PMONITOR = window->m_pMonitor.lock();
+    const auto PMONITOR = g_pCompositor->m_pLastMonitor.lock();
     set_mode(scroller_sizes.get_mode(PMONITOR));
     update_sizes(PMONITOR);
 }
@@ -1659,6 +1933,85 @@ void Row::pin()
 void Row::unpin()
 {
     pinned = nullptr;
+}
+
+void Row::selection_toggle()
+{
+    active->data()->selection_toggle();
+}
+
+void Row::selection_reset()
+{
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        col->data()->selection_reset();
+    }
+}
+
+static void insert_selection_before(List <Column *> &columns, ListNode<Column *> *node, const List<Column *> &selection)
+{
+    for (auto col = selection.first(); col != nullptr; col = col->next()) {
+        columns.insert_before(node, col->data());
+    }
+}
+
+static void insert_selection_after(List <Column *> &columns, ListNode<Column *> *node, const List<Column *> &selection)
+{
+    for (auto col = selection.last(); col != nullptr; col = col->prev()) {
+        columns.insert_after(node, col->data());
+    }
+}
+
+void Row::selection_move(const List<Column *> &selection, Direction direction)
+{
+    if (columns.size() == 0) {
+        for (auto col = selection.first(); col != nullptr; col = col->next()) {
+            columns.push_back(col->data());
+        }
+        active = columns.first();
+    } else {
+        switch (direction) {
+        case Direction::Left:
+            insert_selection_before(columns, active, selection);
+            break;
+        case Direction::Begin:
+            insert_selection_before(columns, columns.first(), selection);
+            break;
+        case Direction::End:
+            insert_selection_after(columns, columns.last(), selection);
+            break;
+        case Direction::Right:
+        default:
+            insert_selection_after(columns, active, selection);
+            break;
+        }
+    }
+}
+
+bool Row::selection_exists() const
+{
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        if (col->data()->selection_exists())
+            return true;
+    }
+    return false;
+}
+
+void Row::selection_get(const Row *row, List<Column *> &selection)
+{
+    auto col = columns.first();
+    while (col != nullptr) {
+        auto next = col->next();
+        Column *column = col->data()->selection_get(row);
+        if (column != nullptr) {
+            selection.push_back(column);
+            if (col->data()->size() == 0) {
+                // Removed all windows
+                columns.erase(col);
+                delete col->data();
+            }
+        }
+        col = next;
+    }
 }
 
 void Row::center_active_column()
@@ -2406,7 +2759,7 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
     WORKSPACEID wid = window->workspaceID();
     auto s = getRowForWorkspace(wid);
     if (s == nullptr) {
-        s = new Row(window);
+        s = new Row(wid);
         rows.push_back(s);
     }
 
@@ -2561,6 +2914,10 @@ void ScrollerLayout::recalculateMonitor(const MONITORID &monitor_id)
 */
 void ScrollerLayout::recalculateWindow(PHLWINDOW window)
 {
+    // It can get called after windows are already being destroyed (decorations update)
+    if (!enabled)
+        return;
+
     auto s = getRowForWindow(window);
     if (s == nullptr)
         return;
@@ -3004,6 +3361,89 @@ void ScrollerLayout::unpin(WORKSPACEID workspace) {
     }
 
     s->unpin();
+}
+
+void ScrollerLayout::selection_toggle(WORKSPACEID workspace) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->selection_toggle();
+
+    // Re-render that monitor to remove decorations
+    g_pHyprRenderer->damageMonitor(g_pCompositor->m_pLastMonitor.lock());
+}
+
+void ScrollerLayout::selection_reset() {
+    for (auto row = rows.first(); row != nullptr; row = row->next()) {
+        row->data()->selection_reset();
+    }
+    // Re-render windows to remove decorations
+    for (auto monitor : g_pCompositor->m_vMonitors) {
+        g_pHyprRenderer->damageMonitor(monitor);
+    }
+}
+
+// Move all selected columns/windows to workspace, and locate them in direction wrt
+// the active column. Valid directiona are left, right, beginning, end, other
+// defaults to right.
+void ScrollerLayout::selection_move(WORKSPACEID workspace, Direction direction) {
+    // Before doing anything complicated, first checkt if there is any selection active
+    bool selection = false;
+    for (auto row = rows.first(); row != nullptr; row = row->next()) {
+        if (row->data()->selection_exists()) {
+            selection = true;
+            break;
+        }
+    }
+    if (!selection)
+        return;
+
+    auto s = getRowForWorkspace(workspace);
+    bool overview_on = false;
+    if (s == nullptr) {
+        s = new Row(workspace);
+        rows.push_back(s);
+    } else {
+        overview_on = s->is_overview();
+        if (overview_on)
+            s->toggle_overview();
+    }
+    // First modify ScrollerLayout internal structures and then call
+    // CWindow::moveToWorkspace(PHLWORKSPACE pWorkspace)
+    // for each window, so Hyprland is aware of the changes.
+    List<Column *> columns;
+    auto row = rows.first();
+    while (row != nullptr) {
+        auto next = row->next();
+        if (row->data()->size() > 0) {
+            row->data()->selection_get(s, columns);
+        }
+        row = next;
+    }
+
+    s->selection_move(columns, direction);
+    g_pCompositor->focusWindow(s->get_active_window());
+
+    // Now delete those rows that may have become empty,
+    // and recalculate the rest
+    row = rows.first();
+    while (row != nullptr) {
+        auto next = row->next();
+        if (row->data()->size() == 0) {
+            rows.erase(row);
+            delete row->data();
+        } else {
+            row->data()->recalculate_row_geometry();
+        }
+        row = next;
+    }
+    // Reset selection
+    selection_reset();
+
+    if (overview_on)
+        s->toggle_overview();
 }
 
 void ScrollerLayout::post_event(WORKSPACEID workspace, const std::string &event) {

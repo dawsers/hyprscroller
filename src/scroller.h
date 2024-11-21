@@ -58,6 +58,10 @@ public:
     void pin(WORKSPACEID workspace);
     void unpin(WORKSPACEID workspace);
 
+    void selection_toggle(WORKSPACEID workspace);
+    void selection_reset();
+    void selection_move(WORKSPACEID workspace, Direction direction = Direction::End);
+
     void post_event(WORKSPACEID workspace, const std::string &event);
 
     void swipe_begin(IPointer::SSwipeBeginEvent);

@@ -30,6 +30,7 @@ struct Box {
         : x(pos.x), y(pos.y), w(size.x), h(size.y) {}
     Box(const Box &box)
         : x(box.x), y(box.y), w(box.w), h(box.h) {}
+    Box& operator=(const Box&) = default;
 
     void set_size(double w_, double h_) {
         w = w_;
@@ -933,7 +934,7 @@ public:
     bool move_focus_up(bool focus_wrap);
     bool move_focus_down(bool focus_wrap);
     void admit_window(Window *window);
-    Window *expel_active(double gap);
+    Window *expel_active();
     void align_window(Direction direction, const Vector2D &gap_x, double gap);
 
     StandardSize get_width() const {
@@ -948,7 +949,7 @@ public:
     void update_width(StandardSize cwidth, double maxw);
     void fit_size(FitSize fitsize, const Vector2D &gap_x, double gap);
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
-    void resize_active_window(double maxw, const Vector2D &gap_x, double gap, const Vector2D &delta);
+    void resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta);
     void selection_toggle();
     void selection_reset();
     Column *selection_get(const Row *row);
@@ -1204,7 +1205,6 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
     // gaps. So the distance between two window border boundaries is
     // two times gaps_in (one per window).
     auto gap0 = active == windows.first() ? 0.0 : gap;
-    auto gap1 = active == windows.last() ? 0.0 : gap;
     auto a_y0 = std::round(active->data()->get_geom_y(gap0));
     auto a_y1 = std::round(a_y0 + active->data()->get_geom_h());
     if (a_y0 < max.y) {
@@ -1373,7 +1373,7 @@ void Column::admit_window(Window *window)
     active = windows.emplace_after(active, window);
 }
 
-Window *Column::expel_active(double gap)
+Window *Column::expel_active()
 {
     reorder = Reorder::Auto;
     Window *window = active->data();
@@ -1469,10 +1469,10 @@ void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
             auto gap0 = w == windows.first() ? 0.0 : gap;
             auto c0 = std::round(w->data()->get_geom_y(gap0));
             auto c1 = std::round(c0 + w->data()->get_geom_h());
-            if (c0 < max.y + max.h && c0 >= max.y ||
-                c1 > max.y && c1 <= max.y + max.h ||
+            if ((c0 < max.y + max.h && c0 >= max.y) ||
+                (c1 > max.y && c1 <= max.y + max.h) ||
                 // should never happen as windows are never taller than the screen
-                c0 < max.y && c1 >= max.y + max.h) {
+                (c0 < max.y && c1 >= max.y + max.h)) {
                 from = w;
                 break;
             }
@@ -1481,10 +1481,10 @@ void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
             auto gap0 = w == windows.first() ? 0.0 : gap;
             auto c0 = std::round(w->data()->get_geom_y(gap0));
             auto c1 = std::round(c0 + w->data()->get_geom_h());
-            if (c0 < max.y + max.h && c0 >= max.y ||
-                c1 > max.y && c1 <= max.y + max.h ||
+            if ((c0 < max.y + max.h && c0 >= max.y) ||
+                (c1 > max.y && c1 <= max.y + max.h) ||
                 // should never happen as windows are never taller than the screen
-                c0 < max.y && c1 >= max.y + max.h) {
+                (c0 < max.y && c1 >= max.y + max.h)) {
                 to = w;
                 break;
             }
@@ -1509,7 +1509,6 @@ void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
     // Now align from top of the screen (max.y), split height of
     // screen (max.h) among from->to, and readapt the rest
     if (from != nullptr && to != nullptr) {
-        auto c = from;
         double total = 0.0;
         for (auto c = from; c != to->next(); c = c->next()) {
             total += c->data()->get_geom_h();
@@ -1543,7 +1542,7 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
     recalculate_col_geometry(gap_x, gap);
 }
 
-void Column::resize_active_window(double maxw, const Vector2D &gap_x, double gap, const Vector2D &delta)
+void Column::resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta)
 {
     const Box &max = row->get_max();
     if (!active->data()->can_resize_width(geom.w, max.w, gap_x, gap, delta.x))
@@ -1639,8 +1638,8 @@ Column *Column::selection_get(const Row *row)
 }
 
 Row::Row(WORKSPACEID workspace)
-    : workspace(workspace), reorder(Reorder::Auto),
-      overview(false), active(nullptr), pinned(nullptr)
+    : workspace(workspace), overview(false),
+      reorder(Reorder::Auto), pinned(nullptr), active(nullptr)
 {
     post_event("overview");
     const auto PMONITOR = g_pCompositor->m_pLastMonitor.lock();
@@ -1880,7 +1879,7 @@ void Row::resize_active_window(const Vector2D &delta)
     if (overview)
         return;
 
-    active->data()->resize_active_window(max.w, calculate_gap_x(active), gap, delta);
+    active->data()->resize_active_window(calculate_gap_x(active), gap, delta);
     recalculate_row_geometry();
 }
 
@@ -2150,7 +2149,7 @@ void Row::admit_window_left()
     if (overview)
         toggle_overview();
 
-    auto w = active->data()->expel_active(gap);
+    auto w = active->data()->expel_active();
     auto prev = active->prev();
     if (active->data()->size() == 0) {
         if (active == pinned)
@@ -2181,7 +2180,7 @@ void Row::expel_window_right()
     if (overview)
         toggle_overview();
 
-    auto w = active->data()->expel_active(gap);
+    auto w = active->data()->expel_active();
     StandardSize width = active->data()->get_width();
     // This code inherits the width of the original column. There is a
     // problem with that when the mode is "Free". The new column may have
@@ -2325,10 +2324,10 @@ void Row::fit_size(FitSize fitsize)
             Column *col = c->data();
             auto c0 = col->get_geom_x();
             auto c1 = std::round(col->get_geom_x() + col->get_geom_w());
-            if (c0 < max.x + max.w && c0 >= max.x ||
-                c1 > max.x && c1 <= max.x + max.w ||
+            if ((c0 < max.x + max.w && c0 >= max.x) ||
+                (c1 > max.x && c1 <= max.x + max.w) ||
                 // should never happen as columns are never wider than the screen
-                c0 < max.x && c1 >= max.x + max.w) {
+                (c0 < max.x && c1 >= max.x + max.w)) {
                 from = c;
                 break;
             }
@@ -2337,10 +2336,10 @@ void Row::fit_size(FitSize fitsize)
             Column *col = c->data();
             auto c0 = col->get_geom_x();
             auto c1 = std::round(col->get_geom_x() + col->get_geom_w());
-            if (c0 < max.x + max.w && c0 >= max.x ||
-                c1 > max.x && c1 <= max.x + max.w ||
+            if ((c0 < max.x + max.w && c0 >= max.x) ||
+                (c1 > max.x && c1 <= max.x + max.w) ||
                 // should never happen as columns are never wider than the screen
-                c0 < max.x && c1 >= max.x + max.w) {
+                (c0 < max.x && c1 >= max.x + max.w)) {
                 to = c;
                 break;
             }
@@ -2365,7 +2364,6 @@ void Row::fit_size(FitSize fitsize)
     // Now align from to left edge of the screen (max.x), split width of
     // screen (max.w) among from->to, and readapt the rest
     if (from != nullptr && to != nullptr) {
-        auto c = from;
         double total = 0.0;
         for (auto c = from; c != to->next(); c = c->next()) {
             total += c->data()->get_geom_w();
@@ -2838,7 +2836,7 @@ void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 /*
     Called when a floating window is removed (unmapped)
 */
-void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW window)
+void ScrollerLayout::onWindowRemovedFloating(PHLWINDOW)
 {
     WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     if (!workspace_id) {
@@ -2941,7 +2939,7 @@ void ScrollerLayout::recalculateWindow(PHLWINDOW window)
     Optional pWindow for a specific window
 */
 void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
-                                        eRectCorner corner, PHLWINDOW window)
+                                        eRectCorner /* corner */, PHLWINDOW window)
 {
     const auto PWINDOW = window ? window : g_pCompositor->m_pLastWindow.lock();
     auto s = getRowForWindow(PWINDOW);
@@ -3010,7 +3008,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
     The layout is free to ignore.
     std::any is the reply. Can be empty.
 */
-std::any ScrollerLayout::layoutMessage(SLayoutMessageHeader header, std::string content)
+std::any ScrollerLayout::layoutMessage(SLayoutMessageHeader /* header */, std::string /* content */)
 {
     return "";
 }
@@ -3037,7 +3035,7 @@ void ScrollerLayout::switchWindows(PHLWINDOW, PHLWINDOW)
     Called when the user requests a window move in a direction.
     The layout is free to ignore.
 */
-void ScrollerLayout::moveWindowTo(PHLWINDOW window, const std::string &direction, bool silent)
+void ScrollerLayout::moveWindowTo(PHLWINDOW window, const std::string &direction, bool /* silent */)
 {
     auto s = getRowForWindow(window);
     if (s == nullptr) {
@@ -3078,7 +3076,7 @@ std::string ScrollerLayout::getLayoutName()
 /*
     Called for getting the next candidate for a focus
 */
-PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW old_window)
+PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW/* old_window */)
 {
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
@@ -3097,7 +3095,7 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW old_window)
 /*
     Called for replacing any data a layout has for a new window
 */
-void ScrollerLayout::replaceWindowDataWith(PHLWINDOW from, PHLWINDOW to)
+void ScrollerLayout::replaceWindowDataWith(PHLWINDOW /* from */, PHLWINDOW /* to */)
 {
 }
 
@@ -3115,28 +3113,28 @@ void ScrollerLayout::onEnable() {
     g_pKeybindManager->m_mDispatchers["movewindow"] = this_moveActiveTo;
 
     // Register dynamic callbacks for events
-    workspaceHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [&](void* self, SCallbackInfo& info, std::any param) {
+    workspaceHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "workspace", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
         auto WORKSPACE = std::any_cast<PHLWORKSPACE>(param);
         post_event(WORKSPACE->m_iID, "mode");
         post_event(WORKSPACE->m_iID, "overview");
     });
-    focusedMonHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [&](void* self, SCallbackInfo& info, std::any param) {
+    focusedMonHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
         auto monitor = std::any_cast<PHLMONITOR>(param);
         post_event(monitor->activeWorkspaceID(), "mode");
         post_event(monitor->activeWorkspaceID(), "overview");
     });
 
-    swipeBeginHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [&](void* self, SCallbackInfo& info, std::any param) {
+    swipeBeginHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
         auto swipe_event = std::any_cast<IPointer::SSwipeBeginEvent>(param);
         swipe_begin(swipe_event);
     });
 
-    swipeUpdateHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeUpdate", [&](void* self, SCallbackInfo& info, std::any param) {
+    swipeUpdateHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeUpdate", [&](void* /* self */, SCallbackInfo& info, std::any param) {
         auto swipe_event = std::any_cast<IPointer::SSwipeUpdateEvent>(param);
         swipe_update(info, swipe_event);
     });
 
-    swipeEndHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [&](void* self, SCallbackInfo& info, std::any param) {
+    swipeEndHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [&](void* /* self */, SCallbackInfo& info, std::any param) {
         auto swipe_event = std::any_cast<IPointer::SSwipeEndEvent>(param);
         swipe_end(info, swipe_event);
     });
@@ -3458,7 +3456,7 @@ void ScrollerLayout::post_event(WORKSPACEID workspace, const std::string &event)
     s->post_event(event);
 }
 
-void ScrollerLayout::swipe_begin(IPointer::SSwipeBeginEvent swipe_event) {
+void ScrollerLayout::swipe_begin(IPointer::SSwipeBeginEvent /* swipe_event */) {
     WORKSPACEID wid = get_workspace_id();
     if (wid == -1) {
         return;
@@ -3574,7 +3572,7 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
 }
 
 void ScrollerLayout::swipe_end(SCallbackInfo &info,
-                               IPointer::SSwipeEndEvent swipe_event) {
+                               IPointer::SSwipeEndEvent /* swipe_event */) {
     WORKSPACEID wid = get_workspace_id();
     if (wid == -1) {
         return;

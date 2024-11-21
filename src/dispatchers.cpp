@@ -101,7 +101,7 @@ namespace dispatchers {
         }
     }
 
-    void dispatch_admitwindow(std::string arg) {
+    void dispatch_admitwindow(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
@@ -109,7 +109,7 @@ namespace dispatchers {
         g_ScrollerLayout->admit_window_left(workspace);
     }
 
-    void dispatch_expelwindow(std::string arg) {
+    void dispatch_expelwindow(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
@@ -153,7 +153,7 @@ namespace dispatchers {
             g_ScrollerLayout->fit_size(workspace, *fitsize);
         }
     }
-    void dispatch_toggleoverview(std::string arg) {
+    void dispatch_toggleoverview(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
@@ -173,24 +173,24 @@ namespace dispatchers {
     void dispatch_marksvisit(std::string arg) {
         g_ScrollerLayout->marks_visit(arg);
     }
-    void dispatch_marksreset(std::string arg) {
+    void dispatch_marksreset(std::string) {
         g_ScrollerLayout->marks_reset();
     }
-    void dispatch_pin(std::string arg) {
+    void dispatch_pin(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
 
         g_ScrollerLayout->pin(workspace);
     }
-    void dispatch_selectiontoggle(std::string arg) {
+    void dispatch_selectiontoggle(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return;
 
         g_ScrollerLayout->selection_toggle(workspace);
     }
-    void dispatch_selectionreset(std::string arg) {
+    void dispatch_selectionreset(std::string) {
         g_ScrollerLayout->selection_reset();
     }
     void dispatch_selectionmove(std::string arg) {

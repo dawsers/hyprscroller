@@ -296,42 +296,42 @@ Overview::~Overview()
     }
 
     if (g_pGetCursorPosForMonitorHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pGetCursorPosForMonitorHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pGetCursorPosForMonitorHook);
         g_pGetCursorPosForMonitorHook = nullptr;
     }
 
     if (g_pRenderMonitorHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderMonitorHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderMonitorHook);
         g_pRenderMonitorHook = nullptr;
     }
 
     if (g_pClosestValidHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pClosestValidHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pClosestValidHook);
         g_pClosestValidHook = nullptr;
     }
 
     if (g_pGetMonitorFromVectorHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pGetMonitorFromVectorHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pGetMonitorFromVectorHook);
         g_pGetMonitorFromVectorHook = nullptr;
     }
 
     if (g_pRenderSoftwareCursorsForHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderSoftwareCursorsForHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderSoftwareCursorsForHook);
         g_pRenderSoftwareCursorsForHook = nullptr;
     }
 
     if (g_pLogicalBoxHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pLogicalBoxHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pLogicalBoxHook);
         g_pLogicalBoxHook = nullptr;
     }
 
     if (g_pRenderLayerHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderLayerHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pRenderLayerHook);
         g_pRenderLayerHook = nullptr;
     }
 
     if (g_pVisibleOnMonitorHook != nullptr) {
-        bool success = HyprlandAPI::removeFunctionHook(PHANDLE, g_pVisibleOnMonitorHook);
+        /* bool success = */HyprlandAPI::removeFunctionHook(PHANDLE, g_pVisibleOnMonitorHook);
         g_pVisibleOnMonitorHook = nullptr;
     }
 

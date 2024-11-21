@@ -492,7 +492,7 @@ class SelectionBorders : public IHyprWindowDecoration {
 
 class Window {
 public:
-    Window(PHLWINDOW window, double maxy, double box_h) : window(window) {
+    Window(PHLWINDOW window, double maxy, double box_h) : window(window), selected(false) {
         ConfigurationSize window_height =  scroller_sizes.get_window_default_height(window);
         StandardSize h;
         if (window_height == ConfigurationSize::One) {

@@ -3433,8 +3433,13 @@ void ScrollerLayout::selection_move(WORKSPACEID workspace, Direction direction) 
             rows.erase(row);
             delete row->data();
         } else {
+            bool overview = row->data()->is_overview();
+            if (overview)
+                row->data()->toggle_overview();
             g_pCompositor->focusWindow(row->data()->get_active_window());
             row->data()->recalculate_row_geometry();
+            if (overview)
+                row->data()->toggle_overview();
         }
         row = next;
     }

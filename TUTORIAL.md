@@ -128,6 +128,19 @@ submap = reset
 ```
 
 
+## Trails and Trailmarks
+
+Marks are good for quickly moving to some window, but you need to assign a
+name to each one. Trailmarks are like anonymous marks that live in a list
+called a trail. You can have as many trailmarks as you want in each trail, and
+as many trails as you want. To navigate these trailmarks, you navigate the
+list with previous/next dispatchers.
+
+Read the section of the README for a more detailed explanation, possible key
+bindings, and how to set IPC events to show trail and trailmark information on
+your desktop bar.
+
+
 ## Touchpad Gestures
 
 By default, *hyprscroller* supports three and four finger touchpad swipe

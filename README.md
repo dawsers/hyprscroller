@@ -8,7 +8,8 @@ similar to [PaperWM](https://github.com/paperwm/PaperWM).
 
 The plugin is quite feature complete and supports gaps, borders, decorations,
 special workspace, full screen modes, overview, marks, pinned columns,
-touchpad gestures, copying/pasting windows and installation through `hyprpm`.
+touchpad gestures, copying/pasting windows, trails/trailmarks, and installation
+through `hyprpm`.
 
 Check the [Tutorial](./TUTORIAL.md) for a quick overview of *hyprscroller's* main
 features.
@@ -119,25 +120,34 @@ general {
 
 The plugin adds the following dispatchers:
 
-| Dispatcher                | Description                                                                                                                 |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`      | An optional replacement for `movefocus`, takes a direction as argument.                                                     |
-| `scroller:movewindow`     | An optional replacement for `movewindow`, takes a direction as argument.                                                    |
-| `scroller:setmode`        | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.       |
-| `scroller:cyclesize`      | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                  |
-| `scroller:alignwindow`    | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode)         |
-| `scroller:admitwindow`    | Push the current window below the active one of the column to its left.                                                     |
-| `scroller:expelwindow`    | Pop the current window out of its column and place it on a new column to the right.                                         |
-| `scroller:fitsize`        | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg` |
-| `scroller:toggleoverview` | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                         |
-| `scroller:marksadd`       | Add a named mark. Argument is the name of the mark                                                                          |
-| `scroller:marksdelete`    | Delete a named mark. Argument is the name of the mark                                                                       |
-| `scroller:marksvisit`     | Visit a named mark. Argument is the name of the mark                                                                        |
-| `scroller:marksreset`     | Delete all marks                                                                                                            |
-| `scroller:pin`            | Toggle pin a column to its current position. The rest will adapt when changing focus etc.                                   |
-| `scroller:selectiontoggle`| Toggle on/off the selection status of a window                                                                              |
-| `scroller:selectionreset` | Resets selection (deselects all windows)                                                                                    |
-| `scroller:selectionmove`  | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)  |
+| Dispatcher                  | Description                                                                                                                 |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `scroller:movefocus`        | An optional replacement for `movefocus`, takes a direction as argument.                                                     |
+| `scroller:movewindow`       | An optional replacement for `movewindow`, takes a direction as argument.                                                    |
+| `scroller:setmode`          | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.       |
+| `scroller:cyclesize`        | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                  |
+| `scroller:alignwindow`      | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode)         |
+| `scroller:admitwindow`      | Push the current window below the active one of the column to its left.                                                     |
+| `scroller:expelwindow`      | Pop the current window out of its column and place it on a new column to the right.                                         |
+| `scroller:fitsize`          | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg` |
+| `scroller:toggleoverview`   | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                         |
+| `scroller:marksadd`         | Add a named mark. Argument is the name of the mark                                                                          |
+| `scroller:marksdelete`      | Delete a named mark. Argument is the name of the mark                                                                       |
+| `scroller:marksvisit`       | Visit a named mark. Argument is the name of the mark                                                                        |
+| `scroller:marksreset`       | Delete all marks                                                                                                            |
+| `scroller:pin`              | Toggle pin a column to its current position. The rest will adapt when changing focus etc.                                   |
+| `scroller:selectiontoggle`  | Toggle on/off the selection status of a window                                                                              |
+| `scroller:selectionreset`   | Resets selection (deselects all windows)                                                                                    |
+| `scroller:selectionmove`    | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)  |
+| `scroller:trailnew`         | Creates a new trail                                                                                                         |
+| `scroller:traildelete`      | Deletes the active trail                                                                                                    |
+| `scroller:trailclear`       | Clears all the trailmarks of the current trail                                                                              |
+| `scroller:trailnext`        | Moves to next trail                                                                                                         |
+| `scroller:trailprevious`    | Moves to previous trail                                                                                                     |
+| `scroller:trailtoselection` | Creates a selection from all the windows in the current trail                                                               |
+| `scroller:trailmarktoggle`  | Toggles a trailmark for the current window in the active trail                                                              |
+| `scroller:trailmarknext`    | Moves to next trailmark in the current trail                                                                                |
+| `scroller:trailmarkprevious`| Moves to previous trailmark in the current trail                                                                            |
 
 
 ## Modes
@@ -320,6 +330,39 @@ are:
    the end (last column).
 
 
+## Trails and Trailmarks
+
+Trails and Trailmarks are a concept borrowed from [trailblazer.nvim](https://github.com/LeonHeidelbach/trailblazer.nvim).
+
+A **trailmark** is like an anonymous mark on a window, and a **trail** is a
+collection of trailmarks. You can have as many trails as you want, and as many
+trailmarks as you want in any trail. Each window can be in as many trails
+as you want too.
+
+Creating your first trailmark (`trailmarktoggle`) will create a trail. From
+then on, every trailmark you create will be assigned to that trail. You can
+navigate back (`trailmarkprevious`) and forth (`trailmarknext`) within the
+collection of trailmarks contained in the trail.
+
+To create a new trail, use `trailnew`. With `trailprevious` and `trailnext`
+you can navigate trails, changing the active one. The active trail will be
+the one used for the trailmark dispatchers (toggle, next, and previous).
+
+Clear all the trailmarks of the active trail using `trailclear`, or delete
+the trail from the list with `traildelete`.
+
+`trailtoselection` creates a selection list from the trailmarks in the active
+trail. You can use that selection for example to move all the windows to a new
+workspace using `selectionmove`.
+
+*hyprscroller* generates IPC signals for trail/trailmark events, and in this
+README there is an example implementation for [ags](https://github.com/Aylur/ags)
+to use those signals to display information on your desktop bar.
+
+See the key bindings section for an example on how to set bindings for trail
+and trailmark dispatchers.
+
+
 ## Touchpad Gestures
 
 There are options to enable/disable touchpad gestures for `movefocus`
@@ -357,6 +400,8 @@ events that trigger a message:
 | `scroller expelwindow` | expelling a window         |                     |
 | `scroller overview`    | toggling overview mode     | `0/1`               |
 | `scroller mode`        | changing mode              | `row/column`        |
+| `scroller trail`       | current trail information  | `number`, `size`    |
+| `scroller trailmark`   | current window trailmark?  | `0/1`               |
 
 You can use these events to show messages, or modify your bar. This simple
 script captures the events and shows a notification each time:
@@ -389,7 +434,9 @@ socat - "UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket
 
 For those using [ags](https://github.com/Aylur/ags) to create the desktop bar,
 this is a module example on how you could use *hyprscroller* IPC events to show
-the current mode (*row* or *column*) and whether we are in *overview* mode or not.
+the current mode (*row* or *column*), whether we are in *overview* mode or not,
+your current trail (and its number of trailmarks), and whether the current
+window contains a trailmark or not.
 
 ``` js
 import Gio from 'gi://Gio'
@@ -405,11 +452,21 @@ export function Scroller() {
         class_name: "scroller-overview",
         label: ''
     });
+    const trailmark_label = Widget.Label({
+        class_name: "scroller-trailmark",
+        label: ''
+    });
+    const trail_label = Widget.Label({
+        class_name: "scroller-trail",
+        label: ''
+    });
     const scroller = Widget.Box({
         class_name: "scroller",
         children: [
             mode_label,
             overview_label,
+            trail_label,
+            trailmark_label,
         ],
     })
     function event_decode(data) {
@@ -425,6 +482,21 @@ export function Scroller() {
                 overview_label.label = "🐦";
             } else {
                 overview_label.label = "";
+            }
+        } else if (text.startsWith("scroller>>trail,")) {
+            const trail = text.substring(16).trim().split(",");
+            const tnumber = trail[0].trim();
+            if (tnumber == "-1") {
+                trail_label.label = "";
+            } else {
+                const tsize = trail[1].trim();
+                trail_label.label = tnumber + " (" + tsize + ")";
+            }
+        } else if (text.startsWith("scroller>>trailmark,")) {
+            if (text.substring(20) == 1) {
+                trailmark_label.label = "✅";
+            } else {
+                trailmark_label.label = "";
             }
         }
     }
@@ -462,6 +534,7 @@ and a simple `style.css`
 ``` css
 @define-color wb-background #000000;
 @define-color wb-primary #f0c671;
+@define-color wb-green #00b35b;
 
 .scroller {
     color: @wb-primary;
@@ -476,6 +549,17 @@ and a simple `style.css`
   padding-right: 10px;
 }
 .scroller-overview {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 10px;
+}
+.scroller-trailmark {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 10px;
+}
+.scroller-trail {
+  color: @wb-green;
   padding-top: 10px;
   padding-bottom: 10px;
   padding-right: 10px;
@@ -865,5 +949,30 @@ bind = $mainMod, P, scroller:pin,
 bind = $mainMod, Insert, scroller:selectiontoggle,
 bind = $mainMod CTRL, Insert, scroller:selectionreset,
 bind = $mainMod SHIFT, Insert, scroller:selectionmove, right
+
+# Trails and Trailmarks
+bind = $mainMod SHIFT, semicolon, submap, trail
+submap = trail
+bind = , bracketright, scroller:trailnext,
+bind = , bracketleft, scroller:trailprevious,
+bind = , semicolon, scroller:trailnew,
+bind = , semicolon, submap, reset
+bind = , d, scroller:traildelete,
+bind = , d, submap, reset
+bind = , c, scroller:trailclear,
+bind = , c, submap, reset
+bind = , Insert, scroller:trailtoselection,
+bind = , Insert, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+bind = $mainMod, semicolon, submap, trailmark
+submap = trailmark
+bind = , bracketright, scroller:trailmarknext,
+bind = , bracketleft, scroller:trailmarkprevious,
+bind = , semicolon, scroller:trailmarktoggle,
+bind = , semicolon, submap, reset
+bind = , escape, submap, reset
+submap = reset
 ```
 

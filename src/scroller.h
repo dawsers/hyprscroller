@@ -58,8 +58,19 @@ public:
     void pin(WORKSPACEID workspace);
 
     void selection_toggle(WORKSPACEID workspace);
+    void selection_set(PHLWINDOWREF window);
     void selection_reset();
     void selection_move(WORKSPACEID workspace, Direction direction = Direction::End);
+
+    void trail_new();
+    void trail_next();
+    void trail_prev();
+    void trail_delete();
+    void trail_clear();
+    void trail_toselection();
+    void trailmark_toggle();
+    void trailmark_next();
+    void trailmark_prev();
 
     void post_event(WORKSPACEID workspace, const std::string &event);
 

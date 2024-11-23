@@ -168,12 +168,21 @@ namespace dispatchers {
         g_ScrollerLayout->marks_add(arg);
     }
     void dispatch_marksdelete(std::string arg) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
         g_ScrollerLayout->marks_delete(arg);
     }
     void dispatch_marksvisit(std::string arg) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
         g_ScrollerLayout->marks_visit(arg);
     }
     void dispatch_marksreset(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
         g_ScrollerLayout->marks_reset();
     }
     void dispatch_pin(std::string) {
@@ -191,6 +200,9 @@ namespace dispatchers {
         g_ScrollerLayout->selection_toggle(workspace);
     }
     void dispatch_selectionreset(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
         g_ScrollerLayout->selection_reset();
     }
     void dispatch_selectionmove(std::string arg) {
@@ -202,6 +214,60 @@ namespace dispatchers {
         if (auto direction = parse_move_arg(args[0])) {
             g_ScrollerLayout->selection_move(workspace, *direction);
         }
+    }
+    void dispatch_trailnew(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_new();
+    }
+    void dispatch_trailnext(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_next();
+    }
+    void dispatch_trailprev(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_prev();
+    }
+    void dispatch_traildelete(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_delete();
+    }
+    void dispatch_trailclear(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_clear();
+    }
+    void dispatch_trailtoselection(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trail_toselection();
+    }
+    void dispatch_trailmarktoggle(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trailmark_toggle();
+    }
+    void dispatch_trailmarknext(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trailmark_next();
+    }
+    void dispatch_trailmarkprev(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->trailmark_prev();
     }
     void addDispatchers() {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
@@ -221,5 +287,14 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnew", dispatch_trailnew);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnext", dispatch_trailnext);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailprevious", dispatch_trailprev);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:traildelete", dispatch_traildelete);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailclear", dispatch_trailclear);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailtoselection", dispatch_trailtoselection);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarktoggle", dispatch_trailmarktoggle);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarknext", dispatch_trailmarknext);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarkprevious", dispatch_trailmarkprev);
     }
 }

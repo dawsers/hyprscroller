@@ -8,9 +8,6 @@
 #include <hyprland/src/managers/KeybindManager.hpp>
 #include <sstream>
 #include <string>
-#ifdef COLORS_IPC
-#include <hyprland/src/managers/EventManager.hpp>
-#endif
 
 #include "dispatchers.h"
 #include "scroller.h"
@@ -20,6 +17,7 @@
 #include <vector>
 
 extern HANDLE PHANDLE;
+extern std::unique_ptr<ScrollerLayout> g_ScrollerLayout;
 extern Overview *overviews;
 
 struct Box {
@@ -679,6 +677,10 @@ public:
         selected = !selected;
     }
 
+    void selection_set() {
+        selected = true;
+    }
+
     void selection_reset() {
         if (selected)
             selection_toggle();
@@ -845,6 +847,193 @@ bool SelectionBorders::doesntWantBorders() {
     return m_pWindow->m_sWindowData.noBorder.valueOrDefault() || m_pWindow->m_bX11DoesntWantBorders || m_pWindow->getRealBorderSize() == 0;
 }
 
+class Trail {
+protected:
+    Trail(int number) : number(number), active(nullptr) {}
+    ~Trail() {}
+
+    void toggle(const PHLWINDOW window) {
+        auto win = marks.first();
+        while (win != nullptr) {
+            auto next = win->next();
+            if (win->data() == window) {
+                active = active != marks.last() ? active->next() : active->prev();
+                marks.erase(win);
+                return;
+            }
+            win = next;
+        }
+        if (active == nullptr) {
+            marks.push_back(window);
+            active = marks.first();
+        } else {
+            marks.insert_after(active, window);
+            active = active->next();
+        }
+    }
+    void remove_window(PHLWINDOW window) {
+        auto win = marks.first();
+        while (win != nullptr) {
+            auto next = win->next();
+            if (win->data() == window) {
+                active = active != marks.last() ? active->next() : active->prev();
+                marks.erase(win);
+                return;
+            }
+            win = next;
+        }
+    }
+    void next() {
+        if (active == nullptr)
+            return;
+        active = active == marks.last() ? marks.first() : active->next();
+    }
+    void prev() {
+        if (active == nullptr)
+            return;
+        active = active == marks.first() ? marks.last() : active->prev();
+    }
+    void clear() {
+        marks.clear();
+        active = nullptr;
+    }
+    bool is_marked(PHLWINDOW window) const {
+        for (auto win = marks.first(); win != nullptr; win = win->next()) {
+            if (win->data() == window)
+                return true;
+        }
+        return false;
+    }
+    void toselection() const {
+        for (auto win = marks.first(); win != nullptr; win = win->next()) {
+            g_ScrollerLayout->selection_set(win->data());
+        }
+        // Re-render windows to show decorations
+        for (auto monitor : g_pCompositor->m_vMonitors) {
+            g_pHyprRenderer->damageMonitor(monitor);
+        }
+    }
+
+private:
+    friend class Trails;
+
+    int number;
+    ListNode<const PHLWINDOWREF> *active;
+    List<const PHLWINDOWREF> marks;
+};
+
+class Trails {
+public:
+    Trails() : counter(0), active(nullptr) {
+        //trail_new();
+    }
+    ~Trails() {
+        for (auto trail = trails.first(); trail != nullptr; trail = trail->next()) {
+            delete trail->data();
+        }
+        active = nullptr;
+        post_trailmark_event(nullptr);
+        post_trail_event();
+    }
+    void remove_window(PHLWINDOW window) {
+        for (auto trail = trails.first(); trail != nullptr; trail = trail->next()) {
+            trail->data()->remove_window(window);
+        }
+        post_trail_event();
+    }
+
+    size_t get_active_size() const {
+        return active ? active->data()->marks.size() : 0;
+    }
+    int get_active_number() const {
+        return active ? active->data()->number : -1;
+    }
+    bool get_active_marked(PHLWINDOW window) const {
+        return active ? active->data()->is_marked(window) : false;
+    }
+    PHLWINDOW get_active() const {
+        if (active == nullptr) {
+            return nullptr;
+        } else {
+            auto mark = active->data();
+            if (mark->active != nullptr) {
+                return mark->active->data().lock();
+            } else {
+                return nullptr;
+            }
+        }
+    }
+    void trail_new() {
+        trails.push_back(new Trail(counter++));
+        active = trails.last();
+        post_trail_event();
+    }
+    void trail_next() {
+        active = active == trails.last() ? trails.first() : active->next();
+        post_trail_event();
+    }
+    void trail_prev() {
+        active = active == trails.first() ? trails.last() : active->prev();
+        post_trail_event();
+    }
+    void trail_delete() {
+        if (active == nullptr)
+            return;
+        auto act = active == trails.first() ? active->next() : active->prev();
+        trails.erase(active);
+        delete active->data();
+        active = act;
+        post_trail_event();
+    }
+    void trail_clear() {
+        if (active == nullptr)
+            return;
+        active->data()->clear();
+        post_trail_event();
+    }
+
+    void trail_toselection() {
+        if (active == nullptr)
+            return;
+        active->data()->toselection();
+    }
+
+    void trailmark_toggle(PHLWINDOW window) {
+        if (active == nullptr) {
+            trail_new();
+        }
+        active->data()->toggle(window);
+        post_trailmark_event(window);
+        post_trail_event();
+    }
+    void trailmark_next() {
+        if (active == nullptr)
+            return;
+        active->data()->next();
+    }
+    void trailmark_prev() {
+        if (active == nullptr)
+            return;
+        active->data()->prev();
+    }
+
+    void post_trail_event() {
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("trail, {}, {}", get_active_number(), get_active_size())});
+    }
+    void post_trailmark_event(PHLWINDOW window) {
+        bool marked = false;
+        if (active != nullptr && active->data()->is_marked(window))
+            marked = true;
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("trailmark, {}", marked ? 1 : 0)});
+    }
+
+private:
+    int counter;
+    ListNode<Trail *> *active;
+    List<Trail *> trails;
+};
+
+static Trails *trails;
 
 class Column {
 public:
@@ -951,6 +1140,7 @@ public:
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
     void resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta);
     void selection_toggle();
+    void selection_set(PHLWINDOWREF window);
     void selection_reset();
     Column *selection_get(const Row *row);
     bool selection_exists() const;
@@ -1017,6 +1207,7 @@ public:
     void align_column(Direction dir);
     void pin();
     void selection_toggle();
+    void selection_set(PHLWINDOWREF window);
     void selection_reset();
     void selection_move(const List<Column *> &columns, Direction direction);
     void selection_get(const Row *row, List<Column *> &selection);
@@ -1597,6 +1788,16 @@ void Column::selection_toggle()
     active->data()->selection_toggle();
 }
 
+void Column::selection_set(PHLWINDOWREF window)
+{
+    for (auto w = windows.first(); w != nullptr; w = w->next()) {
+        if (w->data()->get_window() == window) {
+            w->data()->selection_set();
+            return;
+        }
+    }
+}
+
 void Column::selection_reset()
 {
     for (auto win = windows.first(); win != nullptr; win = win->next()) {
@@ -1937,6 +2138,13 @@ void Row::pin()
 void Row::selection_toggle()
 {
     active->data()->selection_toggle();
+}
+
+void Row::selection_set(PHLWINDOWREF window)
+{
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        col->data()->selection_set(window);
+    }
 }
 
 void Row::selection_reset()
@@ -2808,6 +3016,7 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 {
     marks.remove(window);
+    trails->remove_window(window);
 
     auto s = getRowForWindow(window);
     if (s == nullptr) {
@@ -3101,6 +3310,7 @@ void ScrollerLayout::replaceWindowDataWith(PHLWINDOW /* from */, PHLWINDOW /* to
 
 static SP<HOOK_CALLBACK_FN> workspaceHookCallback;
 static SP<HOOK_CALLBACK_FN> focusedMonHookCallback;
+static SP<HOOK_CALLBACK_FN> activeWindowHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeBeginHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeUpdateHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeEndHookCallback;
@@ -3123,6 +3333,10 @@ void ScrollerLayout::onEnable() {
         post_event(monitor->activeWorkspaceID(), "mode");
         post_event(monitor->activeWorkspaceID(), "overview");
     });
+    activeWindowHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "activeWindow", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
+        auto window = std::any_cast<PHLWINDOW>(param);
+        trails->post_trailmark_event(window);
+    });
 
     swipeBeginHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
         auto swipe_event = std::any_cast<IPointer::SSwipeBeginEvent>(param);
@@ -3142,6 +3356,7 @@ void ScrollerLayout::onEnable() {
     enabled = true;
     overviews = new Overview;
     marks.reset();
+    trails = new Trails();
     for (auto& window : g_pCompositor->m_vWindows) {
         if (window->m_bIsFloating || !window->m_bIsMapped || window->isHidden())
             continue;
@@ -3167,6 +3382,10 @@ void ScrollerLayout::onDisable() {
         focusedMonHookCallback.reset();
         focusedMonHookCallback = nullptr;
     }
+    if (activeWindowHookCallback != nullptr) {
+        activeWindowHookCallback.reset();
+        activeWindowHookCallback = nullptr;
+    }
     if (swipeBeginHookCallback != nullptr) {
         swipeBeginHookCallback.reset();
         swipeBeginHookCallback = nullptr;
@@ -3190,6 +3409,8 @@ void ScrollerLayout::onDisable() {
     }
     rows.clear();
     marks.reset();
+    delete trails;
+    trails = nullptr;
 }
 
 /*
@@ -3353,6 +3574,55 @@ void ScrollerLayout::marks_reset() {
     marks.reset();
 }
 
+// Trails and Trailmarks
+void ScrollerLayout::trail_new() {
+    trails->trail_new();
+}
+
+void ScrollerLayout::trail_next() {
+    trails->trail_next();
+}
+
+void ScrollerLayout::trail_prev() {
+    trails->trail_prev();
+}
+
+void ScrollerLayout::trail_delete() {
+    trails->trail_delete();
+}
+
+void ScrollerLayout::trail_clear() {
+    trails->trail_clear();
+}
+
+void ScrollerLayout::trail_toselection() {
+    trails->trail_toselection();
+}
+
+void ScrollerLayout::trailmark_toggle() {
+    PHLWINDOW window = getActiveWindow(get_workspace_id());
+    if (window != nullptr)
+        trails->trailmark_toggle(window);
+}
+
+void ScrollerLayout::trailmark_next() {
+    trails->trailmark_next();
+    PHLWINDOW from = getActiveWindow(get_workspace_id());
+    PHLWINDOW to = trails->get_active();
+    if (to != nullptr) {
+        switch_to_window(from, to);
+    }
+}
+
+void ScrollerLayout::trailmark_prev() {
+    trails->trailmark_prev();
+    PHLWINDOW from = getActiveWindow(get_workspace_id());
+    PHLWINDOW to = trails->get_active();
+    if (to != nullptr) {
+        switch_to_window(from, to);
+    }
+}
+
 void ScrollerLayout::pin(WORKSPACEID workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
@@ -3372,6 +3642,12 @@ void ScrollerLayout::selection_toggle(WORKSPACEID workspace) {
 
     // Re-render that monitor to remove decorations
     g_pHyprRenderer->damageMonitor(g_pCompositor->m_pLastMonitor.lock());
+}
+
+void ScrollerLayout::selection_set(PHLWINDOWREF window) {
+    for (auto row = rows.first(); row != nullptr; row = row->next()) {
+        row->data()->selection_set(window);
+    }
 }
 
 void ScrollerLayout::selection_reset() {

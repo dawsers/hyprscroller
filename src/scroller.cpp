@@ -48,13 +48,17 @@ struct Box {
 };
 
 enum class StandardSize {
-    OneSixth = 0,
+    OneEighth = 0,
+    OneSixth,
     OneFourth,
     OneThird,
+    ThreeEighths,
     OneHalf,
+    FiveEighths,
     TwoThirds,
     ThreeQuarters,
     FiveSixths,
+    SevenEighths,
     One,
     Free
 };
@@ -92,20 +96,28 @@ public:
         std::string size;
         std::stringstream stream(option);
         while (std::getline(stream, size, ' ')) {
-            if (size == "onesixth") {
+            if (size == "oneeighth") {
+                sizes.push_back(StandardSize::OneEighth);
+            } else if (size == "onesixth") {
                 sizes.push_back(StandardSize::OneSixth);
             } else if (size == "onefourth") {
                 sizes.push_back(StandardSize::OneFourth);
             } else if (size == "onethird") {
                 sizes.push_back(StandardSize::OneThird);
+            } else if (size == "threeeighths") {
+                sizes.push_back(StandardSize::ThreeEighths);
             } else if (size == "onehalf") {
                 sizes.push_back(StandardSize::OneHalf);
+            } else if (size == "fiveeighths") {
+                sizes.push_back(StandardSize::FiveEighths);
             } else if (size == "twothirds") {
                 sizes.push_back(StandardSize::TwoThirds);
             } else if (size == "threequarters") {
                 sizes.push_back(StandardSize::ThreeQuarters);
             } else if (size == "fivesixths") {
                 sizes.push_back(StandardSize::FiveSixths);
+            } else if (size == "seveneighths") {
+                sizes.push_back(StandardSize::SevenEighths);
             } else if (size == "one") {
                 sizes.push_back(StandardSize::One);
             }
@@ -130,13 +142,17 @@ static CycleSizes window_heights;
 static CycleSizes column_widths;
 
 enum class ConfigurationSize {
-    OneSixth = 0,
+    OneEighth = 0,
+    OneSixth,
     OneFourth,
     OneThird,
+    ThreeEighths,
     OneHalf,
+    FiveEighths,
     TwoThirds,
     ThreeQuarters,
     FiveSixths,
+    SevenEighths,
     One,
     Maximized,
     Floating
@@ -271,20 +287,28 @@ private:
     ConfigurationSize get_window_default_height_fron_string(const std::string &window_height) {
         if (window_height == "one") {
             return ConfigurationSize::One;
+        } else if (window_height == "oneeighth") {
+            return ConfigurationSize::OneEighth;
         } else if (window_height == "onesixth") {
             return ConfigurationSize::OneSixth;
         } else if (window_height == "onefourth") {
             return ConfigurationSize::OneFourth;
         } else if (window_height == "onethird") {
             return ConfigurationSize::OneThird;
+        } else if (window_height == "threeeighths") {
+            return ConfigurationSize::ThreeEighths;
         } else if (window_height == "onehalf") {
             return ConfigurationSize::OneHalf;
+        } else if (window_height == "fiveeighths") {
+            return ConfigurationSize::FiveEighths;
         } else if (window_height == "twothirds") {
             return ConfigurationSize::TwoThirds;
         } else if (window_height == "threequarters") {
             return ConfigurationSize::ThreeQuarters;
         } else if (window_height == "fivesixths") {
             return ConfigurationSize::FiveSixths;
+        } else if (window_height == "seveneighths") {
+            return ConfigurationSize::SevenEighths;
         } else {
             return ConfigurationSize::One;
         }
@@ -297,18 +321,26 @@ private:
     ConfigurationSize get_column_default_width_fron_string(const std::string &column_width) {
         if (column_width == "onehalf") {
             return ConfigurationSize::OneHalf;
+        } else if (column_width == "oneeighth") {
+            return ConfigurationSize::OneEighth;
         } else if (column_width == "onesixth") {
             return ConfigurationSize::OneSixth;
         } else if (column_width == "onefourth") {
             return ConfigurationSize::OneFourth;
         } else if (column_width == "onethird") {
             return ConfigurationSize::OneThird;
+        } else if (column_width == "threeeighths") {
+            return ConfigurationSize::ThreeEighths;
+        } else if (column_width == "fiveeighths") {
+            return ConfigurationSize::FiveEighths;
         } else if (column_width == "twothirds") {
             return ConfigurationSize::TwoThirds;
         } else if (column_width == "threequarters") {
             return ConfigurationSize::ThreeQuarters;
         } else if (column_width == "fivesixths") {
             return ConfigurationSize::FiveSixths;
+        } else if (column_width == "seveneighths") {
+            return ConfigurationSize::SevenEighths;
         } else if (column_width == "one") {
             return ConfigurationSize::One;
         } else if (column_width == "maximized") {
@@ -496,20 +528,28 @@ public:
         StandardSize h;
         if (window_height == ConfigurationSize::One) {
             h = StandardSize::One;
+        } else if (window_height == ConfigurationSize::OneEighth) {
+            h = StandardSize::OneEighth;
         } else if (window_height == ConfigurationSize::OneSixth) {
             h = StandardSize::OneSixth;
         } else if (window_height == ConfigurationSize::OneFourth) {
             h = StandardSize::OneFourth;
         } else if (window_height == ConfigurationSize::OneThird) {
             h = StandardSize::OneThird;
+        } else if (window_height == ConfigurationSize::ThreeEighths) {
+            h = StandardSize::ThreeEighths;
         } else if (window_height == ConfigurationSize::OneHalf) {
             h = StandardSize::OneHalf;
+        } else if (window_height == ConfigurationSize::FiveEighths) {
+            h = StandardSize::FiveEighths;
         } else if (window_height == ConfigurationSize::TwoThirds) {
             h = StandardSize::TwoThirds;
         } else if (window_height == ConfigurationSize::ThreeQuarters) {
             h = StandardSize::ThreeQuarters;
         } else if (window_height == ConfigurationSize::FiveSixths) {
             h = StandardSize::FiveSixths;
+        } else if (window_height == ConfigurationSize::SevenEighths) {
+            h = StandardSize::SevenEighths;
         } else {
             h = StandardSize::One;
         }
@@ -559,6 +599,9 @@ public:
         case StandardSize::One:
             box_h = max;
             break;
+        case StandardSize::SevenEighths:
+            box_h = 7.0 * max / 8.0;
+            break;
         case StandardSize::FiveSixths:
             box_h = 5.0 * max / 6.0;
             break;
@@ -568,8 +611,14 @@ public:
         case StandardSize::TwoThirds:
             box_h = 2.0 * max / 3.0;
             break;
+        case StandardSize::FiveEighths:
+            box_h = 5.0 * max / 8.0;
+            break;
         case StandardSize::OneHalf:
             box_h = 0.5 * max;
+            break;
+        case StandardSize::ThreeEighths:
+            box_h = 3.0 * max / 8.0;
             break;
         case StandardSize::OneThird:
             box_h = max / 3.0;
@@ -579,6 +628,9 @@ public:
             break;
         case StandardSize::OneSixth:
             box_h = max / 6.0;
+            break;
+        case StandardSize::OneEighth:
+            box_h = max / 8.0;
             break;
         default:
             break;
@@ -1261,18 +1313,26 @@ Column::Column(PHLWINDOW cwindow, double maxw, const Row *row)
         scroller_sizes.get_column_default_width(cwindow);
     if (column_width == ConfigurationSize::OneHalf) {
         width = StandardSize::OneHalf;
+    } else if (column_width == ConfigurationSize::OneEighth) {
+        width = StandardSize::OneEighth;
     } else if (column_width == ConfigurationSize::OneSixth) {
         width = StandardSize::OneSixth;
     } else if (column_width == ConfigurationSize::OneFourth) {
         width = StandardSize::OneFourth;
     } else if (column_width == ConfigurationSize::OneThird) {
         width = StandardSize::OneThird;
+    } else if (column_width == ConfigurationSize::ThreeEighths) {
+        width = StandardSize::ThreeEighths;
+    } else if (column_width == ConfigurationSize::FiveEighths) {
+        width = StandardSize::FiveEighths;
     } else if (column_width == ConfigurationSize::TwoThirds) {
         width = StandardSize::TwoThirds;
     } else if (column_width == ConfigurationSize::ThreeQuarters) {
         width = StandardSize::ThreeQuarters;
     } else if (column_width == ConfigurationSize::FiveSixths) {
         width = StandardSize::FiveSixths;
+    } else if (column_width == ConfigurationSize::SevenEighths) {
+        width = StandardSize::SevenEighths;
     } else if (column_width == ConfigurationSize::One) {
         width = StandardSize::One;
     } else if (column_width == ConfigurationSize::Maximized) {
@@ -1612,6 +1672,9 @@ void Column::update_width(StandardSize cwidth, double maxw)
         geom.w = maxw;
     } else {
         switch (cwidth) {
+        case StandardSize::OneEighth:
+            geom.w = maxw / 8.0;
+            break;
         case StandardSize::OneSixth:
             geom.w = maxw / 6.0;
             break;
@@ -1621,8 +1684,14 @@ void Column::update_width(StandardSize cwidth, double maxw)
         case StandardSize::OneThird:
             geom.w = maxw / 3.0;
             break;
+        case StandardSize::ThreeEighths:
+            geom.w = 3.0 * maxw / 8.0;
+            break;
         case StandardSize::OneHalf:
             geom.w = maxw / 2.0;
+            break;
+        case StandardSize::FiveEighths:
+            geom.w = 5.0 * maxw / 8.0;
             break;
         case StandardSize::TwoThirds:
             geom.w = 2.0 * maxw / 3.0;
@@ -1632,6 +1701,9 @@ void Column::update_width(StandardSize cwidth, double maxw)
             break;
         case StandardSize::FiveSixths:
             geom.w = 5.0 * maxw / 6.0;
+            break;
+        case StandardSize::SevenEighths:
+            geom.w = 7.0 * maxw / 8.0;
             break;
         case StandardSize::One:
             geom.w = maxw;
@@ -2238,6 +2310,9 @@ void Row::center_active_column()
         return;
 
     switch (column->get_width()) {
+    case StandardSize::OneEighth:
+        column->set_geom_pos(max.x + 7.0 * max.w / 16.0, max.y);
+        break;
     case StandardSize::OneSixth:
         column->set_geom_pos(max.x + 5.0 * max.w / 12.0, max.y);
         break;
@@ -2247,8 +2322,14 @@ void Row::center_active_column()
     case StandardSize::OneThird:
         column->set_geom_pos(max.x + max.w / 3.0, max.y);
         break;
+    case StandardSize::ThreeEighths:
+        column->set_geom_pos(max.x + 5.0 * max.w / 16.0, max.y);
+        break;
     case StandardSize::OneHalf:
         column->set_geom_pos(max.x + max.w / 4.0, max.y);
+        break;
+    case StandardSize::FiveEighths:
+        column->set_geom_pos(max.x + 3.0 * max.w / 16.0, max.y);
         break;
     case StandardSize::TwoThirds:
         column->set_geom_pos(max.x + max.w / 6.0, max.y);
@@ -2258,6 +2339,9 @@ void Row::center_active_column()
         break;
     case StandardSize::FiveSixths:
         column->set_geom_pos(max.x + max.w / 12.0, max.y);
+        break;
+    case StandardSize::SevenEighths:
+        column->set_geom_pos(max.x + 1.0 * max.w / 16.0, max.y);
         break;
     case StandardSize::One:
         column->set_geom_pos(max.x, max.y);

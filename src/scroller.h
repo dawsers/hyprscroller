@@ -72,6 +72,8 @@ public:
     void trailmark_next();
     void trailmark_prev();
 
+    void jump();
+
     void post_event(WORKSPACEID workspace, const std::string &event);
 
     void swipe_begin(IPointer::SSwipeBeginEvent);

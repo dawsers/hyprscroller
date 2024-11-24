@@ -6,6 +6,7 @@
 #include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
+#include <hyprland/src/devices/Keyboard.hpp>
 #include <sstream>
 #include <string>
 
@@ -15,6 +16,8 @@
 
 #include <unordered_map>
 #include <vector>
+
+#include <pango/pangocairo.h>
 
 extern HANDLE PHANDLE;
 extern std::unique_ptr<ScrollerLayout> g_ScrollerLayout;
@@ -1098,6 +1101,11 @@ public:
     size_t size() const {
         return windows.size();
     }
+    void get_windows(std::vector<PHLWINDOWREF> &pWindows) {
+        for (auto win = windows.first(); win != nullptr; win = win->next()) {
+            pWindows.push_back(win->data()->get_window());
+        }
+    }
     bool has_window(PHLWINDOW window) const;
     void add_active_window(PHLWINDOW window);
     void remove_window(PHLWINDOW window);
@@ -1244,6 +1252,11 @@ public:
     }
     bool is_active(PHLWINDOW window) const {
         return get_active_window() == window;
+    }
+    void get_windows(std::vector<PHLWINDOWREF> &windows) {
+        for (auto col = columns.first(); col != nullptr; col = col->next()) {
+            col->data()->get_windows(windows);
+        }
     }
     void add_active_window(PHLWINDOW window);
     // Remove a window and re-adapt rows and columns, returning
@@ -3033,6 +3046,172 @@ void Row::adjust_overview_columns()
     }
 }
 
+// Jump
+class JumpDecoration : public IHyprWindowDecoration {
+  public:
+    JumpDecoration(PHLWINDOW, int nchars, int number);
+    virtual ~JumpDecoration();
+
+    virtual SDecorationPositioningInfo getPositioningInfo();
+    virtual void                       onPositioningReply(const SDecorationPositioningReply& reply);
+    virtual void                       draw(PHLMONITOR, float const& a);
+    virtual eDecorationType            getDecorationType();
+    virtual void                       updateWindow(PHLWINDOW);
+    virtual void                       damageEntire();
+    virtual eDecorationLayer           getDecorationLayer();
+    virtual uint64_t                   getDecorationFlags();
+    virtual std::string                getDisplayName();
+
+    int getNumber() const { return m_iNumber; }
+
+  private:
+    PHLWINDOWREF m_pWindow;
+    CBox m_bAssignedGeometry = { 0 };
+    CBox assignedBoxGlobal();
+
+    int m_iChars;
+    int m_iNumber;
+    SP<CTexture> m_pTexture;
+};
+
+JumpDecoration::JumpDecoration(PHLWINDOW window, int nchars, int number) : IHyprWindowDecoration(window) {
+    m_pWindow = window;
+    m_iChars = nchars;
+    m_iNumber = number;
+}
+
+JumpDecoration::~JumpDecoration() {
+}
+
+SDecorationPositioningInfo JumpDecoration::getPositioningInfo() {
+    SDecorationPositioningInfo info;
+    info.policy = DECORATION_POSITION_STICKY;
+    info.edges = DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP;
+    return info;
+}
+
+void JumpDecoration::onPositioningReply(const SDecorationPositioningReply& reply) {
+    m_bAssignedGeometry = reply.assignedGeometry;
+}
+
+CBox JumpDecoration::assignedBoxGlobal() {
+    static auto *const *TEXTSCALE = (Hyprlang::FLOAT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_scale")->getDataStaticPtr();
+    CBox box = m_bAssignedGeometry;
+    box.translate(g_pDecorationPositioner->getEdgeDefinedPoint(DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP, m_pWindow.lock()));
+
+    const double scale = **TEXTSCALE < 0.1 ? 0.1 : **TEXTSCALE > 1.0 ? 1.0 : **TEXTSCALE;
+    box.scaleFromCenter(scale);
+
+    const auto PWORKSPACE = m_pWindow->m_pWorkspace;
+
+    if (!PWORKSPACE)
+        return box;
+
+    const auto WORKSPACEOFFSET = PWORKSPACE->m_vRenderOffset.value();
+    return box.translate(WORKSPACEOFFSET);
+}
+
+void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
+    CBox windowBox = assignedBoxGlobal().translate(-pMonitor->vecPosition).scale(pMonitor->scale).round();
+
+    if (windowBox.width < 1 || windowBox.height < 1)
+        return;
+
+    if (m_pTexture.get() == nullptr) {
+        m_pTexture = makeShared<CTexture>();
+        static auto TEXTFONTSIZE = 64;
+        static auto  FALLBACKFONT = CConfigValue<std::string>("misc:font_family");
+        static auto const *TEXTFONTFAMILY = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_font")->getDataStaticPtr();
+        static auto *const *TEXTCOL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_color")->getDataStaticPtr();
+        const CColor color = CColor(**TEXTCOL);
+        std::string font_family(*TEXTFONTFAMILY);
+        if (font_family == "")
+            font_family = *FALLBACKFONT;
+
+        const auto LAYOUTSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
+    	const auto LAYOUTCAIRO = cairo_create(LAYOUTSURFACE);
+	    cairo_surface_destroy(LAYOUTSURFACE);
+
+    	PangoLayout *layout = pango_cairo_create_layout(LAYOUTCAIRO);
+	    pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+        const std::string fmt = "{:0" + std::to_string(m_iChars) + "d}";
+        std::string label = std::vformat(fmt, std::make_format_args(m_iNumber));
+    	pango_layout_set_text(layout, label.c_str(), -1);
+
+        PangoFontDescription* font_desc = pango_font_description_new();
+        pango_font_description_set_family_static(font_desc, font_family.c_str());
+        pango_font_description_set_size(font_desc, TEXTFONTSIZE * PANGO_SCALE * a);
+        pango_layout_set_font_description(layout, font_desc);
+        pango_font_description_free(font_desc);
+
+        int layout_width, layout_height;
+	    PangoRectangle ink_rect;
+    	PangoRectangle logical_rect;
+	    pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
+        layout_width = ink_rect.width;
+        layout_height = ink_rect.height;
+
+        const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, layout_width, layout_height);
+        const auto CAIRO = cairo_create(CAIROSURFACE);
+
+        // clear the pixmap
+        cairo_save(CAIRO);
+        cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
+        cairo_paint(CAIRO);
+        cairo_restore(CAIRO);
+        cairo_move_to(CAIRO, -ink_rect.x, -ink_rect.y);
+        cairo_set_source_rgba(CAIRO, color.r, color.g, color.b, color.a);
+        pango_cairo_show_layout(CAIRO, layout);
+
+        g_object_unref(layout);
+
+        cairo_surface_flush(CAIROSURFACE);
+
+        // copy the data to an OpenGL texture we have
+        const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
+        m_pTexture->allocate();
+        glBindTexture(GL_TEXTURE_2D, m_pTexture->m_iTexID);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+#ifndef GLES2
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#endif
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, layout_width, layout_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
+
+        // delete cairo
+        cairo_destroy(LAYOUTCAIRO);
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+    }
+
+    g_pHyprOpenGL->renderTexture(m_pTexture, &windowBox, a);
+}
+
+eDecorationType JumpDecoration::getDecorationType() {
+    return DECORATION_CUSTOM;
+}
+
+void JumpDecoration::updateWindow(PHLWINDOW) {
+}
+
+void JumpDecoration::damageEntire() {
+}
+
+eDecorationLayer JumpDecoration::getDecorationLayer() {
+    return DECORATION_LAYER_OVERLAY;
+}
+
+uint64_t JumpDecoration::getDecorationFlags() {
+    return DECORATION_PART_OF_MAIN_WINDOW;
+}
+
+std::string JumpDecoration::getDisplayName() {
+    return "Overview";
+}
+
 Row *ScrollerLayout::getRowForWorkspace(WORKSPACEID workspace) {
     for (auto row = rows.first(); row != nullptr; row = row->next()) {
         if (row->data()->get_workspace() == workspace)
@@ -3810,6 +3989,115 @@ void ScrollerLayout::selection_move(WORKSPACEID workspace, Direction direction) 
 
     if (overview_on)
         s->toggle_overview();
+}
+
+typedef struct JumpData {
+    typedef struct {
+        Row *row;
+        bool overview;
+    } Rows;
+    std::vector<Rows> workspaces;
+    std::vector<PHLWINDOWREF> windows;
+    std::vector<JumpDecoration *> decorations;
+    int keys_pressed = 0;
+    int window_number = 0;
+    int nkeys;
+    SP<HOOK_CALLBACK_FN> keyPressHookCallback;
+} JumpData;
+
+static JumpData *jump_data;
+
+void ScrollerLayout::jump() {
+    jump_data = new JumpData;
+
+    for (auto monitor : g_pCompositor->m_vMonitors) {
+        WORKSPACEID workspace_id = monitor->activeSpecialWorkspaceID();
+        if (!workspace_id) {
+            workspace_id = monitor->activeWorkspaceID();
+        }
+        auto s = getRowForWorkspace(workspace_id);
+        if (s == nullptr)
+            continue;
+
+        jump_data->workspaces.push_back({s, s->is_overview()});
+    }
+    if (jump_data->workspaces.size() == 0) {
+        delete jump_data;
+        return;
+    }
+
+    for (auto workspace : jump_data->workspaces) {
+        workspace.row->get_windows(jump_data->windows);
+    }
+    if (jump_data->windows.size() == 0) {
+        delete jump_data;
+        return;
+    }
+
+    jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()));
+    int i = 0;
+    for (auto window : jump_data->windows) {
+        std::unique_ptr<JumpDecoration> deco = std::make_unique<JumpDecoration>(window.lock(), jump_data->nkeys, i++);
+        jump_data->decorations.push_back(deco.get());
+        HyprlandAPI::addWindowDecoration(PHANDLE, window.lock(), std::move(deco));
+    }
+
+    // Set overview mode for those workspaces that are not
+    for (auto workspace : jump_data->workspaces) {
+        if (!workspace.overview) {
+            workspace.row->toggle_overview();
+        }
+    }
+    jump_data->keys_pressed = 0;
+    jump_data->window_number = 0;
+
+    jump_data->keyPressHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "keyPress", [&](void* /* self */, SCallbackInfo& info, std::any param) {
+        auto keypress_event = std::any_cast<std::unordered_map<std::string, std::any>>(param);
+        auto keyboard = std::any_cast<SP<IKeyboard>>(keypress_event["keyboard"]);
+        auto event = std::any_cast<IKeyboard::SKeyEvent>(keypress_event["event"]);
+
+        const auto KEYCODE = event.keycode + 8; // Because to xkbcommon it's +8 from libinput
+        const xkb_keysym_t keysym = xkb_state_key_get_one_sym(keyboard->xkbState, KEYCODE);
+
+        if (event.state != WL_KEYBOARD_KEY_STATE_PRESSED)
+            return;
+
+        // Check if key is 0 to 9, otherwise exit
+        bool valid = false;
+        const char *keys[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        for (int i = 0; i < 10; ++i) {
+            xkb_keysym_t key = xkb_keysym_from_name(keys[i], XKB_KEYSYM_NO_FLAGS);
+            if (key && key == keysym) {
+                jump_data->window_number = jump_data->window_number * 10 + i;
+                valid = true;
+                break;
+            }
+        }
+        if (valid) {
+            jump_data->keys_pressed++;
+            if (jump_data->keys_pressed == jump_data->nkeys) {
+                if (jump_data->window_number < jump_data->windows.size())
+                    g_pCompositor->focusWindow(jump_data->windows[jump_data->window_number].lock());
+            } else {
+                return;
+            }
+        }
+
+        // Finished, remove decorations
+        for (size_t i = 0; i < jump_data->windows.size(); ++i) {
+            jump_data->windows[i]->removeWindowDeco(jump_data->decorations[i]);
+        }
+
+        // Restore original ovreview state
+        for (auto workspace : jump_data->workspaces) {
+            if (!workspace.overview) {
+                workspace.row->toggle_overview();
+            }
+        }
+        jump_data->keyPressHookCallback.reset();
+        delete jump_data;
+        info.cancelled = true;
+    });
 }
 
 void ScrollerLayout::post_event(WORKSPACEID workspace, const std::string &event) {

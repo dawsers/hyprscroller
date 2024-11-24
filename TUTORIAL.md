@@ -81,6 +81,26 @@ of the whole workspace.
 [overview-mode.mp4](https://github.com/user-attachments/assets/5f43ba62-ef97-4677-aa81-cf6169168bff)
 
 
+## Jump Mode
+
+Jump mode takes advantage of overview mode to provide a very quick way to focus on
+any window on your monitors. Similar to [vim-easymotion](https://github.com/easymotion/vim-easymotion),
+it overlays a label on each window. Pressing all the numbers of a label,
+changes focus to the selected window.
+
+1. Assign a key binding to `scroller:jump`, for this tutorial:
+
+```
+bind = $mainMod, slash, scroller:jump,
+```
+
+2. Pressing your `mod` key and `/` will show an overview of your windows on
+   each monitor.
+3. Now press the numbers shown on the overlay for the window you want to change
+   focus to.
+4. `jump` will exit, and the focus will be on the window you selected.
+
+
 ## Pinning a Column
 
 Sometimes you want to keep one window static at all times, for example an

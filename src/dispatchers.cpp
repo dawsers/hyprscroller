@@ -269,6 +269,12 @@ namespace dispatchers {
 
         g_ScrollerLayout->trailmark_prev();
     }
+    void dispatch_jump(std::string) {
+        if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
+            return;
+
+        g_ScrollerLayout->jump();
+    }
     void addDispatchers() {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
@@ -296,5 +302,6 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarktoggle", dispatch_trailmarktoggle);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarknext", dispatch_trailmarknext);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarkprevious", dispatch_trailmarkprev);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:jump", dispatch_jump);
     }
 }

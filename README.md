@@ -8,8 +8,8 @@ similar to [PaperWM](https://github.com/paperwm/PaperWM).
 
 The plugin is quite feature complete and supports gaps, borders, decorations,
 special workspace, full screen modes, overview, marks, pinned columns,
-touchpad gestures, copying/pasting windows, trails/trailmarks, and installation
-through `hyprpm`.
+touchpad gestures, copying/pasting windows, trails/trailmarks, quick jump mode,
+and installation through `hyprpm`.
 
 Check the [Tutorial](./TUTORIAL.md) for a quick overview of *hyprscroller's* main
 features.
@@ -148,6 +148,7 @@ The plugin adds the following dispatchers:
 | `scroller:trailmarktoggle`  | Toggles a trailmark for the current window in the active trail                                                              |
 | `scroller:trailmarknext`    | Moves to next trailmark in the current trail                                                                                |
 | `scroller:trailmarkprevious`| Moves to previous trailmark in the current trail                                                                            |
+| `scroller:jump`             | Shows every window on the active monitors for a shortcut-based, quick focus mode                                            |
 
 
 ## Modes
@@ -263,6 +264,28 @@ supported on x86_64 -Intel/AMD CPUs), the default value will be `false`. If
 you simply want to have the content at the original size, you can also turn
 this option manually to `false`.
 
+## Jump
+
+`scroller:jump` provides a shortcut-based quick focus mode for any window on
+the active workspaces, similar to [vim-easymotion](https://github.com/easymotion/vim-easymotion)
+and variations.
+
+It shows all the windows on your monitors' active workspaces in overview, and
+waits for a combination of number key presses (overlaid on each window) to quickly
+change focus to the selected window. Pressing any key that is not a number or
+a combination that doesn't exist, exits jump mode without changes.
+
+Depending on the total number of windows, you will have to press more or less
+keys. For example, if there are ten or less windows, `0` to `9` will allow you
+to change focus to any of them. If there are more, you will need to press more
+keys. Each window has its full combination on the overlay.
+
+You can call `jump` from any mode: overview, full screen or normal mode.
+
+There are three options related to `scroller:jump`:
+`plugin:scroller:jump_labels_font`, `plugin:scroller:jump_labels_color` and
+`plugin:scroller:jump_labels_scale`. These options are explained in detail in
+**Options**.
 
 ## Marks
 
@@ -609,6 +632,23 @@ overview mode. Possible arguments are: `true`|`1` (default), or
 
 It is the color of the border of selected windows. The default value is
 `0xff9e1515`, which is `red`.
+
+### `jump_labels_font`
+
+It is a string with the font to use for `jump` labels. If omitted, the default
+is to use whatever you have set as default for Hyprland (`misc:font_family`).
+
+### `jump_labels_color`
+
+Color of the numbers for the `jump` labels. The default is `0x159eff15`, which
+is a tone of green/blue.
+
+### `jump_labels_scale`
+
+`jump` labels will be centered in each window, and this parameter scales their
+size. The default is `0.5`. `1.0` would make the label fit the full size of
+the window, and it's the maximum allowed, `0.1` is the minimum allowed, and
+would make the label's box size 10% of the width and height of the window.
 
 ### `column_widths`
 
@@ -977,5 +1017,7 @@ bind = , semicolon, scroller:trailmarktoggle,
 bind = , semicolon, submap, reset
 bind = , escape, submap, reset
 submap = reset
+
+bind = $mainMod, slash, scroller:jump,
 ```
 

@@ -640,8 +640,8 @@ is to use whatever you have set as default for Hyprland (`misc:font_family`).
 
 ### `jump_labels_color`
 
-Color of the numbers for the `jump` labels. The default is `0x159eff15`, which
-is a tone of green/blue.
+Color of the numbers for the `jump` labels. The default is `0x80159e30`, which
+is a tone of green.
 
 ### `jump_labels_scale`
 

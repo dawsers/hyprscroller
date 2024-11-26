@@ -1,3 +1,6 @@
+#ifndef SCROLLER_OVERVIEW_H
+#define SCROLLER_OVERVIEW_H
+
 #include <hyprland/src/SharedDefs.hpp>
 #include <unordered_map>
 
@@ -29,3 +32,4 @@ private:
     std::unordered_map<WORKSPACEID, OverviewData> workspaces;
 };
 
+#endif // SCROLLER_OVERVIEW_H

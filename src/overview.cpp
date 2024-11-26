@@ -178,7 +178,7 @@ static PHLMONITOR hookGetMonitorFromVector(void *thisptr, const Vector2D& point)
     }
 
     if (!pBestMon) { // ?????
-        Debug::log(WARN, "getMonitorFromVector no close mon???");
+        //Debug::log(WARN, "getMonitorFromVector no close mon???");
         return compositor->m_vMonitors.front();
     }
 

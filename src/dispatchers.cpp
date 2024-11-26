@@ -5,6 +5,7 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <optional>
 
+#include "enums.h"
 #include "dispatchers.h"
 #include "scroller.h"
 

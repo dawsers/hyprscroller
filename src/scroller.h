@@ -1,12 +1,13 @@
+#ifndef SCROLLER_SCROLLER_H
+#define SCROLLER_SCROLLER_H
+
 #include <hyprland/src/layout/IHyprLayout.hpp>
 
 #include "list.h"
 #include <hyprland/src/SharedDefs.hpp>
 #include <hyprland/src/devices/IPointer.hpp>
 
-enum class Direction { Left, Right, Up, Down, Begin, End, Center };
-enum class FitSize { Active, Visible, All, ToEnd, ToBeg };
-enum class Mode { Row, Column };
+#include "enums.h"
 
 class Row;
 
@@ -94,3 +95,5 @@ private:
     bool swipe_active;
     Direction swipe_direction;
 };
+
+#endif  // SCROLLER_SCROLLER_H

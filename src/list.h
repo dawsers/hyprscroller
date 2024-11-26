@@ -1,3 +1,6 @@
+#ifndef SCROLLER_LIST_H
+#define SCROLLER_LIST_H
+
 #include <algorithm>
 
 template<typename T> class List;
@@ -181,3 +184,4 @@ private:
     ListNode<T> *m_last;
 };
 
+#endif  // SCROLLER_LIST_H

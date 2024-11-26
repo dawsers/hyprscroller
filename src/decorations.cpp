@@ -154,6 +154,7 @@ JumpDecoration::JumpDecoration(PHLWINDOW window, int nchars, int number) : IHypr
     m_pWindow = window;
     m_iChars = nchars;
     m_iNumber = number;
+    m_pTexture = nullptr;
 }
 
 JumpDecoration::~JumpDecoration() {
@@ -195,7 +196,7 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
     
     const bool ANIMATED = m_pWindow->m_vRealPosition.isBeingAnimated();
 
-    if (m_pTexture.get() == nullptr || ANIMATED) {
+    if (m_pTexture.get() == nullptr) {
         m_pTexture = makeShared<CTexture>();
         static auto TEXTFONTSIZE = 64;
         static auto  FALLBACKFONT = CConfigValue<std::string>("misc:font_family");
@@ -267,8 +268,9 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
 
     g_pHyprOpenGL->renderTexture(m_pTexture, &windowBox, a);
 
-    if (ANIMATED)
+    if (ANIMATED) {
         m_pTexture.reset();
+    }
 }
 
 eDecorationType JumpDecoration::getDecorationType() {

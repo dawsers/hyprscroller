@@ -518,7 +518,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
     } else {
         if (EFFECTIVE_MODE == CURRENT_EFFECTIVE_MODE)
             return;
-        s->set_fullscreen_mode(CURRENT_EFFECTIVE_MODE, EFFECTIVE_MODE);
+        s->set_fullscreen_mode(window, CURRENT_EFFECTIVE_MODE, EFFECTIVE_MODE);
     }
     g_pCompositor->changeWindowZOrder(window, true);
 }

@@ -61,7 +61,7 @@ public:
     // Returns the old viewport
     bool update_sizes(PHLMONITOR monitor);
     void set_fullscreen_mode_windows(eFullscreenMode mode);
-    void set_fullscreen_mode(eFullscreenMode cur_mode, eFullscreenMode new_mode);
+    void set_fullscreen_mode(PHLWINDOW window, eFullscreenMode cur_mode, eFullscreenMode new_mode);
     void fit_size(FitSize fitsize);
     bool is_overview() const;
     void toggle_overview();

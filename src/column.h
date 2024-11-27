@@ -24,6 +24,7 @@ public:
         }
     }
     bool has_window(PHLWINDOW window) const;
+    Window *get_window(PHLWINDOW window) const;
     void add_active_window(PHLWINDOW window);
     void remove_window(PHLWINDOW window);
     void focus_window(PHLWINDOW window);
@@ -70,12 +71,6 @@ public:
     }
     void set_active_window_geometry(const Box &box) {
         active->data()->set_geometry(box);
-    }
-    void push_active_window_geometry() {
-        active->data()->push_geom();
-    }
-    void pop_active_window_geometry() {
-        active->data()->pop_geom();
     }
     bool fullscreen() const {
         return active->data()->fullscreen_state() != eFullscreenMode::FSMODE_NONE;

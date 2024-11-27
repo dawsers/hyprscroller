@@ -106,6 +106,15 @@ bool Column::has_window(PHLWINDOW window) const
     return false;
 }
 
+Window *Column::get_window(PHLWINDOW window) const
+{
+    for (auto win = windows.first(); win != nullptr; win = win->next()) {
+        if (win->data()->is_window(window))
+            return win->data();
+    }
+    return nullptr;
+}
+
 void Column::add_active_window(PHLWINDOW window)
 {
     reorder = Reorder::Auto;

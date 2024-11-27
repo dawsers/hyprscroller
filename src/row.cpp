@@ -670,27 +670,33 @@ void Row::set_fullscreen_mode_windows(eFullscreenMode mode)
     }
 }
 
-void Row::set_fullscreen_mode(eFullscreenMode cur_mode, eFullscreenMode new_mode)
+void Row::set_fullscreen_mode(PHLWINDOW window, eFullscreenMode cur_mode, eFullscreenMode new_mode)
 {
     reorder = Reorder::Auto;
-    Column *column = active->data();
-    switch (new_mode) {
-    case eFullscreenMode::FSMODE_NONE:
-        column->pop_active_window_geometry();
-        set_fullscreen_mode_windows(eFullscreenMode::FSMODE_NONE);
-        break;
-    case eFullscreenMode::FSMODE_FULLSCREEN:
-        if (cur_mode == eFullscreenMode::FSMODE_NONE)
-            column->push_active_window_geometry();
-        set_fullscreen_mode_windows(eFullscreenMode::FSMODE_FULLSCREEN);
-        break;
-    case eFullscreenMode::FSMODE_MAXIMIZED:
-        if (cur_mode == eFullscreenMode::FSMODE_NONE)
-            column->push_active_window_geometry();
-        set_fullscreen_mode_windows(eFullscreenMode::FSMODE_MAXIMIZED);
-        break;
-    default:
-        return;
+    Window *win = nullptr;
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        win = col->data()->get_window(window);
+        if (win != nullptr)
+            break;
+    }
+    if (win != nullptr) {
+        switch (new_mode) {
+        case eFullscreenMode::FSMODE_NONE:
+            win->pop_geom();
+            break;
+        case eFullscreenMode::FSMODE_FULLSCREEN:
+            if (cur_mode == eFullscreenMode::FSMODE_NONE)
+                win->push_geom();
+            win->set_geometry(full);
+            break;
+        case eFullscreenMode::FSMODE_MAXIMIZED:
+            if (cur_mode == eFullscreenMode::FSMODE_NONE)
+                win->push_geom();
+            win->set_geometry(max);
+            break;
+        default:
+            return;
+        }
     }
 }
 

@@ -154,6 +154,7 @@ JumpDecoration::JumpDecoration(PHLWINDOW window, int nchars, int number) : IHypr
     m_pWindow = window;
     m_iChars = nchars;
     m_iNumber = number;
+    m_iFrames = 0;
     m_pTexture = nullptr;
 }
 
@@ -194,9 +195,10 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
     if (windowBox.width < 1 || windowBox.height < 1)
         return;
     
-    const bool ANIMATED = m_pWindow->m_vRealPosition.isBeingAnimated();
+    const bool ANIMATED = m_pWindow->m_vRealPosition.isBeingAnimated() || m_pWindow->m_vRealSize.isBeingAnimated();
 
     if (m_pTexture.get() == nullptr) {
+        m_iFrames++;
         m_pTexture = makeShared<CTexture>();
         static auto TEXTFONTSIZE = 64;
         static auto  FALLBACKFONT = CConfigValue<std::string>("misc:font_family");
@@ -268,7 +270,9 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
 
     g_pHyprOpenGL->renderTexture(m_pTexture, &windowBox, a);
 
-    if (ANIMATED) {
+    if (ANIMATED || m_iFrames < 3) {
+        // Render at least 3 frames to prevent a possible black texture
+        // when there is no animation but the window is off
         m_pTexture.reset();
     }
 }

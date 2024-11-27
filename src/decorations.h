@@ -59,6 +59,7 @@ class JumpDecoration : public IHyprWindowDecoration {
 
     int m_iChars;
     int m_iNumber;
+    int m_iFrames;
     SP<CTexture> m_pTexture;
 };
 

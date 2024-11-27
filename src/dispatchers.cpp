@@ -12,6 +12,7 @@
 
 extern HANDLE PHANDLE;
 extern std::unique_ptr<ScrollerLayout> g_ScrollerLayout;
+extern std::function<SDispatchResult(std::string)> orig_moveActiveTo;
 
 
 namespace dispatchers {
@@ -31,7 +32,7 @@ namespace dispatchers {
         else if (arg == "c" || arg == "center" || arg == "centre")
             return Direction::Center;
         else
-            return {};
+            return Direction::Invalid;
     }
 
     int workspace_for_action() {
@@ -76,7 +77,8 @@ namespace dispatchers {
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
-            g_ScrollerLayout->move_focus(workspace, *direction);
+            if (direction != Direction::Invalid)
+                g_ScrollerLayout->move_focus(workspace, *direction);
         }
     }
 
@@ -87,7 +89,10 @@ namespace dispatchers {
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
-            g_ScrollerLayout->move_window(workspace, *direction);
+            if (direction != Direction::Invalid)
+                g_ScrollerLayout->move_window(workspace, *direction);
+            else
+               orig_moveActiveTo(arg);
         }
     }
 
@@ -98,7 +103,8 @@ namespace dispatchers {
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
-            g_ScrollerLayout->align_window(workspace, *direction);
+            if (direction != Direction::Invalid)
+                g_ScrollerLayout->align_window(workspace, *direction);
         }
     }
 
@@ -213,7 +219,8 @@ namespace dispatchers {
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
-            g_ScrollerLayout->selection_move(workspace, *direction);
+            if (direction != Direction::Invalid)
+                g_ScrollerLayout->selection_move(workspace, *direction);
         }
     }
     void dispatch_trailnew(std::string) {

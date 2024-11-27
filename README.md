@@ -81,9 +81,11 @@ hyprctl plugin load /home/xxxx/.config/hypr/plugins/hyprscroller.so
 
 ### NixOS
 
-I don't use NixOS, so the "flakes" in this repo are maintained by users, and
-may not be up to date. However, it seems *hyprscroller* is now an official
-unstable package in [nixpkgs](https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=hyprlandPlugins.hyprscroller) so you can install it from there.
+*hyprscroller* is now an official unstable package in [nixpkgs](https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=hyprlandPlugins.hyprscroller),
+so you can install it from there. I don't maintain *flakes* any more because
+they were usually very out of date and I don't know enough about NixOS to keep
+them alive. If you need a newer version than the NixOS package, I recommend you
+temporarily use `hyprpm`.
 
 
 ## Configuration

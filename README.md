@@ -661,7 +661,7 @@ your keyboard.
 
 ### `column_widths`
 
-Determines the set of column widths *hyprscroler* will
+Determines the set of column widths *hyprscroller* will
 cycle through when resizing the width of a column in *row* mode. It is a string
 of any number of values chosen among: *oneeighth, onesixth, onefourth, onethird,
 threeeighths, onehalf, fiveeighths, twothirds, threequarters, fivesixths,
@@ -669,7 +669,7 @@ seveneighths, one*. The default value is: *onehalf twothirds onethird*.
 
 ### `window_heights`
 
-Determines the set of window heights *hyprscroler* will
+Determines the set of window heights *hyprscroller* will
 cycle through when resizing the height of a window in *column* mode. It is a
 string of any number of values chosen among: *oneeighth, onesixth, onefourth,
 onethird, threeeighths, onehalf, fiveeighths, twothirds, threequarters,

@@ -37,7 +37,7 @@ class SelectionBorders : public IHyprWindowDecoration {
 
 class JumpDecoration : public IHyprWindowDecoration {
   public:
-    JumpDecoration(PHLWINDOW, int nchars, int number);
+    JumpDecoration(PHLWINDOW, const std::string &label);
     virtual ~JumpDecoration();
 
     virtual SDecorationPositioningInfo getPositioningInfo();
@@ -50,15 +50,12 @@ class JumpDecoration : public IHyprWindowDecoration {
     virtual uint64_t                   getDecorationFlags();
     virtual std::string                getDisplayName();
 
-    int getNumber() const { return m_iNumber; }
-
   private:
     PHLWINDOWREF m_pWindow;
     CBox m_bAssignedGeometry = { 0 };
     CBox assignedBoxGlobal();
 
-    int m_iChars;
-    int m_iNumber;
+    std::string m_sLabel;
     int m_iFrames;
     SP<CTexture> m_pTexture;
 };

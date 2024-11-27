@@ -150,10 +150,9 @@ bool SelectionBorders::doesntWantBorders() {
 
 
 // JumpDecoration
-JumpDecoration::JumpDecoration(PHLWINDOW window, int nchars, int number) : IHyprWindowDecoration(window) {
+JumpDecoration::JumpDecoration(PHLWINDOW window, const std::string &label) : IHyprWindowDecoration(window) {
     m_pWindow = window;
-    m_iChars = nchars;
-    m_iNumber = number;
+    m_sLabel = label;
     m_iFrames = 0;
     m_pTexture = nullptr;
 }
@@ -215,9 +214,7 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
 
     	PangoLayout *layout = pango_cairo_create_layout(LAYOUTCAIRO);
 	    pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
-        const std::string fmt = "{:0" + std::to_string(m_iChars) + "d}";
-        std::string label = std::vformat(fmt, std::make_format_args(m_iNumber));
-    	pango_layout_set_text(layout, label.c_str(), -1);
+    	pango_layout_set_text(layout, m_sLabel.c_str(), -1);
 
         PangoFontDescription* font_desc = pango_font_description_new();
         pango_font_description_set_family_static(font_desc, font_family.c_str());

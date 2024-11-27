@@ -271,21 +271,20 @@ the active workspaces, similar to [vim-easymotion](https://github.com/easymotion
 and variations.
 
 It shows all the windows on your monitors' active workspaces in overview, and
-waits for a combination of number key presses (overlaid on each window) to quickly
-change focus to the selected window. Pressing any key that is not a number or
+waits for a combination of key presses (overlaid on each window) to quickly
+change focus to the selected window. Pressing any key that is not on the list or
 a combination that doesn't exist, exits jump mode without changes.
 
-Depending on the total number of windows, you will have to press more or less
-keys. For example, if there are ten or less windows, `0` to `9` will allow you
-to change focus to any of them. If there are more, you will need to press more
-keys. Each window has its full combination on the overlay.
+Depending on the total number of windows and keys you set on your list, you
+will have to press more or less times. Each window has its full combination
+on the overlay.
 
 You can call `jump` from any mode: overview, full screen or normal mode.
 
-There are three options related to `scroller:jump`:
-`plugin:scroller:jump_labels_font`, `plugin:scroller:jump_labels_color` and
-`plugin:scroller:jump_labels_scale`. These options are explained in detail in
-**Options**.
+There are four options related to `scroller:jump`:
+`plugin:scroller:jump_labels_font`, `plugin:scroller:jump_labels_color`,
+`plugin:scroller:jump_labels_scale` and `plugin:scroller:jump_labels_keys`.
+These options are explained in detail in **Options**.
 
 ## Marks
 
@@ -640,7 +639,7 @@ is to use whatever you have set as default for Hyprland (`misc:font_family`).
 
 ### `jump_labels_color`
 
-Color of the numbers for the `jump` labels. The default is `0x80159e30`, which
+Color of the text for the `jump` labels. The default is `0x80159e30`, which
 is a tone of green.
 
 ### `jump_labels_scale`
@@ -649,6 +648,16 @@ is a tone of green.
 size. The default is `0.5`. `1.0` would make the label fit the full size of
 the window, and it's the maximum allowed, `0.1` is the minimum allowed, and
 would make the label's box size 10% of the width and height of the window.
+
+### `jump_labels_keys`
+
+It is a string with the keys that will be used for the labels. The default is
+`1234`, which means labels will show a unique combination of `1`, `2`, `3` and
+`4`. The more keys you set on this option, the shorter the combination of key
+presses to reach any window, but some times, reaching for those keys can be
+slower. Some people prefer to use `qwerasdf` which provides a shorter label
+and good reachability. The perfect combination depends on how you use
+your keyboard.
 
 ### `column_widths`
 

@@ -5,8 +5,6 @@
 #include "row.h"
 #include "overview.h"
 
-#include <format>
-
 extern HANDLE PHANDLE;
 extern Overview *overviews;
 extern std::function<SDispatchResult(std::string)> orig_moveFocusTo;

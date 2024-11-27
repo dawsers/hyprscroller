@@ -66,6 +66,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:jump_labels_font", Hyprlang::STRING{""});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:jump_labels_scale", Hyprlang::FLOAT{0.5});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:jump_labels_color", Hyprlang::INT{0x80159e30});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:jump_labels_keys", Hyprlang::STRING{"1234"});
 
     HyprlandAPI::reloadConfig();
 

@@ -1033,6 +1033,7 @@ typedef struct JumpData {
     std::vector<Rows> workspaces;
     std::vector<PHLWINDOWREF> windows;
     std::vector<JumpDecoration *> decorations;
+    std::string keys;
     int keys_pressed = 0;
     int nkeys;
     unsigned int window_number = 0;
@@ -1040,6 +1041,18 @@ typedef struct JumpData {
 } JumpData;
 
 static JumpData *jump_data;
+
+static std::string generate_label(unsigned int i, const std::string &keys, unsigned int nkeys)
+{
+    size_t ksize = keys.size();
+    std::string label;
+    for (unsigned int n = 0, div = i; n < nkeys; ++n) {
+        unsigned int rem = div % ksize;
+        label.insert(0, &keys[rem], 1);
+        div = div / ksize;
+    }
+    return label;
+}
 
 void ScrollerLayout::jump() {
     jump_data = new JumpData;
@@ -1068,8 +1081,10 @@ void ScrollerLayout::jump() {
         return;
     }
 
+    static auto const *KEYS = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_keys")->getDataStaticPtr();
+    jump_data->keys = *KEYS;
     jump_data->from_window = g_pCompositor->m_pLastWindow;
-    jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()));
+    jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()) / std::log10(jump_data->keys.size()));
 
     // Set overview mode for those workspaces that are not
     for (auto workspace : jump_data->workspaces) {
@@ -1081,7 +1096,8 @@ void ScrollerLayout::jump() {
     // Set decorations (in overview mode)
     int i = 0;
     for (auto window : jump_data->windows) {
-        std::unique_ptr<JumpDecoration> deco = std::make_unique<JumpDecoration>(window.lock(), jump_data->nkeys, i++);
+        const std::string label = generate_label(i++, jump_data->keys, jump_data->nkeys);
+        std::unique_ptr<JumpDecoration> deco = std::make_unique<JumpDecoration>(window.lock(), label);
         jump_data->decorations.push_back(deco.get());
         HyprlandAPI::addWindowDecoration(PHANDLE, window.lock(), std::move(deco));
     }
@@ -1100,13 +1116,13 @@ void ScrollerLayout::jump() {
         if (event.state != WL_KEYBOARD_KEY_STATE_PRESSED)
             return;
 
-        // Check if key is 0 to 9, otherwise exit
+        // Check if key is valid, otherwise exit
         bool valid = false;
-        const char *keys[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-        for (int i = 0; i < 10; ++i) {
-            xkb_keysym_t key = xkb_keysym_from_name(keys[i], XKB_KEYSYM_NO_FLAGS);
+        for (int i = 0; i < jump_data->keys.size(); ++i) {
+            std::string keyname(1, jump_data->keys[i]);
+            xkb_keysym_t key = xkb_keysym_from_name(keyname.c_str(), XKB_KEYSYM_NO_FLAGS);
             if (key && key == keysym) {
-                jump_data->window_number = jump_data->window_number * 10 + i;
+                jump_data->window_number = jump_data->window_number * jump_data->keys.size() + i;
                 valid = true;
                 break;
             }
@@ -1118,6 +1134,7 @@ void ScrollerLayout::jump() {
                 if (jump_data->window_number < jump_data->windows.size())
                     focus = true;
             } else {
+                info.cancelled = true;
                 return;
             }
         }
@@ -1137,9 +1154,9 @@ void ScrollerLayout::jump() {
             switch_to_window(jump_data->from_window.lock(),
                              jump_data->windows[jump_data->window_number].lock());
         }
+        info.cancelled = true;
         jump_data->keyPressHookCallback.reset();
         delete jump_data;
-        info.cancelled = true;
     });
 }
 

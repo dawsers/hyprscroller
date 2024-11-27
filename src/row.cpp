@@ -514,6 +514,7 @@ void Row::move_active_column(Direction dir)
         break;
     }
     case Direction::Center:
+    default:
         return;
     }
 

@@ -603,7 +603,7 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW/* old_window */)
     // new active window is the correct thing.
     WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     if (!workspace_id) {
-        workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
     }
     auto s = getRowForWorkspace(workspace_id);
     if (s == nullptr)

@@ -286,6 +286,7 @@ void Row::align_column(Direction dir)
             const Vector2D gap_x = calculate_gap_x(active);
             active->data()->align_window(Direction::Center, gap_x, gap);
             active->data()->recalculate_col_geometry(gap_x, gap);
+            return;
         } else {
             center_active_column();
         }
@@ -295,6 +296,7 @@ void Row::align_column(Direction dir)
         const Vector2D gap_x = calculate_gap_x(active);
         active->data()->align_window(dir, gap_x, gap);
         active->data()->recalculate_col_geometry(gap_x, gap);
+        return;
     } break;
     default:
         return;

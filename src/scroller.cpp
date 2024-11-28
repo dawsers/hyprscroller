@@ -601,6 +601,15 @@ PHLWINDOW ScrollerLayout::getNextWindowCandidate(PHLWINDOW/* old_window */)
     // This is called when a windows in unmapped. This means the window
     // has also been removed from the layout. In that case, returning the
     // new active window is the correct thing.
+    // We would like to be able to retain the full screen mode for old_window's
+    // workspace if it was a different one than the current one (background
+    // window unmapped), but old_window has had its fsmode removed in
+    // Hyprland's /src/events/Windows.cpp
+    // void Events::listener_unmapWindow(void* owner, void* data);
+    // so it is impossible to know the old state short of storing it ourselves
+    // in Row, because WORKSPACE has also lost it. Storing it in Row is hard
+    // to keep synchronized. So for now, unmapping a window from a workspace
+    // different than the active one, loses full screen state.
     WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
     if (!workspace_id) {
         workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
@@ -779,7 +788,21 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
         return;
     }
 
-    s->move_focus(direction, **focus_wrap == 0 ? false : true);
+    auto from = s->get_active_window();
+
+    if (s->move_focus(direction, **focus_wrap == 0 ? false : true)) {
+        // Changed workspace
+        WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+        if (!workspace_id) {
+            workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+        }
+        s = getRowForWorkspace(workspace_id);
+        if (s != nullptr) {
+            s->recalculate_row_geometry();
+        }
+    }
+    PHLWINDOW to = s != nullptr ? s->get_active_window() : nullptr;
+    switch_to_window(from, to);
 }
 
 void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {

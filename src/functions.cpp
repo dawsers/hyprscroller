@@ -85,6 +85,11 @@ void switch_to_window(PHLWINDOW from, PHLWINDOW to)
         if (mode != eFullscreenMode::FSMODE_NONE) {
             toggle_window_fullscreen_internal(to, mode);
         }
+    } else {
+        // from and to are the same, it can happen when we want to recover
+        // focus after changing to another monitor where focus was lost
+        // due to a window exiting in the background
+        force_focus_to_window(to);
     }
     return;
 }

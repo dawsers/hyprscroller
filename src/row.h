@@ -39,7 +39,7 @@ public:
     // so the layout can remove it.
     bool remove_window(PHLWINDOW window);
     void focus_window(PHLWINDOW window); 
-    void move_focus(Direction dir, bool focus_wrap); 
+    bool move_focus(Direction dir, bool focus_wrap);
 
     void resize_active_column(int step);
     void resize_active_window(const Vector2D &delta);

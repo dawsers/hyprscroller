@@ -129,27 +129,26 @@ void Row::focus_window(PHLWINDOW window)
     }
 }
 
-void Row::move_focus(Direction dir, bool focus_wrap)
+bool Row::move_focus(Direction dir, bool focus_wrap)
 {
-    auto from = get_active_window();
-    eFullscreenMode mode = window_fullscreen_state(from);
+    bool changed_workspace = false;
 
     switch (dir) {
     case Direction::Left:
         if (!move_focus_left(focus_wrap))
-            return;
+            changed_workspace = true;
         break;
     case Direction::Right:
         if (!move_focus_right(focus_wrap))
-            return;
+            changed_workspace = true;
         break;
     case Direction::Up:
         if (!active->data()->move_focus_up(focus_wrap))
-            return;
+            changed_workspace = true;
         break;
     case Direction::Down:
         if (!active->data()->move_focus_down(focus_wrap))
-            return;
+            changed_workspace = true;
         break;
     case Direction::Begin:
         move_focus_begin();
@@ -158,15 +157,13 @@ void Row::move_focus(Direction dir, bool focus_wrap)
         move_focus_end();
         break;
     default:
-        return;
+        return false;
     }
 
-    if (mode == eFullscreenMode::FSMODE_NONE) {
-        reorder = Reorder::Auto;
-        recalculate_row_geometry();
-    }
-    auto to = get_active_window();
-    switch_to_window(from, to);
+    reorder = Reorder::Auto;
+    recalculate_row_geometry();
+
+    return changed_workspace;
 }
 
 bool Row::move_focus_left(bool focus_wrap)

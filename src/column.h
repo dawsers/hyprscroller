@@ -57,16 +57,16 @@ public:
             win->data()->scale(bmin, start, scale, gap0, gap1);
         }
     }
-    void push_geom() {
+    void push_overview_geom() {
         mem.geom = geom;
         for (auto w = windows.first(); w != nullptr; w = w->next()) {
-            w->data()->push_geom();
+            w->data()->push_overview_geom();
         }
     }
-    void pop_geom() {
+    void pop_overview_geom() {
         geom = mem.geom;
         for (auto w = windows.first(); w != nullptr; w = w->next()) {
-            w->data()->pop_geom();
+            w->data()->pop_overview_geom();
         }
     }
     void set_active_window_geometry(const Box &box) {

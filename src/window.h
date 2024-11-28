@@ -25,21 +25,17 @@ public:
         Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
         return window->m_vPosition.y - topL.y - gap0;
     }
-    void push_geom() {
-        PHLWINDOW w = window.lock();
-        mem.box_h = box_h;
-        mem.pos_y = w->m_vPosition.y;
-        mem.vPosition = w->m_vPosition;
-        mem.vSize = w->m_vSize;
+    void push_fullscreen_geom() {
+        push_geom(mem_fs);
     }
-    void pop_geom() {
-        PHLWINDOW w = window.lock();
-        box_h = mem.box_h;
-        w->m_vPosition.y = mem.pos_y;
-        w->m_vPosition = mem.vPosition;
-        w->m_vSize = mem.vSize;
-        w->m_vRealPosition = w->m_vPosition;
-        w->m_vRealSize = w->m_vSize;
+    void pop_fullscreen_geom() {
+        pop_geom(mem_fs);
+    }
+    void push_overview_geom() {
+        push_geom(mem_ov);
+    }
+    void pop_overview_geom() {
+        pop_geom(mem_ov);
     }
     StandardSize get_height() const { return height; }
     void update_height(StandardSize h, double max);
@@ -155,10 +151,28 @@ private:
         Vector2D vPosition;
         Vector2D vSize;
     };
+
+    void push_geom(Memory &mem) {
+        PHLWINDOW w = window.lock();
+        mem.box_h = box_h;
+        mem.pos_y = w->m_vPosition.y;
+        mem.vPosition = w->m_vPosition;
+        mem.vSize = w->m_vSize;
+    }
+    void pop_geom(const Memory &mem) {
+        PHLWINDOW w = window.lock();
+        box_h = mem.box_h;
+        w->m_vPosition.y = mem.pos_y;
+        w->m_vPosition = mem.vPosition;
+        w->m_vSize = mem.vSize;
+        w->m_vRealPosition = w->m_vPosition;
+        w->m_vRealSize = w->m_vSize;
+    }
+
     PHLWINDOWREF window;
     StandardSize height;
     double box_h;
-    Memory mem;    // memory to store old height and win y when in maximized/overview modes
+    Memory mem_ov, mem_fs;   // memory to store old height and win y when in overview/fullscreen modes
     bool selected;
     SelectionBorders *decoration;
 };

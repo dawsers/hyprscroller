@@ -71,6 +71,11 @@ bool Row::remove_window(PHLWINDOW window)
     if (overview)
         toggle_overview();
 
+    eFullscreenMode fsmode = window_fullscreen_state(window);
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        toggle_window_fullscreen_internal(window, eFullscreenMode::FSMODE_NONE);
+    }
+
     reorder = Reorder::Auto;
     for (auto c = columns.first(); c != nullptr; c = c->next()) {
         Column *col = c->data();
@@ -100,6 +105,11 @@ bool Row::remove_window(PHLWINDOW window)
                 break;
             }
         }
+    }
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        PHLWINDOW awindow = get_active_window();
+        toggle_window_fullscreen_internal(awindow, fsmode);
+        force_focus_to_window(awindow);
     }
     if (overview_on)
         toggle_overview();
@@ -480,6 +490,12 @@ void Row::move_active_column(Direction dir)
     if (overview)
         toggle_overview();
 
+    auto window = active->data()->get_active_window();
+    eFullscreenMode fsmode = window_fullscreen_state(window);
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        toggle_window_fullscreen_internal(window, eFullscreenMode::FSMODE_NONE);
+    }
+
     switch (dir) {
     case Direction::Right:
         if (active != columns.last()) {
@@ -516,13 +532,15 @@ void Row::move_active_column(Direction dir)
         return;
     }
 
-    auto window = active->data()->get_active_window();
-    eFullscreenMode mode = window_fullscreen_state(window);
-    if (mode == eFullscreenMode::FSMODE_NONE) {
-        reorder = Reorder::Auto;
-        recalculate_row_geometry();
-        // Now the columns are in the right order, recalculate again
-        recalculate_row_geometry();
+    reorder = Reorder::Auto;
+    recalculate_row_geometry();
+    // Now the columns are in the right order, recalculate again
+    recalculate_row_geometry();
+
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        window = active->data()->get_active_window();
+        toggle_window_fullscreen_internal(window, fsmode);
+        force_focus_to_window(window);
     }
 
     if (overview_on)
@@ -681,16 +699,16 @@ void Row::set_fullscreen_mode(PHLWINDOW window, eFullscreenMode cur_mode, eFulls
     if (win != nullptr) {
         switch (new_mode) {
         case eFullscreenMode::FSMODE_NONE:
-            win->pop_geom();
+            win->pop_fullscreen_geom();
             break;
         case eFullscreenMode::FSMODE_FULLSCREEN:
             if (cur_mode == eFullscreenMode::FSMODE_NONE)
-                win->push_geom();
+                win->push_fullscreen_geom();
             win->set_geometry(full);
             break;
         case eFullscreenMode::FSMODE_MAXIMIZED:
             if (cur_mode == eFullscreenMode::FSMODE_NONE)
-                win->push_geom();
+                win->push_fullscreen_geom();
             win->set_geometry(max);
             break;
         default:
@@ -823,7 +841,7 @@ void Row::toggle_overview()
             Vector2D offset(0.5 * (max.w - w * scale), 0.5 * (max.h - h * scale));
             for (auto c = columns.first(); c != nullptr; c = c->next()) {
                 Column *col = c->data();
-                col->push_geom();
+                col->push_overview_geom();
                 Vector2D cheight = col->get_height();
                 col->set_geom_pos(full.x + (max.x - full.x + offset.x) / scale + (col->get_geom_x() - bmin.x), full.y + (max.y - full.y + offset.y) / scale + (cheight.x - bmin.y));
             }
@@ -840,7 +858,7 @@ void Row::toggle_overview()
             Vector2D offset(0.5 * (max.w - w * scale), 0.5 * (max.h - h * scale));
             for (auto c = columns.first(); c != nullptr; c = c->next()) {
                 Column *col = c->data();
-                col->push_geom();
+                col->push_overview_geom();
                 Vector2D cheight = col->get_height();
                 col->set_geom_pos(offset.x + max.x + (col->get_geom_x() - bmin.x) * scale, offset.y + max.y + (cheight.x - bmin.y) * scale);
                 col->set_geom_w(col->get_geom_w() * scale);
@@ -857,7 +875,7 @@ void Row::toggle_overview()
         }
         for (auto c = columns.first(); c != nullptr; c = c->next()) {
             Column *col = c->data();
-            col->pop_geom();
+            col->pop_overview_geom();
         }
         // Try to maintain the positions except if the active is not visible,
         // in that case, make it visible.

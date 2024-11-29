@@ -261,10 +261,17 @@ void Row::resize_active_window(const Vector2D &delta)
     recalculate_row_geometry();
 }
 
-void Row::set_mode(Mode m)
+void Row::set_mode(Mode m, bool silent)
 {
     mode = m;
-    post_event("mode");
+    if (!silent) {
+        post_event("mode");
+    }
+}
+
+Mode Row::get_mode() const
+{
+    return mode;
 }
 
 void Row::align_column(Direction dir)

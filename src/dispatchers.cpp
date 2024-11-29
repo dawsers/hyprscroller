@@ -54,20 +54,44 @@ namespace dispatchers {
         return workspace_id;
     }
 
-    void dispatch_cyclesize(std::string arg) {
-        auto workspace = workspace_for_action();
-        if (workspace == -1)
-            return;
-
+    int parse_step_arg(const std::string &arg) {
         int step = 0;
         if (arg == "+1" || arg == "1" || arg == "next") {
             step = 1;
         } else if (arg == "-1" || arg == "prev" || arg == "previous") {
             step = -1;
-        } else {
-            return;
         }
-        g_ScrollerLayout->cycle_window_size(workspace, step);
+        return step;
+    }
+
+    void dispatch_cyclesize(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        int step = parse_step_arg(arg);
+        if (step != 0)
+            g_ScrollerLayout->cycle_window_size(workspace, step);
+    }
+
+    void dispatch_cyclewidth(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        int step = parse_step_arg(arg);
+        if (step != 0)
+            g_ScrollerLayout->cycle_window_width(workspace, step);
+    }
+
+    void dispatch_cycleheight(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        int step = parse_step_arg(arg);
+        if (step != 0)
+            g_ScrollerLayout->cycle_window_height(workspace, step);
     }
 
     void dispatch_movefocus(std::string arg) {
@@ -285,6 +309,8 @@ namespace dispatchers {
     }
     void addDispatchers() {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclewidth", dispatch_cyclewidth);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cycleheight", dispatch_cycleheight);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:movewindow", dispatch_movewindow);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);

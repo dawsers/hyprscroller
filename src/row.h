@@ -43,7 +43,8 @@ public:
 
     void resize_active_column(int step);
     void resize_active_window(const Vector2D &delta);
-    void set_mode(Mode m);
+    void set_mode(Mode m, bool silent = false);
+    Mode get_mode() const;
     void align_column(Direction dir);
     void pin();
     void selection_toggle();

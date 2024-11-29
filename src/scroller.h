@@ -42,6 +42,8 @@ public:
 
     // New Dispatchers
     void cycle_window_size(WORKSPACEID workspace, int step);
+    void cycle_window_width(WORKSPACEID workspace, int step);
+    void cycle_window_height(WORKSPACEID workspace, int step);
     void move_focus(WORKSPACEID workspace, Direction);
     void move_window(WORKSPACEID workspace, Direction);
     void align_window(WORKSPACEID workspace, Direction);

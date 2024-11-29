@@ -128,6 +128,8 @@ The plugin adds the following dispatchers:
 | `scroller:movewindow`       | An optional replacement for `movewindow`, takes a direction as argument.                                                    |
 | `scroller:setmode`          | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.       |
 | `scroller:cyclesize`        | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                  |
+| `scroller:cyclewidth`       | Resize the focused column width.                                                                                            |
+| `scroller:cycleheight`      | Resize the active window height.                                                                                            |
 | `scroller:alignwindow`      | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode)         |
 | `scroller:admitwindow`      | Push the current window below the active one of the column to its left.                                                     |
 | `scroller:expelwindow`      | Pop the current window out of its column and place it on a new column to the right.                                         |
@@ -193,6 +195,9 @@ heights are a fraction of the width or height of the monitor, and are
 configurable (see *options*). However, using the dispatcher `resizewindow`, you
 can modify the width or height of any window freely.
 
+`cyclewidth` is like `cyclesize`, but *cycle-sizes* the width of the column,
+regardless of which mode you are in. `cycleheight` works similarly, but
+resizing the active window's height.
 
 ## Aligning
 
@@ -891,8 +896,12 @@ bind = $mainMod, bracketleft, scroller:setmode, row
 bind = $mainMod, bracketright, scroller:setmode, col
 
 # Sizing keys
-bind = $mainMod, equal, scroller:cyclesize, next
-bind = $mainMod, minus, scroller:cyclesize, prev
+# bind = $mainMod, equal, scroller:cyclesize, next
+# bind = $mainMod, minus, scroller:cyclesize, prev
+bind = $mainMod, equal, scroller:cyclewidth, next
+bind = $mainMod, minus, scroller:cyclewidth, prev
+bind = $mainMod SHIFT, equal, scroller:cycleheight, next
+bind = $mainMod SHIFT, minus, scroller:cycleheight, prev
 
 # Admit/Expel
 bind = $mainMod, I, scroller:admitwindow,

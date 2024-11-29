@@ -762,6 +762,32 @@ void ScrollerLayout::cycle_window_size(WORKSPACEID workspace, int step)
     s->resize_active_column(step);
 }
 
+void ScrollerLayout::cycle_window_width(WORKSPACEID workspace, int step)
+{
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Row, true);
+    s->resize_active_column(step);
+    s->set_mode(mode, true);
+}
+
+void ScrollerLayout::cycle_window_height(WORKSPACEID workspace, int step)
+{
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Column, true);
+    s->resize_active_column(step);
+    s->set_mode(mode, true);
+}
+
 void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();

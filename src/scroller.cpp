@@ -1202,6 +1202,8 @@ void ScrollerLayout::jump() {
         if (focus) {
             switch_to_window(jump_data->from_window.lock(),
                              jump_data->windows[jump_data->window_number].lock());
+        } else {
+            g_pCompositor->warpCursorTo(jump_data->from_window.lock()->middle());
         }
         info.cancelled = true;
         jump_data->keyPressHookCallback.reset();

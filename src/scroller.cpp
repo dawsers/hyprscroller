@@ -1079,6 +1079,7 @@ typedef struct JumpData {
         bool overview;
     } Rows;
     PHLWINDOWREF from_window;
+    PHLMONITORREF from_monitor;
     std::vector<Rows> workspaces;
     std::vector<PHLWINDOWREF> windows;
     std::vector<JumpDecoration *> decorations;
@@ -1133,6 +1134,7 @@ void ScrollerLayout::jump() {
     static auto const *KEYS = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_keys")->getDataStaticPtr();
     jump_data->keys = *KEYS;
     jump_data->from_window = g_pCompositor->m_pLastWindow;
+    jump_data->from_monitor = g_pCompositor->m_pLastMonitor;
     jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()) / std::log10(jump_data->keys.size()));
 
     // Set overview mode for those workspaces that are not
@@ -1203,7 +1205,12 @@ void ScrollerLayout::jump() {
             switch_to_window(jump_data->from_window.lock(),
                              jump_data->windows[jump_data->window_number].lock());
         } else {
-            g_pCompositor->warpCursorTo(jump_data->from_window.lock()->middle());
+            if (jump_data->from_window != nullptr)
+                g_pCompositor->warpCursorTo(jump_data->from_window.lock()->middle());
+            else {
+                g_pCompositor->warpCursorTo(jump_data->from_monitor.lock()->middle());
+                g_pCompositor->setActiveMonitor(jump_data->from_monitor.lock());
+            }
         }
         info.cancelled = true;
         jump_data->keyPressHookCallback.reset();

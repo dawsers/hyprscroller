@@ -31,6 +31,8 @@ namespace dispatchers {
             return Direction::End;
         else if (arg == "c" || arg == "center" || arg == "centre")
             return Direction::Center;
+        else if (arg == "m" || arg == "middle")
+            return Direction::Middle;
         else
             return Direction::Invalid;
     }

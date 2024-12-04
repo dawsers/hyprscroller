@@ -313,6 +313,8 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
                 s->align_column(Direction::Down);
             } else if (dir == "c" || dir == "centre" || dir == "center") {
                 s->align_column(Direction::Center);
+            } else if (dir == "m" || dir == "middle") {
+                s->align_column(Direction::Middle);
             }
         } else if (r.szRule.starts_with("plugin:scroller:marksadd")) {
             const auto mark_name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);

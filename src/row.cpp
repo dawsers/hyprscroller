@@ -305,6 +305,12 @@ void Row::align_column(Direction dir)
         active->data()->recalculate_col_geometry(gap_x, gap);
         return;
     } break;
+    case Direction::Middle: {
+        const Vector2D gap_x = calculate_gap_x(active);
+        active->data()->align_window(Direction::Center, gap_x, gap);
+        center_active_column();
+        break;
+    }
     default:
         return;
     }

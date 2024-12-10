@@ -630,6 +630,12 @@ Determines whether focus will *wrap* when at the first or
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
+### `center_row_if_space_available`
+
+If there is empty space in the viewport, the row will be centered, leaving the
+same amount of empty space on each side (respecting `gaps_out`). Possible
+arguments are: `false`|`0` (default), or `true`|`1`.
+
 ### `overview_scale_content`
 
 Scales the content of the windows in overview mode, like GNOME/MacOS/Windows

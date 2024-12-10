@@ -35,6 +35,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:focus_wrap", Hyprlang::INT{1});
     // 0, 1
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:center_row_if_space_available", Hyprlang::INT{0});
+    // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:overview_scale_content", Hyprlang::INT{1});
     // a list of values used as standard widths for cyclesize in row mode, and in the cycling order
     // available options: onesixth, onefourth, onethird, onehalf, twothirds, one

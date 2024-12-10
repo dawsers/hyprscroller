@@ -942,6 +942,22 @@ void Row::recalculate_row_geometry()
         adjust_overview_columns();
         return;
     }
+    static auto* const *center_row = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:center_row_if_space_available")->getDataStaticPtr();
+    if (**center_row && pinned == nullptr) {
+        double lwidth = 0.0, rwidth = 0.0;
+        for (auto col = columns.first(); col != active; col = col->next()) {
+            lwidth += col->data()->get_geom_w();
+        }
+        for (auto col = active; col != nullptr; col = col->next()) {
+            rwidth += col->data()->get_geom_w();
+        }
+        double width = lwidth + rwidth;
+        if (width < max.w) {
+            double start = max.x + 0.5 * (max.w - width);
+            active->data()->set_geom_pos(start + lwidth, max.y);
+        }
+    }
+
     auto a_w = active->data()->get_geom_w();
     auto a_x = active->data()->get_geom_x();
     // Pinned will stay in place, with active having second priority to fit in

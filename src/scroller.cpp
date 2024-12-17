@@ -298,11 +298,11 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 
     // Check window rules
     for (auto &r: window->m_vMatchedRules) {
-        if (r.szRule.starts_with("plugin:scroller:group")) {
-            const auto name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+        if (r->szRule.starts_with("plugin:scroller:group")) {
+            const auto name = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
             s->move_active_window_to_group(name);
-        } else if (r.szRule.starts_with("plugin:scroller:alignwindow")) {
-            const auto dir = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+        } else if (r->szRule.starts_with("plugin:scroller:alignwindow")) {
+            const auto dir = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
             if (dir == "l" || dir == "left") {
                 s->align_column(Direction::Left);
             } else if (dir == "r" || dir == "right") {
@@ -316,8 +316,8 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
             } else if (dir == "m" || dir == "middle") {
                 s->align_column(Direction::Middle);
             }
-        } else if (r.szRule.starts_with("plugin:scroller:marksadd")) {
-            const auto mark_name = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+        } else if (r->szRule.starts_with("plugin:scroller:marksadd")) {
+            const auto mark_name = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
             marks.add(window, mark_name);
         }
     }

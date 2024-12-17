@@ -1,6 +1,7 @@
 #include "functions.h"
-#include "scroller.h"
 #include "dispatchers.h"
+
+#include <hyprland/src/Compositor.hpp>
 
 SDispatchResult this_moveFocusTo(std::string args)
 {

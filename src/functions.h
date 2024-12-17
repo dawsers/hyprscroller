@@ -1,6 +1,7 @@
 #ifndef SCROLLER_FUNCTIONS_H
 #define SCROLLER_FUNCTIONS_H
 
+#include <hyprland/src/helpers/Timer.hpp>
 #include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 

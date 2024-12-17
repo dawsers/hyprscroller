@@ -83,8 +83,8 @@ ConfigurationSize ScrollerSizes::get_window_default_height(PHLWINDOW window)
 {
     // Check window rules
     for (auto &r: window->m_vMatchedRules) {
-        if (r.szRule.starts_with("plugin:scroller:windowheight")) {
-            const auto window_height = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+        if (r->szRule.starts_with("plugin:scroller:windowheight")) {
+            const auto window_height = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
             return get_window_default_height_fron_string(window_height);
         }
     }
@@ -103,8 +103,8 @@ ConfigurationSize ScrollerSizes::get_column_default_width(PHLWINDOW window)
 {
     // Check window rules
     for (auto &r: window->m_vMatchedRules) {
-        if (r.szRule.starts_with("plugin:scroller:columnwidth")) {
-            const auto column_width = r.szRule.substr(r.szRule.find_first_of(' ') + 1);
+        if (r->szRule.starts_with("plugin:scroller:columnwidth")) {
+            const auto column_width = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
             return get_column_default_width_fron_string(column_width);
         }
     }

@@ -203,7 +203,7 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
         static auto  FALLBACKFONT = CConfigValue<std::string>("misc:font_family");
         static auto const *TEXTFONTFAMILY = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_font")->getDataStaticPtr();
         static auto *const *TEXTCOL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_color")->getDataStaticPtr();
-        const CColor color = CColor(**TEXTCOL);
+        const CHyprColor color = CHyprColor(**TEXTCOL);
         std::string font_family(*TEXTFONTFAMILY);
         if (font_family == "")
             font_family = *FALLBACKFONT;

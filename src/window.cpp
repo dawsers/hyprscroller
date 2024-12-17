@@ -89,7 +89,7 @@ void Window::update_height(StandardSize h, double max)
 CGradientValueData Window::get_border_color() const
 {
     static auto *const *SELECTEDCOL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:col.selection_border")->getDataStaticPtr();
-    static CColor selected_col = **SELECTEDCOL;
+    static CHyprColor selected_col = **SELECTEDCOL;
     return selected ? selected_col : window->m_cRealBorderColor;
 }
 

@@ -192,8 +192,9 @@ in a direction or to the beginning or end or the row.
 `-1`/`prev`/`previous`. It cycles forward or backward through a number of column
 widths (in *row* mode), or window heights (in *column* mode). Those widths or
 heights are a fraction of the width or height of the monitor, and are
-configurable (see *options*). However, using the dispatcher `resizewindow`, you
-can modify the width or height of any window freely.
+configurable (see *options*). However, using Hyprland's own dispatchers `resizeactive`
+or `resizewindowpixel`, you can still modify the width or height of any window
+freely.
 
 `cyclewidth` is like `cyclesize`, but *cycle-sizes* the width of the column,
 regardless of which mode you are in. `cycleheight` works similarly, but

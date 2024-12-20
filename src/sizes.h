@@ -35,7 +35,8 @@ public:
     CycleSizes() {}
     ~CycleSizes() { reset(); }
     StandardSize get_default() { return sizes[0]; }
-    StandardSize get_next(StandardSize size, int step);
+    StandardSize get_next(StandardSize size, int step) const;
+    StandardSize get_size(int index) const;
     void update(const std::string &option);
 
 private:

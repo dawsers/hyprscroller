@@ -249,6 +249,30 @@ void Row::resize_active_column(int step)
         toggle_overview();
 }
 
+void Row::size_active_column(int index)
+{
+    if (active->data()->fullscreen())
+        return;
+
+    bool overview_on = overview;
+    if (overview)
+        toggle_overview();
+
+    if (mode == Mode::Column) {
+        active->data()->size_active_window(index, calculate_gap_x(active), gap);
+    } else {
+        static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
+        column_widths.update(*column_widths_str);
+
+        StandardSize width = column_widths.get_size(index);
+        active->data()->update_width(width, max.w);
+        reorder = Reorder::Auto;
+        recalculate_row_geometry();
+    }
+    if (overview_on)
+        toggle_overview();
+}
+
 void Row::resize_active_window(const Vector2D &delta)
 {
     // If the active window in the active column is fullscreen, ignore.

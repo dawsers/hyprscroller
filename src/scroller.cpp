@@ -807,6 +807,42 @@ void ScrollerLayout::cycle_window_height(WORKSPACEID workspace, int step)
     s->set_mode(mode, true);
 }
 
+void ScrollerLayout::set_window_size(WORKSPACEID workspace, int index)
+{
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->size_active_column(index);
+}
+
+void ScrollerLayout::set_window_width(WORKSPACEID workspace, int index)
+{
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Row, true);
+    s->size_active_column(index);
+    s->set_mode(mode, true);
+}
+
+void ScrollerLayout::set_window_height(WORKSPACEID workspace, int index)
+{
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Column, true);
+    s->size_active_column(index);
+    s->set_mode(mode, true);
+}
+
 void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
 {
     static auto* const *focus_wrap = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_wrap")->getDataStaticPtr();

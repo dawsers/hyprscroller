@@ -110,6 +110,7 @@ public:
     void update_width(StandardSize cwidth, double maxw);
     void fit_size(FitSize fitsize, const Vector2D &gap_x, double gap);
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
+    void size_active_window(int index, const Vector2D &gap_x, double gap);
     void resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta);
     void selection_toggle();
     void selection_set(PHLWINDOWREF window);

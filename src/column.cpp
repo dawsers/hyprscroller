@@ -515,6 +515,17 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
     recalculate_col_geometry(gap_x, gap);
 }
 
+void Column::size_active_window(int index, const Vector2D &gap_x, double gap)
+{
+    static auto const *window_heights_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:window_heights")->getDataStaticPtr();
+    window_heights.update(*window_heights_str);
+
+    reorder = Reorder::Auto;
+    StandardSize height = window_heights.get_size(index);
+    active->data()->update_height(height, row->get_max().h);
+    recalculate_col_geometry(gap_x, gap);
+}
+
 void Column::resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta)
 {
     const Box &max = row->get_max();

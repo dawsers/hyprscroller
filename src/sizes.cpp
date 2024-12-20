@@ -8,7 +8,7 @@ CycleSizes window_heights;
 CycleSizes column_widths;
 ScrollerSizes scroller_sizes;
 
-StandardSize CycleSizes::get_next(StandardSize size, int step)
+StandardSize CycleSizes::get_next(StandardSize size, int step) const
 {
     int current = -1;
     for (size_t i = 0; i < sizes.size(); ++i) {
@@ -31,6 +31,12 @@ StandardSize CycleSizes::get_next(StandardSize size, int step)
         else if (current >= number)
             current = number - 1;
     }
+    return sizes[current];
+}
+
+StandardSize CycleSizes::get_size(int index) const
+{
+    int current = std::min(std::max(0, index), static_cast<int>(sizes.size()) - 1);
     return sizes[current];
 }
 

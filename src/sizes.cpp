@@ -21,7 +21,16 @@ StandardSize CycleSizes::get_next(StandardSize size, int step)
         return sizes[0];
     }
     int number = sizes.size();
-    current = (number + current + step) % number;
+    static auto* const *CYCLESIZE_WRAP = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:cyclesize_wrap")->getDataStaticPtr();
+    if (**CYCLESIZE_WRAP)
+        current = (number + current + step) % number;
+    else {
+        current += step;
+        if (current < 0)
+            current = 0;
+        else if (current >= number)
+            current = number - 1;
+    }
     return sizes[current];
 }
 

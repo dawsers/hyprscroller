@@ -656,6 +656,15 @@ Determines whether focus will *wrap* when at the first or
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
+### `cyclesize_wrap`
+
+If `true`, `cyclesize`, `cyclewidth` and `cycleheight` will cycle through all
+the respective sizes defined in `column_widths` and `window_heights` infinitely,
+in a cycle. This is the default behavior. If you prefer cycling not to *wrap*
+(just one cycle), set this option to `0/false`. Cycling will then stop at the
+first size if you call `prev`, and at the last size if you call `next`.
+Possible arguments are: `true`|`1` (default), or `false`|`0`.
+
 ### `center_row_if_space_available`
 
 If there is empty space in the viewport, the row will be centered, leaving the

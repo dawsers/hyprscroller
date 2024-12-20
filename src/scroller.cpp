@@ -31,19 +31,24 @@ public:
     ~Marks() { reset(); }
     void reset() {
         marks.clear();
+        post_mark_event(nullptr);
     }
     // Add a mark with name for window, overwriting any existing one with that name
     void add(PHLWINDOW window, const std::string &name) {
         const auto mark = marks.find(name);
         if (mark != marks.end()) {
             mark->second = window;
+            post_mark_event(window);
             return;
         }
         marks[name] = window;
+        post_mark_event(window);
     }
     void del(const std::string &name) {
         const auto mark = marks.find(name);
         if (mark != marks.end()) {
+            if (g_pCompositor->m_pLastWindow == mark->second)
+                post_mark_event(nullptr);
             marks.erase(mark);
         }
     }
@@ -63,6 +68,17 @@ public:
             return mark->second.lock();
         }
         return nullptr;
+    }
+
+    void post_mark_event(PHLWINDOW window) {
+        bool marked = false;
+        for(auto it = marks.begin(); it != marks.end(); it++) {
+            if (it->second.lock() == window) {
+                g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mark, 1, {}", it->first)});
+                return;
+            }
+        }
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", "mark, 0, "});
     }
 
 private:
@@ -658,6 +674,7 @@ void ScrollerLayout::onEnable() {
     activeWindowHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "activeWindow", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {
         auto window = std::any_cast<PHLWINDOW>(param);
         trails->post_trailmark_event(window);
+        marks.post_mark_event(window);
     });
 
     swipeBeginHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeBegin", [&](void* /* self */, SCallbackInfo& /* info */, std::any param) {

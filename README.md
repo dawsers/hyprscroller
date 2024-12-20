@@ -318,6 +318,10 @@ You can use any string name for a mark, for example in scripts. But they are
 also very convenient to use with regular key bindings by simply using a letter
 as the name. Again, see the example configuration.
 
+*hyprscroller* generates IPC signals for mark events, and in this
+README there is an example implementation for [ags](https://github.com/Aylur/ags)
+to use those signals to display information on your desktop bar.
+
 
 ## Pinning a Column
 
@@ -432,6 +436,7 @@ events that trigger a message:
 | `scroller expelwindow` | expelling a window         |                     |
 | `scroller overview`    | toggling overview mode     | `0/1`               |
 | `scroller mode`        | changing mode              | `row/column`        |
+| `scroller mark`        | current window marked?     | `0/1`, `mark_name`  |
 | `scroller trail`       | current trail information  | `number`, `size`    |
 | `scroller trailmark`   | current window trailmark?  | `0/1`               |
 
@@ -484,6 +489,10 @@ export function Scroller() {
         class_name: "scroller-overview",
         label: ''
     });
+    const mark_label = Widget.Label({
+        class_name: "scroller-mark",
+        label: ''
+    });
     const trailmark_label = Widget.Label({
         class_name: "scroller-trailmark",
         label: ''
@@ -497,6 +506,7 @@ export function Scroller() {
         children: [
             mode_label,
             overview_label,
+            mark_label,
             trail_label,
             trailmark_label,
         ],
@@ -529,6 +539,16 @@ export function Scroller() {
                 trailmark_label.label = "✅";
             } else {
                 trailmark_label.label = "";
+            }
+
+        } else if (text.startsWith("scroller>>mark,")) {
+            const mark = text.substring(15).trim().split(",");
+            const enabled = mark[0].trim();
+            if (enabled == "1") {
+                const name = mark[1].trim();
+                mark_label.label = "🔖" + " " + name;
+            } else {
+                mark_label.label = "";
             }
         }
     }
@@ -581,6 +601,11 @@ and a simple `style.css`
   padding-right: 10px;
 }
 .scroller-overview {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 10px;
+}
+.scroller-mark {
   padding-top: 10px;
   padding-bottom: 10px;
   padding-right: 10px;

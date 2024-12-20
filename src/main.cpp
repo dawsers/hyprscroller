@@ -63,6 +63,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable", Hyprlang::INT{1});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance", Hyprlang::INT{60});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers", Hyprlang::INT{3});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_enable", Hyprlang::INT{1});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_distance", Hyprlang::INT{5});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_fingers", Hyprlang::INT{4});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_prefix", Hyprlang::STRING{""});
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:col.selection_border", Hyprlang::INT{0xff9e1515});

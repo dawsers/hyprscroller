@@ -1311,6 +1311,9 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     static auto *const *OENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_enable")->getDataStaticPtr();
     static auto *const *OFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_fingers")->getDataStaticPtr();
     static auto *const *ODISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_distance")->getDataStaticPtr();
+    static auto *const *WENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_enable")->getDataStaticPtr();
+    static auto *const *WFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_fingers")->getDataStaticPtr();
+    static auto *const *WDISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_distance")->getDataStaticPtr();
     static auto const *WPREFIX = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_workspace_switch_prefix")->getDataStaticPtr();
 
     if (**HS &&
@@ -1321,7 +1324,8 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     }
 
     if (!(**SENABLE && swipe_event.fingers == **SFINGERS) &&
-        !(**OENABLE && swipe_event.fingers == **OFINGERS)) {
+        !(**OENABLE && swipe_event.fingers == **OFINGERS) &&
+        !(**WENABLE && swipe_event.fingers == **WFINGERS)) {
         return;
     }
 
@@ -1368,30 +1372,38 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
             }
         }
         s->recalculate_row_geometry();
-    } else if (**OENABLE && swipe_event.fingers == **OFINGERS) {
-        // Only accept the first update: one swipe, one trigger.
-        if (swipe_active)
-            return;
+    } else {
         // Undo natural
         const Vector2D delta = gesture_delta * (**NATURAL ? -1.0 : 1.0);
-        if (delta.y <= -**ODISTANCE) {
-            if (s == nullptr)
+        if (**OENABLE && swipe_event.fingers == **OFINGERS) {
+            // Only accept the first update: one swipe, one trigger.
+            if (swipe_active)
                 return;
-            if (!s->is_overview()) {
-                s->toggle_overview();
+            if (delta.y <= -**ODISTANCE) {
+                if (s == nullptr)
+                    return;
+                if (!s->is_overview()) {
+                    s->toggle_overview();
+                }
+            } else if (delta.y >= **ODISTANCE) {
+                if (s == nullptr)
+                    return;
+                if (s->is_overview()) {
+                    s->toggle_overview();
+                }
             }
-        } else if (delta.y >= **ODISTANCE) {
-            if (s == nullptr)
+        }
+        if (**WENABLE && swipe_event.fingers == **WFINGERS) {
+            // Only accept the first update: one swipe, one trigger.
+            if (swipe_active)
                 return;
-            if (s->is_overview()) {
-                s->toggle_overview();
+            if (delta.x <= -**WDISTANCE) {
+                std::string offset(*WPREFIX);
+                g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "+1" : offset + "-1");
+            } else if (delta.x >= **WDISTANCE) {
+                std::string offset(*WPREFIX);
+                g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "-1" : offset + "+1");
             }
-        } else if (delta.x <= -**ODISTANCE) {
-            std::string offset(*WPREFIX);
-            g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "+1" : offset + "-1");
-        } else if (delta.x >= **ODISTANCE) {
-            std::string offset(*WPREFIX);
-            g_pKeybindManager->m_mDispatchers["workspace"](**HSINVERT ? offset + "-1" : offset + "+1");
         }
     }
     swipe_active = true;

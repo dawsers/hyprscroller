@@ -5,49 +5,11 @@
 extern HANDLE PHANDLE;
 extern std::function<SDispatchResult(std::string)> orig_moveFocusTo;
 extern ScrollerSizes scroller_sizes;
-extern CycleSizes window_heights;
 
 Column::Column(PHLWINDOW cwindow, double maxw, const Row *row)
     : height(StandardSize::One), reorder(Reorder::Auto), row(row)
 {
-    ConfigurationSize column_width =
-        scroller_sizes.get_column_default_width(cwindow);
-    if (column_width == ConfigurationSize::OneHalf) {
-        width = StandardSize::OneHalf;
-    } else if (column_width == ConfigurationSize::OneEighth) {
-        width = StandardSize::OneEighth;
-    } else if (column_width == ConfigurationSize::OneSixth) {
-        width = StandardSize::OneSixth;
-    } else if (column_width == ConfigurationSize::OneFourth) {
-        width = StandardSize::OneFourth;
-    } else if (column_width == ConfigurationSize::OneThird) {
-        width = StandardSize::OneThird;
-    } else if (column_width == ConfigurationSize::ThreeEighths) {
-        width = StandardSize::ThreeEighths;
-    } else if (column_width == ConfigurationSize::FiveEighths) {
-        width = StandardSize::FiveEighths;
-    } else if (column_width == ConfigurationSize::TwoThirds) {
-        width = StandardSize::TwoThirds;
-    } else if (column_width == ConfigurationSize::ThreeQuarters) {
-        width = StandardSize::ThreeQuarters;
-    } else if (column_width == ConfigurationSize::FiveSixths) {
-        width = StandardSize::FiveSixths;
-    } else if (column_width == ConfigurationSize::SevenEighths) {
-        width = StandardSize::SevenEighths;
-    } else if (column_width == ConfigurationSize::One) {
-        width = StandardSize::One;
-    } else if (column_width == ConfigurationSize::Maximized) {
-        width = StandardSize::Free;
-    } else if (column_width == ConfigurationSize::Floating) {
-        if (cwindow->m_vLastFloatingSize.y > 0) {
-            width = StandardSize::Free;
-            maxw = cwindow->m_vLastFloatingSize.x;
-        } else {
-            width = StandardSize::OneHalf;
-        }
-    } else {
-        width = StandardSize::OneHalf;
-    }
+    width = scroller_sizes.get_column_default_width(cwindow);
     const Box &max = row->get_max();
     Window *window = new Window(cwindow, max.y, max.h);
     windows.push_back(window);
@@ -500,16 +462,13 @@ void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
 
 void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double gap)
 {
-    static auto const *window_heights_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:window_heights")->getDataStaticPtr();
-    window_heights.update(*window_heights_str);
-
     reorder = Reorder::Auto;
     StandardSize height = active->data()->get_height();
     if (height == StandardSize::Free) {
-        // When cycle-resizing from Free mode, always move back to first
-        height = window_heights.get_default();
+        // When cycle-resizing from Free mode, always move back to default
+        height = scroller_sizes.get_window_default_height(active->data()->get_window());
     } else {
-        height = window_heights.get_next(height, step);
+        height = scroller_sizes.get_next_window_height(height, step);
     }
     active->data()->update_height(height, row->get_max().h);
     recalculate_col_geometry(gap_x, gap);
@@ -517,11 +476,8 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
 
 void Column::size_active_window(int index, const Vector2D &gap_x, double gap)
 {
-    static auto const *window_heights_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:window_heights")->getDataStaticPtr();
-    window_heights.update(*window_heights_str);
-
     reorder = Reorder::Auto;
-    StandardSize height = window_heights.get_size(index);
+    StandardSize height = scroller_sizes.get_window_height(index);
     active->data()->update_height(height, row->get_max().h);
     recalculate_col_geometry(gap_x, gap);
 }

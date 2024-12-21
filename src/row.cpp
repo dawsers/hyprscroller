@@ -8,7 +8,6 @@
 extern HANDLE PHANDLE;
 extern Overview *overviews;
 extern std::function<SDispatchResult(std::string)> orig_moveFocusTo;
-extern CycleSizes column_widths;
 extern ScrollerSizes scroller_sizes;
 
 Row::Row(WORKSPACEID workspace)
@@ -231,15 +230,12 @@ void Row::resize_active_column(int step)
     if (mode == Mode::Column) {
         active->data()->cycle_size_active_window(step, calculate_gap_x(active), gap);
     } else {
-        static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
-        column_widths.update(*column_widths_str);
-
         StandardSize width = active->data()->get_width();
         if (width == StandardSize::Free) {
-            // When cycle-resizing from Free mode, always move back to first
-            width = column_widths.get_default();
+            // When cycle-resizing from Free mode, always move back to default
+            width = scroller_sizes.get_column_default_width(get_active_window());
         } else {
-            width = column_widths.get_next(width, step);
+            width = scroller_sizes.get_next_column_width(width, step);
         }
         active->data()->update_width(width, max.w);
         reorder = Reorder::Auto;
@@ -261,10 +257,7 @@ void Row::size_active_column(int index)
     if (mode == Mode::Column) {
         active->data()->size_active_window(index, calculate_gap_x(active), gap);
     } else {
-        static auto const *column_widths_str = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:column_widths")->getDataStaticPtr();
-        column_widths.update(*column_widths_str);
-
-        StandardSize width = column_widths.get_size(index);
+        StandardSize width = scroller_sizes.get_column_width(index);
         active->data()->update_width(width, max.w);
         reorder = Reorder::Auto;
         recalculate_row_geometry();

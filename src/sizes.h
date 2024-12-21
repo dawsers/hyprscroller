@@ -4,7 +4,6 @@
 #include <hyprland/src/Compositor.hpp>
 
 #include <vector>
-#include <unordered_map>
 
 #include "enums.h"
 
@@ -29,71 +28,50 @@ enum class Reorder {
     Lazy
 };
 
-
-class CycleSizes {
-public:
-    CycleSizes() {}
-    ~CycleSizes() { reset(); }
-    StandardSize get_default() { return sizes[0]; }
-    StandardSize get_next(StandardSize size, int step) const;
-    StandardSize get_size(int index) const;
-    void update(const std::string &option);
-
-private:
-    void reset() {
-        sizes.clear();
-    }
-
-    std::string str;
-    std::vector<StandardSize> sizes;
-};
-
-
-enum class ConfigurationSize {
-    OneEighth = 0,
-    OneSixth,
-    OneFourth,
-    OneThird,
-    ThreeEighths,
-    OneHalf,
-    FiveEighths,
-    TwoThirds,
-    ThreeQuarters,
-    FiveSixths,
-    SevenEighths,
-    One,
-    Maximized,
-    Floating
-};
-
 class ScrollerSizes {
 public:
     ScrollerSizes() {}
-    ~ScrollerSizes() { reset(); }
+    ~ScrollerSizes() {}
 
+    void update();
     Mode get_mode(PHLMONITOR monitor);
-    ConfigurationSize get_window_default_height(PHLWINDOW window);
-    ConfigurationSize get_column_default_width(PHLWINDOW window);
+    StandardSize get_window_default_height(PHLWINDOW window);
+    StandardSize get_column_default_width(PHLWINDOW window);
+    StandardSize get_next_window_height(StandardSize size, int step);
+    StandardSize get_next_column_width(StandardSize size, int step);
+    StandardSize get_window_height(int index);
+    StandardSize get_column_width(int index);
 
 private:
-    void update_sizes(PHLMONITOR monitor);
-    void reset() {
-        monitors.clear();
-    }
-    ConfigurationSize get_window_default_height_fron_string(const std::string &window_height);
-    ConfigurationSize updatate_window_default_height();
-    ConfigurationSize get_column_default_width_fron_string(const std::string &column_width);
-    ConfigurationSize updatate_column_default_width();
-
+    StandardSize get_next(const std::vector<StandardSize> &sizes, StandardSize size, int step) const;
+    StandardSize get_size(const std::vector<StandardSize> &sizes, int index) const;
+    void update_sizes(std::vector<StandardSize> &sizes, const std::string &option, StandardSize default_size);
+    StandardSize get_size_from_string(const std::string &size, StandardSize default_size);
     void trim(std::string &str);
 
+    std::string str_window_default_height;
+    std::string str_column_default_width;
+    std::string str_monitors;
+    std::string str_window_heights;
+    std::string str_column_widths;
+
+    // Configuration globals
+    StandardSize window_default_height;
+    StandardSize column_default_width;
+    std::vector<StandardSize> window_heights;
+    std::vector<StandardSize> column_widths;
+
+    // Per monitor configuration
     typedef struct {
+        std::string name;
         Mode mode;
-        ConfigurationSize window_default_height;
-        ConfigurationSize column_default_width;
+        StandardSize window_default_height;
+        StandardSize column_default_width;
+        std::vector<StandardSize> window_heights;
+        std::vector<StandardSize> column_widths;
     } MonitorData;
 
-    std::unordered_map<std::string, MonitorData> monitors;
+    std::vector<MonitorData> monitors;
 };
 
 

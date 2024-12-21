@@ -5,35 +5,7 @@ extern ScrollerSizes scroller_sizes;
 
 Window::Window(PHLWINDOW window, double maxy, double box_h) : window(window), selected(false)
 {
-    ConfigurationSize window_height =  scroller_sizes.get_window_default_height(window);
-    StandardSize h;
-    if (window_height == ConfigurationSize::One) {
-        h = StandardSize::One;
-    } else if (window_height == ConfigurationSize::OneEighth) {
-        h = StandardSize::OneEighth;
-    } else if (window_height == ConfigurationSize::OneSixth) {
-        h = StandardSize::OneSixth;
-    } else if (window_height == ConfigurationSize::OneFourth) {
-        h = StandardSize::OneFourth;
-    } else if (window_height == ConfigurationSize::OneThird) {
-        h = StandardSize::OneThird;
-    } else if (window_height == ConfigurationSize::ThreeEighths) {
-        h = StandardSize::ThreeEighths;
-    } else if (window_height == ConfigurationSize::OneHalf) {
-        h = StandardSize::OneHalf;
-    } else if (window_height == ConfigurationSize::FiveEighths) {
-        h = StandardSize::FiveEighths;
-    } else if (window_height == ConfigurationSize::TwoThirds) {
-        h = StandardSize::TwoThirds;
-    } else if (window_height == ConfigurationSize::ThreeQuarters) {
-        h = StandardSize::ThreeQuarters;
-    } else if (window_height == ConfigurationSize::FiveSixths) {
-        h = StandardSize::FiveSixths;
-    } else if (window_height == ConfigurationSize::SevenEighths) {
-        h = StandardSize::SevenEighths;
-    } else {
-        h = StandardSize::One;
-    }
+    StandardSize h = scroller_sizes.get_window_default_height(window);
     window->m_vPosition.y = maxy;
     update_height(h, box_h);
     std::unique_ptr<SelectionBorders> deco = std::make_unique<SelectionBorders>(this);

@@ -677,8 +677,7 @@ by Chen-Yulin provides code to use *hyprscroller's* IPC messages with
 Determines the width of new columns in *row* mode.
 Possible arguments are: `oneeighth`, `onesixth`, `onefourth`, `onethird`,
 `threeeighths`, `onehalf` (default), `fiveeighths`, `twothirds`, `threequarters`,
-`fivesixths`, `seveneighths`, `maximized`, `floating` (uses the
-default width set by the application).
+`fivesixths`, `seveneighths`, `one`.
 
 ### `window_default_height`
 
@@ -777,6 +776,8 @@ monitor. Currently, the supported options are:
    `column_default_width` option.
 3. `window_default_height`: Possible values are the same as the global
    `window_default_height` option.
+4. `column_widths`: Similar to the global option.
+5. `window_heights`: Similar to the global option.
 
 When you create a workspace in any monitor, instead of defaulting to the
 global options, it will read them from this configuration value. For any
@@ -797,7 +798,7 @@ means the name you need to use is HDMI-A-1.
 `monitor_options` is a list with the following format:
 
 ```
-monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
+monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; column_widths = onethird onehalf twothirds; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
 ```
 
 The list of monitors is encapsulated by `()` and separated by `,`. Each
@@ -807,7 +808,8 @@ example above. Spaces are allowed anywhere for better readability.
 
 This option is useful to configure ultra-wide monitors or those in non-standard
 orientations (for example portrait instead of landscape). You can define any
-combination.
+combination. You can also use a configuration per monitor when you have very
+different geometries, for example a laptop and an external, bigger monitor.
 
 ### `gesture_scroll_enable`
 
@@ -900,7 +902,7 @@ plugin {
         # ultra-wide monitor
         column_widths = onefourth onethird onehalf onesixth
         # portrait mode monitors
-        monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
+        monitor_options = (DP-2 = (mode = row; column_default_width = onehalf; column_widths = onethird onehalf twothirds one; window_default_height = one), HDMI-A-1 = (mode = col; column_default_width = one; window_default_height = onehalf))
     }
 }
 ```

@@ -175,6 +175,13 @@ CBox JumpDecoration::assignedBoxGlobal() {
     static auto *const *TEXTSCALE = (Hyprlang::FLOAT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_scale")->getDataStaticPtr();
     CBox box = m_bAssignedGeometry;
     box.translate(g_pDecorationPositioner->getEdgeDefinedPoint(DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT | DECORATION_EDGE_TOP, m_pWindow.lock()));
+    if (box.w > box.h) {
+        box.x += 0.5 * (box.w - box.h);
+        box.w = box.h;
+    } else {
+        box.y += 0.5 * (box.h - box.w);
+        box.h = box.w;
+    }
 
     const double scale = **TEXTSCALE < 0.1 ? 0.1 : **TEXTSCALE > 1.0 ? 1.0 : **TEXTSCALE;
     box.scaleFromCenter(scale);

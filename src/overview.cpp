@@ -74,6 +74,9 @@ static CBox hookLogicalBox(void *thisptr) {
 
 // Needed to render the HW cursor at the right position
 static Vector2D hookGetCursorPosForMonitor(void *thisptr, PHLMONITOR monitor) {
+    if (g_pCompositor->m_pLastMonitor.lock() != monitor)
+        return { 0.0, 0.0 };
+
     WORKSPACEID workspace = monitor->activeSpecialWorkspaceID();
     if (!workspace)
         workspace = monitor->activeWorkspaceID();

@@ -465,8 +465,15 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
     reorder = Reorder::Auto;
     StandardSize height = active->data()->get_height();
     if (height == StandardSize::Free) {
-        // When cycle-resizing from Free mode, always move back to default
-        height = scroller_sizes.get_window_default_height(active->data()->get_window());
+
+        // When cycle-resizing from Free mode, move back to closest or default
+        static auto* const *CYCLESIZE_CLOSEST = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:cyclesize_closest")->getDataStaticPtr();
+        if (**CYCLESIZE_CLOSEST) {
+            double fraction = active->data()->get_geom_h() / row->get_max().h;
+            height = scroller_sizes.get_window_closest_height(g_pCompositor->m_pLastMonitor, fraction, step);
+        } else {
+            height = scroller_sizes.get_window_default_height(active->data()->get_window());
+        }
     } else {
         height = scroller_sizes.get_next_window_height(height, step);
     }

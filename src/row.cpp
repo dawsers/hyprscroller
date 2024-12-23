@@ -232,8 +232,14 @@ void Row::resize_active_column(int step)
     } else {
         StandardSize width = active->data()->get_width();
         if (width == StandardSize::Free) {
-            // When cycle-resizing from Free mode, always move back to default
-            width = scroller_sizes.get_column_default_width(get_active_window());
+            // When cycle-resizing from Free mode, move back to closest or default
+            static auto* const *CYCLESIZE_CLOSEST = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:cyclesize_closest")->getDataStaticPtr();
+            if (**CYCLESIZE_CLOSEST) {
+                double fraction = active->data()->get_geom_w() / max.w;
+                width = scroller_sizes.get_column_closest_width(g_pCompositor->m_pLastMonitor, fraction, step);
+            } else {
+                width = scroller_sizes.get_column_default_width(get_active_window());
+            }
         } else {
             width = scroller_sizes.get_next_column_width(width, step);
         }

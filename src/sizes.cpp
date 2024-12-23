@@ -129,6 +129,85 @@ StandardSize ScrollerSizes::get_column_default_width(PHLWINDOW window)
     return column_default_width;
 }
 
+StandardSize ScrollerSizes::get_closest_size(const std::vector<StandardSize> &sizes, double fraction, int step) const
+{
+    size_t closest = step >= 0 ? sizes.size() - 1 : 0;
+    double closest_distance = 2.0;
+    for (size_t i = 0; i < sizes.size(); ++i) {
+        double s;
+        switch (sizes[i]) {
+        case StandardSize::OneEighth:
+            s = 1.0 / 8.0;
+            break;
+        case StandardSize::OneSixth:
+            s = 1.0 / 6.0;
+            break;
+        case StandardSize::OneFourth:
+            s = 1.0 / 4.0;
+            break;
+        case StandardSize::OneThird:
+            s = 1.0 / 3.0;
+            break;
+        case StandardSize::ThreeEighths:
+            s = 3.0 / 8.0;
+            break;
+        case StandardSize::OneHalf:
+            s = 1.0 / 2.0;
+            break;
+        case StandardSize::FiveEighths:
+            s = 5.0 / 8.0;
+            break;
+        case StandardSize::TwoThirds:
+            s = 2.0 / 3.0;
+            break;
+        case StandardSize::ThreeQuarters:
+            s = 3.0 / 4.0;
+            break;
+        case StandardSize::FiveSixths:
+            s = 5.0 / 6.0;
+            break;
+        case StandardSize::SevenEighths:
+            s = 7.0 / 8.0;
+            break;
+        case StandardSize::One:
+            s = 1.0;
+            break;
+        default:
+            // Shouldn't be here
+            s = 2.0;
+            break;
+        }
+        double distance = step * (s - fraction);
+        if (distance >= 0.0 && distance < closest_distance) {
+            closest = i;
+            closest_distance = distance;
+        }
+    }
+    return sizes[closest];
+}
+
+StandardSize ScrollerSizes::get_window_closest_height(PHLMONITORREF monitor, double fraction, int step)
+{
+    update();
+    for (const auto monitor_data : monitors) {
+        if (monitor_data.name == monitor->szName) {
+            return get_closest_size(monitor_data.window_heights, fraction, step);
+        }
+    }
+    return get_closest_size(window_heights, fraction, step);
+}
+
+StandardSize ScrollerSizes::get_column_closest_width(PHLMONITORREF monitor, double fraction, int step)
+{
+    update();
+    for (const auto monitor_data : monitors) {
+        if (monitor_data.name == monitor->szName) {
+            return get_closest_size(monitor_data.column_widths, fraction, step);
+        }
+    }
+    return get_closest_size(column_widths, fraction, step);
+}
+
 void ScrollerSizes::update_sizes(std::vector<StandardSize> &sizes, const std::string &option, StandardSize default_size)
 {
     sizes.clear();

@@ -37,6 +37,8 @@ public:
     Mode get_mode(PHLMONITOR monitor);
     StandardSize get_window_default_height(PHLWINDOW window);
     StandardSize get_column_default_width(PHLWINDOW window);
+    StandardSize get_window_closest_height(PHLMONITORREF monitor, double fraction, int step);
+    StandardSize get_column_closest_width(PHLMONITORREF monitor, double fraction, int step);
     StandardSize get_next_window_height(StandardSize size, int step);
     StandardSize get_next_column_width(StandardSize size, int step);
     StandardSize get_window_height(int index);
@@ -45,6 +47,7 @@ public:
 private:
     StandardSize get_next(const std::vector<StandardSize> &sizes, StandardSize size, int step) const;
     StandardSize get_size(const std::vector<StandardSize> &sizes, int index) const;
+    StandardSize get_closest_size(const std::vector<StandardSize> &sizes, double fraction, int step) const;
     void update_sizes(std::vector<StandardSize> &sizes, const std::string &option, StandardSize default_size);
     StandardSize get_size_from_string(const std::string &size, StandardSize default_size);
     void trim(std::string &str);

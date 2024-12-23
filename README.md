@@ -702,6 +702,15 @@ in a cycle. This is the default behavior. If you prefer cycling not to *wrap*
 first size if you call `prev`, and at the last size if you call `next`.
 Possible arguments are: `true`|`1` (default), or `false`|`0`.
 
+### `cyclesize_closest`
+
+If `true`, when a window/column has been manually resized or is not of one
+of the standard sizes in `window_heights`/`column_widths`, calling one of the
+`cyclesize` dispatchers will resize it to the closest available size in
+`window_heights`/`column_widths`. If `false`, the window/column will adopt its
+default size instead (`window_default_height`/`column_default_width`).
+Possible arguments are: `true`|`1` (default), or `false`|`0`.
+
 ### `center_row_if_space_available`
 
 If there is empty space in the viewport, the row will be centered, leaving the
@@ -752,7 +761,7 @@ Determines the set of column widths *hyprscroller* will
 cycle through when resizing the width of a column in *row* mode. It is a string
 of any number of values chosen among: *oneeighth, onesixth, onefourth, onethird,
 threeeighths, onehalf, fiveeighths, twothirds, threequarters, fivesixths,
-seveneighths, one*. The default value is: *onehalf twothirds onethird*.
+seveneighths, one*. The default value is: *onethird onehalf twothirds one*.
 
 ### `window_heights`
 
@@ -761,7 +770,7 @@ cycle through when resizing the height of a window in *column* mode. It is a
 string of any number of values chosen among: *oneeighth, onesixth, onefourth,
 onethird, threeeighths, onehalf, fiveeighths, twothirds, threequarters,
 fivesixths, seveneighths, one*. The default value is:
-*one onethird onehalf twothirds*.
+*onethird onehalf twothirds one*.
 
 ### `monitor_options`
 

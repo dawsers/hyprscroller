@@ -114,6 +114,7 @@ public:
     void resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta);
     void selection_toggle();
     void selection_set(PHLWINDOWREF window);
+    void selection_all();
     void selection_reset();
     Column *selection_get(const Row *row);
     bool selection_exists() const;

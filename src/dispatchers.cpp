@@ -280,6 +280,13 @@ namespace dispatchers {
 
         g_ScrollerLayout->selection_reset();
     }
+    void dispatch_selectionworkspace(std::string) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        g_ScrollerLayout->selection_workspace(workspace);
+    }
     void dispatch_selectionmove(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
@@ -373,6 +380,7 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionworkspace", dispatch_selectionworkspace);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnew", dispatch_trailnew);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnext", dispatch_trailnext);

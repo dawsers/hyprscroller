@@ -122,40 +122,41 @@ general {
 
 The plugin adds the following dispatchers:
 
-| Dispatcher                  | Description                                                                                                                      |
-|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `scroller:movefocus`        | An optional replacement for `movefocus`, takes a direction as argument.                                                          |
-| `scroller:movewindow`       | An optional replacement for `movewindow`, takes a direction as argument.                                                         |
-| `scroller:setmode`          | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.            |
-| `scroller:cyclesize`        | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                       |
-| `scroller:cyclewidth`       | Resize the focused column width.                                                                                                 |
-| `scroller:cycleheight`      | Resize the active window height.                                                                                                 |
-| `scroller:setsize`          | Set the focused column width (*row* mode), or the active window height (*column* mode) to one of the standard sizes.             |
-| `scroller:setwidth`         | Set the focused column width to one of `column_widths`. Takes an int value (0-based idx of the desired size in `column_widths`)  |
-| `scroller:setheight`        | Set the active window height to one of `window_heights`. Parameter similar to `setwidth`                                         |
-| `scroller:alignwindow`      | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode), `m/middle`  |
-| `scroller:admitwindow`      | Push the current window below the active one of the column to its left.                                                          |
-| `scroller:expelwindow`      | Pop the current window out of its column and place it on a new column to the right.                                              |
-| `scroller:fitsize`          | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`      |
-| `scroller:toggleoverview`   | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                              |
-| `scroller:marksadd`         | Add a named mark. Argument is the name of the mark                                                                               |
-| `scroller:marksdelete`      | Delete a named mark. Argument is the name of the mark                                                                            |
-| `scroller:marksvisit`       | Visit a named mark. Argument is the name of the mark                                                                             |
-| `scroller:marksreset`       | Delete all marks                                                                                                                 |
-| `scroller:pin`              | Toggle pin a column to its current position. The rest will adapt when changing focus etc.                                        |
-| `scroller:selectiontoggle`  | Toggle on/off the selection status of a window                                                                                   |
-| `scroller:selectionreset`   | Resets selection (deselects all windows)                                                                                         |
-| `scroller:selectionmove`    | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)       |
-| `scroller:trailnew`         | Creates a new trail                                                                                                              |
-| `scroller:traildelete`      | Deletes the active trail                                                                                                         |
-| `scroller:trailclear`       | Clears all the trailmarks of the current trail                                                                                   |
-| `scroller:trailnext`        | Moves to next trail                                                                                                              |
-| `scroller:trailprevious`    | Moves to previous trail                                                                                                          |
-| `scroller:trailtoselection` | Creates a selection from all the windows in the current trail                                                                    |
-| `scroller:trailmarktoggle`  | Toggles a trailmark for the current window in the active trail                                                                   |
-| `scroller:trailmarknext`    | Moves to next trailmark in the current trail                                                                                     |
-| `scroller:trailmarkprevious`| Moves to previous trailmark in the current trail                                                                                 |
-| `scroller:jump`             | Shows every window on the active monitors for a shortcut-based, quick focus mode                                                 |
+| Dispatcher                    | Description                                                                                                                      |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `scroller:movefocus`          | An optional replacement for `movefocus`, takes a direction as argument.                                                          |
+| `scroller:movewindow`         | An optional replacement for `movewindow`, takes a direction as argument.                                                         |
+| `scroller:setmode`            | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.            |
+| `scroller:cyclesize`          | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                       |
+| `scroller:cyclewidth`         | Resize the focused column width.                                                                                                 |
+| `scroller:cycleheight`        | Resize the active window height.                                                                                                 |
+| `scroller:setsize`            | Set the focused column width (*row* mode), or the active window height (*column* mode) to one of the standard sizes.             |
+| `scroller:setwidth`           | Set the focused column width to one of `column_widths`. Takes an int value (0-based idx of the desired size in `column_widths`)  |
+| `scroller:setheight`          | Set the active window height to one of `window_heights`. Parameter similar to `setwidth`                                         |
+| `scroller:alignwindow`        | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode), `m/middle`  |
+| `scroller:admitwindow`        | Push the current window below the active one of the column to its left.                                                          |
+| `scroller:expelwindow`        | Pop the current window out of its column and place it on a new column to the right.                                              |
+| `scroller:fitsize`            | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`      |
+| `scroller:toggleoverview`     | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                              |
+| `scroller:marksadd`           | Add a named mark. Argument is the name of the mark                                                                               |
+| `scroller:marksdelete`        | Delete a named mark. Argument is the name of the mark                                                                            |
+| `scroller:marksvisit`         | Visit a named mark. Argument is the name of the mark                                                                             |
+| `scroller:marksreset`         | Delete all marks                                                                                                                 |
+| `scroller:pin`                | Toggle pin a column to its current position. The rest will adapt when changing focus etc.                                        |
+| `scroller:selectiontoggle`    | Toggle on/off the selection status of a window                                                                                   |
+| `scroller:selectionworkspace` | Select every window in the current workspace                                                                                     |
+| `scroller:selectionreset`     | Resets selection (deselects all windows)                                                                                         |
+| `scroller:selectionmove`      | Moves the selected windows/columns to the current workspace and location, takes a direction as argument (keeps sizes etc.)       |
+| `scroller:trailnew`           | Creates a new trail                                                                                                              |
+| `scroller:traildelete`        | Deletes the active trail                                                                                                         |
+| `scroller:trailclear`         | Clears all the trailmarks of the current trail                                                                                   |
+| `scroller:trailnext`          | Moves to next trail                                                                                                              |
+| `scroller:trailprevious`      | Moves to previous trail                                                                                                          |
+| `scroller:trailtoselection`   | Creates a selection from all the windows in the current trail                                                                    |
+| `scroller:trailmarktoggle`    | Toggles a trailmark for the current window in the active trail                                                                   |
+| `scroller:trailmarknext`      | Moves to next trailmark in the current trail                                                                                     |
+| `scroller:trailmarkprevious`  | Moves to previous trailmark in the current trail                                                                                 |
+| `scroller:jump`               | Shows every window on the active monitors for a shortcut-based, quick focus mode                                                 |
 
 
 ## Modes
@@ -381,6 +382,12 @@ color to the one specified in the option `plugin:scroller:col.selection_border`.
 Once you have made a selection, you can move those windows to a different
 workspace or location in the same workspace using `scroller:selectionmove`.
 The selection order and column/window configuration will be maintained.
+
+`scroller:selectionworkspace` will add every window of the current workspace
+to the selection. You can use this when you want to move one workspace to a
+different one, but keeping windows positions and sizes. Use
+`scroller:selectionworkspace`, and then `scroller:selectionmove` where you
+want the windows to appear.
 
 `scroller:selectionmove` accepts a direction as parameter. Valid directions
 are:
@@ -1134,6 +1141,7 @@ bind = $mainMod, P, scroller:pin,
 bind = $mainMod, Insert, scroller:selectiontoggle,
 bind = $mainMod CTRL, Insert, scroller:selectionreset,
 bind = $mainMod SHIFT, Insert, scroller:selectionmove, right
+bind = $mainMod CTRL SHIFT, Insert, scroller:selectionworkspace,
 
 # Trails and Trailmarks
 bind = $mainMod SHIFT, semicolon, submap, trail

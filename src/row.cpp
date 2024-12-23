@@ -362,6 +362,13 @@ void Row::selection_set(PHLWINDOWREF window)
     }
 }
 
+void Row::selection_all()
+{
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        col->data()->selection_all();
+    }
+}
+
 void Row::selection_reset()
 {
     for (auto col = columns.first(); col != nullptr; col = col->next()) {

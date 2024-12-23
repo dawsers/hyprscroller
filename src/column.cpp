@@ -554,6 +554,13 @@ void Column::selection_set(PHLWINDOWREF window)
     }
 }
 
+void Column::selection_all()
+{
+    for (auto w = windows.first(); w != nullptr; w = w->next()) {
+        w->data()->selection_set();
+    }
+}
+
 void Column::selection_reset()
 {
     for (auto win = windows.first(); win != nullptr; win = win->next()) {

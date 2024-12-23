@@ -50,6 +50,7 @@ public:
     void pin();
     void selection_toggle();
     void selection_set(PHLWINDOWREF window);
+    void selection_all();
     void selection_reset();
     void selection_move(const List<Column *> &columns, Direction direction);
     void selection_get(const Row *row, List<Column *> &selection);

@@ -66,6 +66,7 @@ public:
     void selection_toggle(WORKSPACEID workspace);
     void selection_set(PHLWINDOWREF window);
     void selection_reset();
+    void selection_workspace(WORKSPACEID workspace);
     void selection_move(WORKSPACEID workspace, Direction direction = Direction::End);
 
     void trail_new();

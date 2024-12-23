@@ -1060,6 +1060,18 @@ void ScrollerLayout::selection_reset() {
     }
 }
 
+void ScrollerLayout::selection_workspace(WORKSPACEID workspace) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+
+    s->selection_all();
+
+    // Re-render that monitor to render decorations
+    g_pHyprRenderer->damageMonitor(g_pCompositor->m_pLastMonitor.lock());
+}
+
 // Move all selected columns/windows to workspace, and locate them in direction wrt
 // the active column. Valid directiona are left, right, beginning, end, other
 // defaults to right.

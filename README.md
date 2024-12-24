@@ -352,6 +352,10 @@ as the name. Again, see the example configuration.
 README there is an example implementation for [ags](https://github.com/Aylur/ags)
 to use those signals to display information on your desktop bar.
 
+If you want more advanced functionality for *marks*, including some nice UI
+to view which ones are set and navigate them, see
+[this](https://github.com/dawsers/hyprscroller/issues/101#issue-2757080105)
+script and comment by `CRAG666`
 
 ## Pinning a Column
 

@@ -561,43 +561,44 @@ export function Scroller() {
         ],
     })
     function event_decode(data) {
-        const text = decoder.decode(data);
-        if (text.startsWith("scroller>>mode,")) {
-            const mode = text.substring(15).trim();
-            if (mode == "row")
-                mode_label.label = "-";
-            else
-                mode_label.label = "|";
-        } else if (text.startsWith("scroller>>overview,")) {
-            if (text.substring(19) == 1) {
-                overview_label.label = "🐦";
-            } else {
-                overview_label.label = "";
-            }
-        } else if (text.startsWith("scroller>>trail,")) {
-            const trail = text.substring(16).trim().split(",");
-            const tnumber = trail[0].trim();
-            if (tnumber == "-1") {
-                trail_label.label = "";
-            } else {
-                const tsize = trail[1].trim();
-                trail_label.label = tnumber + " (" + tsize + ")";
-            }
-        } else if (text.startsWith("scroller>>trailmark,")) {
-            if (text.substring(20) == 1) {
-                trailmark_label.label = "✅";
-            } else {
-                trailmark_label.label = "";
-            }
-
-        } else if (text.startsWith("scroller>>mark,")) {
-            const mark = text.substring(15).trim().split(",");
-            const enabled = mark[0].trim();
-            if (enabled == "1") {
-                const name = mark[1].trim();
-                mark_label.label = "🔖" + " " + name;
-            } else {
-                mark_label.label = "";
+        const msg = decoder.decode(data);
+        const text = msg.split(">>");
+        if (text[0] == "scroller") {
+            const argv = text[1].split(",");
+            if (argv[0] == "mode") {
+                const mode = argv[1].trim();
+                if (mode == "row")
+                    mode_label.label = "-";
+                else
+                    mode_label.label = "|";
+            } else if (argv[0] == "overview") {
+                if (argv[1].trim() == "1") {
+                    overview_label.label = "🐦";
+                } else {
+                    overview_label.label = "";
+                }
+            } else if (argv[0] == "trail") {
+                const tnumber = argv[1].trim();
+                if (tnumber == "-1") {
+                    trail_label.label = "";
+                } else {
+                    const tsize = argv[2].trim();
+                    trail_label.label = tnumber + " (" + tsize + ")";
+                }
+            } else if (argv[0] == "trailmark") {
+                if (argv[1].trim() == "1") {
+                    trailmark_label.label = "✅";
+                } else {
+                    trailmark_label.label = "";
+                }
+            } else if (argv[0] == "mark") {
+                const enabled = argv[1].trim();
+                if (enabled == "1") {
+                    const name = argv[2].trim();
+                    mark_label.label = "🔖" + " " + name;
+                } else {
+                    mark_label.label = "";
+                }
             }
         }
     }

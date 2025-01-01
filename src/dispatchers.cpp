@@ -228,6 +228,26 @@ namespace dispatchers {
             g_ScrollerLayout->fit_size(workspace, *fitsize);
         }
     }
+    void dispatch_fitwidth(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        auto args = CVarList(arg);
+        if (auto fitsize = parse_fit_size(args[0])) {
+            g_ScrollerLayout->fit_width(workspace, *fitsize);
+        }
+    }
+    void dispatch_fitheight(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        auto args = CVarList(arg);
+        if (auto fitsize = parse_fit_size(args[0])) {
+            g_ScrollerLayout->fit_height(workspace, *fitsize);
+        }
+    }
     void dispatch_toggleoverview(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
@@ -372,6 +392,8 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitheight", dispatch_fitheight);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksadd", dispatch_marksadd);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);

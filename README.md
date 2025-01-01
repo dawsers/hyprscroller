@@ -137,6 +137,8 @@ The plugin adds the following dispatchers:
 | `scroller:admitwindow`        | Push the current window below the active one of the column to its left.                                                          |
 | `scroller:expelwindow`        | Pop the current window out of its column and place it on a new column to the right.                                              |
 | `scroller:fitsize`            | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`      |
+| `scroller:fitwidth`           | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`                                           |
+| `scroller:fitheight`          | Resize windows for the active column so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`                     |
 | `scroller:toggleoverview`     | Toggle an overview of the workspace where all the windows are temporarily scaled to fit the monitor                              |
 | `scroller:marksadd`           | Add a named mark. Argument is the name of the mark                                                                               |
 | `scroller:marksdelete`        | Delete a named mark. Argument is the name of the mark                                                                            |
@@ -286,6 +288,11 @@ columns or windows affected.
    row/column will be affected.
 5. `tobeg` or `tobeginning`: All the columns/windows from the focused one to
    the beginning of the row/column will now fit the screen.
+
+`fitwidth` and `fitheight` accept the same arguments as `fitsize`, but work
+for the current *row* (`fitwidth`) or the active *column* (`fitheight`),
+regardless of your current *row/column* mode. They provide a direct way to
+fit windows without having to change the current working mode.
 
 
 ## Overview
@@ -1093,6 +1100,10 @@ bind = , up, scroller:fitsize, active
 bind = , up, submap, reset
 bind = , down, scroller:fitsize, all
 bind = , down, submap, reset
+bind = , bracketleft, scroller:fitwidth, all
+bind = , bracketleft, submap, reset
+bind = , bracketright, scroller:fitheight, all
+bind = , bracketright, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one

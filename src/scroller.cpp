@@ -936,6 +936,28 @@ void ScrollerLayout::fit_size(WORKSPACEID workspace, FitSize fitsize) {
     s->fit_size(fitsize);
 }
 
+void ScrollerLayout::fit_width(WORKSPACEID workspace, FitSize fitsize) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Row, true);
+    s->fit_size(fitsize);
+    s->set_mode(mode, true);
+}
+
+void ScrollerLayout::fit_height(WORKSPACEID workspace, FitSize fitsize) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+    Mode mode = s->get_mode();
+    s->set_mode(Mode::Column, true);
+    s->fit_size(fitsize);
+    s->set_mode(mode, true);
+}
+
 void ScrollerLayout::toggle_overview(WORKSPACEID workspace) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {

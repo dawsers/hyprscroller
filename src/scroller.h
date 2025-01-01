@@ -54,6 +54,8 @@ public:
     void expel_window_right(WORKSPACEID workspace);
     void set_mode(WORKSPACEID workspace, Mode);
     void fit_size(WORKSPACEID workspace, FitSize);
+    void fit_width(WORKSPACEID workspace, FitSize);
+    void fit_height(WORKSPACEID workspace, FitSize);
     void toggle_overview(WORKSPACEID workspace);
 
     void marks_add(const std::string &name);

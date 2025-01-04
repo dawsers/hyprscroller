@@ -688,10 +688,10 @@ bool Row::update_sizes(PHLMONITOR monitor)
     static auto PGAPSOUTDATA = CConfigValue<Hyprlang::CUSTOMTYPE>("general:gaps_out");
     auto *const PGAPSIN = (CCssGapData *)(PGAPSINDATA.ptr())->getData();
     auto *const PGAPSOUT = (CCssGapData *)(PGAPSOUTDATA.ptr())->getData();
+    const auto WORKSPACERULE = g_pConfigManager->getWorkspaceRuleFor(g_pCompositor->getWorkspaceByID(workspace));
     // For now, support only constant CCssGapData
-    auto gaps_in = PGAPSIN->top;
-    auto gaps_out = *PGAPSOUT;
-
+    auto gaps_in = WORKSPACERULE.gapsIn.value_or(*PGAPSIN).top;
+    auto gaps_out = WORKSPACERULE.gapsOut.value_or(*PGAPSOUT);
     const auto SIZE = monitor->vecSize;
     const auto POS = monitor->vecPosition;
     const auto TOPLEFT = monitor->vecReservedTopLeft;

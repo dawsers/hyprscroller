@@ -44,8 +44,8 @@ public:
     void set_geometry(const Box &box) {
         window->m_vPosition = Vector2D(box.x, box.y);
         window->m_vSize = Vector2D(box.w, box.h);
-        window->m_vRealPosition = window->m_vPosition;
-        window->m_vRealSize = window->m_vSize;
+        *window->m_vRealPosition = window->m_vPosition;
+        *window->m_vRealSize = window->m_vSize;
     }
     bool is_window(PHLWINDOW w) const {
         return window == w;
@@ -63,8 +63,8 @@ public:
         window->m_vSize.x *= scale;
         window->m_vSize.y = (window->m_vSize.y + reserved_area.topLeft.y + reserved_area.bottomRight.y + gap0 + gap1) * scale - gap0 - gap1 - reserved_area.topLeft.y - reserved_area.bottomRight.y;
         window->m_vSize = Vector2D(std::max(window->m_vSize.x, 1.0), std::max(window->m_vSize.y, 1.0));
-        window->m_vRealSize = window->m_vSize;
-        window->m_vRealPosition = window->m_vPosition;
+        *window->m_vRealSize = window->m_vSize;
+        *window->m_vRealPosition = window->m_vPosition;
     }
 
     void move_to_bottom(double x, const Box &max, const Vector2D &gap_x, double gap) {
@@ -92,8 +92,8 @@ public:
         auto reserved = window->getFullWindowReservedArea();
         //win->m_vSize = Vector2D(w - gap_x.x - gap_x.y, wh - gap0 - gap1);
         window->m_vSize = Vector2D(std::max(w - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(get_geom_h() - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
-        window->m_vRealPosition = window->m_vPosition;
-        window->m_vRealSize = window->m_vSize;
+        *window->m_vRealPosition = window->m_vPosition;
+        *window->m_vRealSize = window->m_vSize;
     }
     bool can_resize_width(double geomw, double maxw, const Vector2D &gap_x, double gap, double deltax) {
         // First, check if resize is possible or it would leave any window
@@ -175,8 +175,8 @@ private:
         w->m_vPosition.y = mem.pos_y;
         w->m_vPosition = mem.vPosition;
         w->m_vSize = mem.vSize;
-        w->m_vRealPosition = w->m_vPosition;
-        w->m_vRealSize = w->m_vSize;
+        *w->m_vRealPosition = w->m_vPosition;
+        *w->m_vRealSize = w->m_vSize;
     }
 
     PHLWINDOWREF window;

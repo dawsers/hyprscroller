@@ -44,7 +44,7 @@ CBox SelectionBorders::assignedBoxGlobal() {
     if (!PWORKSPACE)
         return box;
 
-    const auto WORKSPACEOFFSET = PWORKSPACE && !m_pWindow->m_bPinned ? PWORKSPACE->m_vRenderOffset.value() : Vector2D();
+    const auto WORKSPACEOFFSET = PWORKSPACE && !m_pWindow->m_bPinned ? PWORKSPACE->m_vRenderOffset->value() : Vector2D();
     return box.translate(WORKSPACEOFFSET);
 }
 
@@ -61,22 +61,23 @@ void SelectionBorders::draw(PHLMONITOR pMonitor, float const& a) {
         return;
 
     auto       grad     = window->get_border_color();
-    const bool ANIMATED = m_pWindow->m_fBorderFadeAnimationProgress.isBeingAnimated();
-    float      a1       = a * (ANIMATED ? m_pWindow->m_fBorderFadeAnimationProgress.value() : 1.f);
+    const bool ANIMATED = m_pWindow->m_fBorderFadeAnimationProgress->isBeingAnimated();
+    float      a1       = a * (ANIMATED ? m_pWindow->m_fBorderFadeAnimationProgress->value() : 1.f);
 
-    if (m_pWindow->m_fBorderAngleAnimationProgress.getConfig()->pValues->internalEnabled) {
-        grad.m_fAngle += m_pWindow->m_fBorderAngleAnimationProgress.value() * M_PI * 2;
+    if (m_pWindow->m_fBorderAngleAnimationProgress->getConfig()->pValues->internalEnabled) {
+        grad.m_fAngle += m_pWindow->m_fBorderAngleAnimationProgress->value() * M_PI * 2;
         grad.m_fAngle = normalizeAngleRad(grad.m_fAngle);
     }
 
     int        borderSize = m_pWindow->getRealBorderSize();
     const auto ROUNDING   = m_pWindow->rounding() * pMonitor->scale;
+    const auto ROUNDINGPOWER = m_pWindow->roundingPower();
 
-    g_pHyprOpenGL->renderBorder(&windowBox, grad, ROUNDING, borderSize, a1);
+    g_pHyprOpenGL->renderBorder(&windowBox, grad, ROUNDING, borderSize, a1, ROUNDINGPOWER);
 
     if (ANIMATED) {
-        float a2 = a * (1.f - m_pWindow->m_fBorderFadeAnimationProgress.value());
-        g_pHyprOpenGL->renderBorder(&windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2);
+        float a2 = a * (1.f - m_pWindow->m_fBorderFadeAnimationProgress->value());
+        g_pHyprOpenGL->renderBorder(&windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2, ROUNDINGPOWER);
     }
 }
 
@@ -108,8 +109,8 @@ void SelectionBorders::damageEntire() {
     const auto BORDERSIZE   = m_pWindow->getRealBorderSize() + 1;
 
     const auto PWINDOWWORKSPACE = m_pWindow->m_pWorkspace;
-    if (PWINDOWWORKSPACE && PWINDOWWORKSPACE->m_vRenderOffset.isBeingAnimated() && !m_pWindow->m_bPinned)
-        surfaceBox.translate(PWINDOWWORKSPACE->m_vRenderOffset.value());
+    if (PWINDOWWORKSPACE && PWINDOWWORKSPACE->m_vRenderOffset->isBeingAnimated() && !m_pWindow->m_bPinned)
+        surfaceBox.translate(PWINDOWWORKSPACE->m_vRenderOffset->value());
     surfaceBox.translate(m_pWindow->m_vFloatingOffset);
 
     CBox surfaceBoxExpandedBorder = surfaceBox;
@@ -191,7 +192,7 @@ CBox JumpDecoration::assignedBoxGlobal() {
     if (!PWORKSPACE)
         return box;
 
-    const auto WORKSPACEOFFSET = PWORKSPACE->m_vRenderOffset.value();
+    const auto WORKSPACEOFFSET = PWORKSPACE->m_vRenderOffset->value();
     return box.translate(WORKSPACEOFFSET);
 }
 
@@ -201,7 +202,7 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
     if (windowBox.width < 1 || windowBox.height < 1)
         return;
     
-    const bool ANIMATED = m_pWindow->m_vRealPosition.isBeingAnimated() || m_pWindow->m_vRealSize.isBeingAnimated();
+    const bool ANIMATED = m_pWindow->m_vRealPosition->isBeingAnimated() || m_pWindow->m_vRealSize->isBeingAnimated();
 
     if (m_pTexture.get() == nullptr) {
         m_iFrames++;

@@ -497,7 +497,7 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
     auto s = getRowForWindow(PWINDOW);
     if (s == nullptr) {
         // Window is not tiled
-        PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize.goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize.goal() + delta).y, 20.0));
+        *PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize->goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize->goal() + delta).y, 20.0));
         PWINDOW->updateWindowDecos();
         return;
     }
@@ -519,17 +519,17 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
     if (s == nullptr) {
         // save position and size if floating
         if (window->m_bIsFloating && CURRENT_EFFECTIVE_MODE == FSMODE_NONE) {
-            window->m_vLastFloatingSize     = window->m_vRealSize.goal();
-            window->m_vLastFloatingPosition = window->m_vRealPosition.goal();
-            window->m_vPosition             = window->m_vRealPosition.goal();
-            window->m_vSize                 = window->m_vRealSize.goal();
+            window->m_vLastFloatingSize     = window->m_vRealSize->goal();
+            window->m_vLastFloatingPosition = window->m_vRealPosition->goal();
+            window->m_vPosition             = window->m_vRealPosition->goal();
+            window->m_vSize                 = window->m_vRealSize->goal();
         }
         if (EFFECTIVE_MODE == FSMODE_NONE) {
             // window is not tiled
             if (window->m_bIsFloating) {
                 // get back its' dimensions from position and size
-                window->m_vRealPosition = window->m_vLastFloatingPosition;
-                window->m_vRealSize     = window->m_vLastFloatingSize;
+                *window->m_vRealPosition = window->m_vLastFloatingPosition;
+                *window->m_vRealSize     = window->m_vLastFloatingSize;
 
                 window->unsetWindowData(PRIORITY_LAYOUT);
                 window->updateWindowData();
@@ -538,13 +538,13 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
             // apply new pos and size being monitors' box
             const auto PMONITOR   = window->m_pMonitor.lock();
             if (EFFECTIVE_MODE == FSMODE_FULLSCREEN) {
-                window->m_vRealPosition = PMONITOR->vecPosition;
-                window->m_vRealSize     = PMONITOR->vecSize;
+                *window->m_vRealPosition = PMONITOR->vecPosition;
+                *window->m_vRealSize     = PMONITOR->vecSize;
             } else {
                 Box box = { PMONITOR->vecPosition + PMONITOR->vecReservedTopLeft,
                             PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
-                window->m_vRealPosition = Vector2D(box.x, box.y);
-                window->m_vRealSize = Vector2D(box.w, box.h);
+                *window->m_vRealPosition = Vector2D(box.x, box.y);
+                *window->m_vRealSize = Vector2D(box.w, box.h);
             }
         }
     } else {

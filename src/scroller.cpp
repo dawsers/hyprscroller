@@ -534,6 +534,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
 
                 window->unsetWindowData(PRIORITY_LAYOUT);
                 window->updateWindowData();
+                g_pXWaylandManager->setWindowSize(window, window->m_vRealSize->goal());
             }
         } else {
             // apply new pos and size being monitors' box

@@ -498,6 +498,7 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
     if (s == nullptr) {
         // Window is not tiled
         *PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize->goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize->goal() + delta).y, 20.0));
+        g_pXWaylandManager->setWindowSize(PWINDOW, PWINDOW->m_vRealSize->goal());
         PWINDOW->updateWindowDecos();
         return;
     }
@@ -545,6 +546,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
                             PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
                 *window->m_vRealPosition = Vector2D(box.x, box.y);
                 *window->m_vRealSize = Vector2D(box.w, box.h);
+                g_pXWaylandManager->setWindowSize(window, window->m_vRealSize->goal());
             }
         }
     } else {

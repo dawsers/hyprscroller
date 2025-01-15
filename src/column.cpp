@@ -80,7 +80,10 @@ Window *Column::get_window(PHLWINDOW window) const
 void Column::add_active_window(PHLWINDOW window)
 {
     reorder = Reorder::Auto;
-    active = windows.emplace_after(active, new Window(window, row->get_max().y, row->get_max().h));
+    auto w = new Window(window, row->get_max().y, row->get_max().h);
+    if (row->get_pinned_column() == this)
+        w->pin(true);
+    active = windows.emplace_after(active, w);
 }
 
 void Column::remove_window(PHLWINDOW window)
@@ -96,6 +99,8 @@ void Column::remove_window(PHLWINDOW window)
                 // the column.
                 active = active != windows.last() ? active->next() : active->prev();
             }
+            if (row->get_pinned_column() == this)
+                win->data()->pin(false);
             windows.erase(win);
             delete win->data();
             return;
@@ -600,3 +605,11 @@ Column *Column::selection_get(const Row *row)
     }
     return column;
 }
+
+void Column::pin(bool pin) const
+{
+    for (auto win = windows.first(); win != nullptr; win = win->next()) {
+        win->data()->pin(pin);
+    }
+}
+

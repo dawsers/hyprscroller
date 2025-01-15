@@ -23,6 +23,9 @@ Row::Row(WORKSPACEID workspace)
 Row::~Row()
 {
     for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        if (col == pinned) {
+            col->data()->pin(false);
+        }
         delete col->data();
     }
     columns.clear();
@@ -344,10 +347,17 @@ void Row::align_column(Direction dir)
 void Row::pin()
 {
     if (pinned != nullptr) {
+        pinned->data()->pin(false);
         pinned = nullptr;
     } else {
         pinned = active;
+        pinned->data()->pin(true);
     }
+}
+
+Column *Row::get_pinned_column() const
+{
+    return pinned->data();
 }
 
 void Row::selection_toggle()
@@ -601,6 +611,8 @@ void Row::admit_window_left()
         toggle_overview();
 
     auto w = active->data()->expel_active();
+    if (active == pinned)
+        w->pin(false);
     auto prev = active->prev();
     if (active->data()->size() == 0) {
         if (active == pinned)
@@ -608,6 +620,8 @@ void Row::admit_window_left()
         columns.erase(active);
     }
     active = prev;
+    if (active == pinned)
+        w->pin(true);
     active->data()->admit_window(w);
 
     reorder = Reorder::Auto;
@@ -633,6 +647,9 @@ void Row::expel_window_right()
 
     auto w = active->data()->expel_active();
     StandardSize width = active->data()->get_width();
+    if (active == pinned) {
+        w->pin(false);
+    }
     // This code inherits the width of the original column. There is a
     // problem with that when the mode is "Free". The new column may have
     // more reserved space for gaps, and the new window in that column

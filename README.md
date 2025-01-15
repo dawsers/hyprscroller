@@ -382,6 +382,14 @@ active one) will not perturb that position. When changing focus, the *active*
 column will be seen on the screen as long as it fits on either side of the
 *pinned* column.
 
+*hyprscroller* sets a special `tag` (`scroller:pinned`) on windows belonging
+to a pinned column. You can use this tag to create window rules affecting
+these windows. For example, to change their border colors:
+
+```
+windowrulev2 = bordercolor rgb(eeee00) rgb(00eeee), tag: scroller:pinned
+```
+
 
 ## Window Copying/Pasting
 
@@ -938,13 +946,20 @@ plugin {
 
 ## Window Rules
 
-*hyprscroller* supports a number of static Window Rules v2 that can be triggered
-at window creation. [Hyprland's Wiki](https://wiki.hyprland.org/Configuring/Window-Rules/)
+*hyprscroller* provides a number of static Window Rules v2 that can be
+triggered at window creation time.
+
+Aside from those, *hyprscroller* also sets some properties on certain windows,
+so you can also apply general Hyprland rules to them.
+
+[Hyprland's Wiki](https://wiki.hyprland.org/Configuring/Window-Rules/)
 explains what Window Rules are, and how to enable and configure them.
+
+### Static Window Rules
 
 These are rules specific to *hyprscroller*
 
-### group
+#### group
 
 You may want to keep every window of the same class, type etc. in the same
 column. For example, in [#45](https://github.com/dawsers/hyprscroller/issues/45),
@@ -957,7 +972,7 @@ column.
 windowrulev2 = plugin:scroller:group python_plots, class:(python3)
 ```
 
-### alignwindow
+#### alignwindow
 
 Aligns the new opened window. Works in the same way as the `alignwindow`
 dispatcher.
@@ -970,7 +985,7 @@ Center any new Firefox window.
 windowrulev2 = plugin:scroller:alignwindow center, class:(firefox)
 ```
 
-### marksadd
+#### marksadd
 
 Add a named mark to a window.
 
@@ -984,7 +999,7 @@ will let you navigate to Thunderbird from wherever you are by using a
 windowrulev2 = plugin:scroller:marksadd m, class:(thunderbird),title:(Mozilla Thunderbird)$
 ```
 
-### columnwidth
+#### columnwidth
 
 Overrides the default width of the column containing the window.
 
@@ -996,7 +1011,7 @@ Open any Firefox window with a width of `twothirds`
 windowrulev2 = plugin:scroller:columnwidth twothirds, class:(firefox)
 ```
 
-### windowheight
+#### windowheight
 
 Overrides the default height of the new window.
 
@@ -1006,6 +1021,20 @@ Open any Firefox window with a height of `onehalf`
 
 ```
 windowrulev2 = plugin:scroller:windowheight onehalf, class:(firefox)
+```
+
+### Hyprscroller Properties for Window Rules
+
+*hyprscroller* allows you to apply general window rules to some of its windows
+by using *tags*. These are automatic *tags* *hyprscroller* sets:
+
+#### scroller:pinned
+
+Windows belonging to a pinned column are tagged `scroller:pinned`. You can use
+this tag to modify their behavior. For example, to change their border colors:
+
+```
+windowrulev2 = bordercolor rgb(eeee00) rgb(00eeee), tag: scroller:pinned
 ```
 
 

@@ -118,6 +118,7 @@ public:
     void selection_reset();
     Column *selection_get(const Row *row);
     bool selection_exists() const;
+    void pin(bool pin) const;
 
 private:
     // Adjust all the windows in the column using 'window' as anchor

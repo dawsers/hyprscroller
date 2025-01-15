@@ -144,6 +144,16 @@ public:
         window->m_pMonitor = workspace->m_pMonitor;
     }
 
+    void pin(bool pin) {
+        if (pin) {
+            window->m_tags.applyTag("+scroller:pinned");
+        } else {
+            window->m_tags.applyTag("-scroller:pinned");
+        }
+        window->updateDynamicRules();
+        g_pCompositor->updateWindowAnimatedDecorationValues(window.lock());
+    }
+
 private:
     struct Memory {
         double pos_y;

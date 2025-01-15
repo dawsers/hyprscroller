@@ -48,6 +48,7 @@ public:
     Mode get_mode() const;
     void align_column(Direction dir);
     void pin();
+    Column *get_pinned_column() const;
     void selection_toggle();
     void selection_set(PHLWINDOWREF window);
     void selection_all();

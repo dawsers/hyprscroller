@@ -357,7 +357,7 @@ void Row::pin()
 
 Column *Row::get_pinned_column() const
 {
-    return pinned->data();
+    return pinned != nullptr ? pinned->data() : nullptr;
 }
 
 void Row::selection_toggle()

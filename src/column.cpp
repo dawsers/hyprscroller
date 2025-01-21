@@ -83,7 +83,29 @@ void Column::add_active_window(PHLWINDOW window)
     auto w = new Window(window, row->get_max().y, row->get_max().h);
     if (row->get_pinned_column() == this)
         w->pin(true);
-    active = windows.emplace_after(active, w);
+
+    ModeModifier modifier = row->get_mode_modifier();
+    auto focus = modifier.get_focus();
+    auto node = active;
+    switch (modifier.get_position()) {
+    case ModeModifier::POSITION_AFTER:
+    default:
+        node = windows.emplace_after(active, w);
+        break;
+    case ModeModifier::POSITION_BEFORE:
+        node = windows.emplace_before(active, w);
+        break;
+    case ModeModifier::POSITION_END:
+        node = windows.emplace_after(windows.last(), w);
+        break;
+    case ModeModifier::POSITION_BEGINNING:
+        node = windows.emplace_before(windows.first(), w);
+        break;
+    }
+    if (focus == ModeModifier::FOCUS_FOCUS)
+        active = node;
+    else
+        window->m_bNoInitialFocus = true;
 }
 
 void Column::remove_window(PHLWINDOW window)

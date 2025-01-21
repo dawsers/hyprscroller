@@ -938,6 +938,14 @@ void ScrollerLayout::set_mode(WORKSPACEID workspace, Mode mode) {
     s->set_mode(mode);
 }
 
+void ScrollerLayout::set_mode_modifier(WORKSPACEID workspace, const ModeModifier &modifier) {
+    auto s = getRowForWorkspace(workspace);
+    if (s == nullptr) {
+        return;
+    }
+    s->set_mode_modifier(modifier);
+}
+
 void ScrollerLayout::fit_size(WORKSPACEID workspace, FitSize fitsize) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {

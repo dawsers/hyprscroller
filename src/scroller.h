@@ -53,6 +53,7 @@ public:
     void admit_window_left(WORKSPACEID workspace);
     void expel_window_right(WORKSPACEID workspace);
     void set_mode(WORKSPACEID workspace, Mode);
+    void set_mode_modifier(WORKSPACEID workspace, const ModeModifier &);
     void fit_size(WORKSPACEID workspace, FitSize);
     void fit_width(WORKSPACEID workspace, FitSize);
     void fit_height(WORKSPACEID workspace, FitSize);

@@ -31,6 +31,56 @@ Row::~Row()
     columns.clear();
 }
 
+void Row::find_auto_insert_point(Mode &new_mode, ListNode<Column *> *&new_active)
+{
+    auto auto_mode = modifier.get_auto_mode();
+    if (auto_mode == ModeModifier::AUTO_AUTO) {
+        auto auto_param = modifier.get_auto_param();
+        if (mode == Mode::Row) {
+            if (active->data()->size() < auto_param) {
+                mode = Mode::Column;
+                return;
+            }
+            // Find another column with less than auto_param windows
+            for (auto col = columns.first(); col != nullptr; col = col->next()) {
+                if (col->data()->size() < auto_param) {
+                    mode = Mode::Column;
+                    active = col;
+                    return;
+                }
+            }
+        } else {
+            // If there are less columns than auto_param, create a new one
+            if (columns.size() < auto_param) {
+                mode = Mode::Row;
+                return;
+            }
+            // Create a new window in the active column only when all the other
+            // columns have the same number of windows
+
+            // Find the column with the highest number of windows
+            auto node = columns.first();
+            for (auto col = columns.first(); col != nullptr; col = col->next()) {
+                if (col->data()->size() > node->data()->size())
+                    node = col;
+            }
+            // Find a column with a lower number of windows than node, and insert
+            // the window there
+            for (auto col = columns.first(); col != nullptr; col = col->next()) {
+                if (col->data()->size() < node->data()->size()) {
+                    mode = Mode::Column;
+                    active = col;
+                    return;
+                }
+            }
+            // All the columns have the same number of windows, and we have
+            // the maximum allowed number of columns, add a window to the active
+            // column
+            return;
+        }
+    }
+}
+
 void Row::add_active_window(PHLWINDOW window)
 {
     bool overview_on = overview;
@@ -48,14 +98,45 @@ void Row::add_active_window(PHLWINDOW window)
         fsmode = eFullscreenMode::FSMODE_NONE;
     }
 
+    auto store_mode = mode;
+    auto store_active = active;
+    find_auto_insert_point(mode, active);
+
     if (active && mode == Mode::Column) {
         active->data()->add_active_window(window);
         active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
+        if (modifier.get_focus() == ModeModifier::FOCUS_NOFOCUS)
+            active = store_active;
     } else {
-        active = columns.emplace_after(active, new Column(window, max.w, this));
+        auto focus = modifier.get_focus();
+        auto node = active;
+        switch (modifier.get_position()) {
+        case ModeModifier::POSITION_AFTER:
+        default:
+            node = columns.emplace_after(active, new Column(window, max.w, this));
+            break;
+        case ModeModifier::POSITION_BEFORE:
+            node = columns.emplace_before(active, new Column(window, max.w, this));
+            break;
+        case ModeModifier::POSITION_END:
+            node = columns.emplace_after(columns.last(), new Column(window, max.w, this));
+            break;
+        case ModeModifier::POSITION_BEGINNING:
+            node = columns.emplace_before(columns.first(), new Column(window, max.w, this));
+            break;
+        }
+        if (focus == ModeModifier::FOCUS_FOCUS)
+            active = node;
+        else {
+            active = store_active;
+            window->m_bNoInitialFocus = true;
+        }
+
         reorder = Reorder::Auto;
         recalculate_row_geometry();
     }
+    mode = store_mode;
+
     if (fsmode != eFullscreenMode::FSMODE_NONE) {
         toggle_window_fullscreen_internal(window, fsmode);
         force_focus_to_window(window);
@@ -298,6 +379,27 @@ void Row::set_mode(Mode m, bool silent)
 Mode Row::get_mode() const
 {
     return mode;
+}
+
+void Row::set_mode_modifier(const ModeModifier &options)
+{
+    auto pos = options.get_position(false);
+    if (pos != ModeModifier::POSITION_UNDEFINED)
+        modifier.set_position(pos);
+    auto focus = options.get_focus(false);
+    if (focus != ModeModifier::FOCUS_UNDEFINED)
+        modifier.set_focus(focus);
+    auto auto_mode = options.get_auto_mode(false);
+    if (auto_mode != ModeModifier::AUTO_UNDEFINED) {
+        modifier.set_auto_mode(auto_mode);
+        modifier.set_auto_param(options.get_auto_param());
+    }
+    post_event("mode");
+}
+
+ModeModifier Row::get_mode_modifier() const
+{
+    return modifier;
 }
 
 void Row::align_column(Direction dir)
@@ -687,7 +789,8 @@ Vector2D Row::predict_window_size() const
 void Row::post_event(const std::string &event)
 {
     if (event == "mode") {
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}", mode == Mode::Row ? "row" : "column")});
+        auto str_mode = mode == Mode::Row ? "row" : "column";
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}, {}, {}, {}, {}", str_mode, modifier.get_position_string(), modifier.get_focus_string(), modifier.get_auto_mode_string(), modifier.get_auto_param())});
     } else if (event == "overview") {
         g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview ? 1 : 0)});
     } else if (event == "admitwindow") {

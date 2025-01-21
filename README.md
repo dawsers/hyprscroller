@@ -127,6 +127,7 @@ The plugin adds the following dispatchers:
 | `scroller:movefocus`          | An optional replacement for `movefocus`, takes a direction as argument.                                                          |
 | `scroller:movewindow`         | An optional replacement for `movewindow`, takes a direction as argument.                                                         |
 | `scroller:setmode`            | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.            |
+| `scroller:setmodemodifier`    | Assigns modifiers to the current mode for window creation: position, focus/nofocus, manual/auto. Description [below](#modes)    |
 | `scroller:cyclesize`          | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                       |
 | `scroller:cyclewidth`         | Resize the focused column width.                                                                                                 |
 | `scroller:cycleheight`        | Resize the active window height.                                                                                                 |
@@ -175,6 +176,87 @@ The plugin adds the following dispatchers:
    `alignwindow` aligns the active window within the column, according to the
    argument received. `fitsize` fits the selected windows in the column to the
    height of the monitor.
+
+### Mode Modifiers
+
+Modes and mode modifiers are per *row* (workspace). Each *row* may have
+different values.
+
+At window creation time, *hyprscroller* can apply several modifiers to the
+current working mode (*row/column*). The dispatcher `scroller:setmodemodifier`
+can set any of them by taking the following parameters:
+
+1. `position`: It is one of `after` (default), `before`, `end`, `beginning`.
+This parameter decides the position of new windows: *after* the current one
+(default value), *before* the current one, at the *end* of the row/column, or
+at the *beginning* of the row/column.
+2. `focus`: One of `focus` (default) or `nofocus`. When creating a new window,
+this parameter decides whether it will get focus or not.
+3. Automatic mode: `manual` (default) or `auto`. In the default *manual* mode,
+you control window placement. When turning on `auto`, *hyprscroller* will work
+in grid mode automatically. `auto` accepts an extra parameter: `number`.
+In *row* mode, *hyprscroller* will wait for as many new windows as `number` per
+column before creating a new column. In *column* mode, *hyprscroller* will
+create as many as `number` columns before adding new windows to any of them.
+If you close any window, `auto` mode will start filling the gaps with new
+windows you create.
+
+You can change modifiers at any time using `scoller:setmodemodifier`, which
+works like this:
+
+```
+# scroller:setmodemodifier, position, focus, auto, number
+# examples
+hyprctl dispatch scroller:setmodemodifier before, nofocus, auto, 3
+# creates new windows at the end of the row/column and doesn't focus on them
+hyprctl dispatch scroller:setmodemodifier end, nofocus
+# sets manual mode with no focus on new windows
+hyprctl dispatch scroller:setmodemodifier , nofocus, manual
+# default values
+hyprctl dispatch scroller:setmodemodifier after, focus, manual
+# sets auto mode with a grid of 4 windows
+hyprctl dispatch scroller:setmodemodifier , , auto, 4
+```
+
+You can skip any parameters. If you don't specify some of them, they will merge
+with the current set.
+
+Add a submap to your key bindings configuration to use this feature more
+easily:
+
+```
+# Set Mode Modifiers submap
+# will switch to a submap called modifiers
+bind = $mainMod, backslash, submap, modifiers
+# will start a submap called "modifiers"
+submap = modifiers
+#
+bind = , right, scroller:setmodemodifier, after
+bind = , right, submap, reset
+bind = , left, scroller:setmodemodifier, before
+bind = , left, submap, reset
+bind = , home, scroller:setmodemodifier, beginning
+bind = , home, submap, reset
+bind = , end, scroller:setmodemodifier, end
+bind = , end, submap, reset
+bind = , up, scroller:setmodemodifier, , focus
+bind = , up, submap, reset
+bind = , down, scroller:setmodemodifier, , nofocus
+bind = , down, submap, reset
+bind = , 2, scroller:setmodemodifier, , , auto, 2
+bind = , 2, submap, reset
+bind = , 3, scroller:setmodemodifier, , , auto, 3
+bind = , 3, submap, reset
+bind = , m, scroller:setmodemodifier, , , manual
+bind = , m, submap, reset
+# use reset to go back to the global submap
+bind = , escape, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
+```
+
+There is also an IPC event with details of the current mode and modifiers.
+Read [this](#ipc) for an example
 
 
 ## Window/Column Focus and Movement
@@ -494,15 +576,15 @@ you disable `workspace_swipe`.
 [*hyprland* does](https://wiki.hyprland.org/IPC/). These are currently the
 events that trigger a message:
 
-| Message                | Occurs when                | Data                |
-|------------------------|----------------------------|---------------------|
-| `scroller admitwindow` | admitting a window         |                     |
-| `scroller expelwindow` | expelling a window         |                     |
-| `scroller overview`    | toggling overview mode     | `0/1`               |
-| `scroller mode`        | changing mode              | `row/column`        |
-| `scroller mark`        | current window marked?     | `0/1`, `mark_name`  |
-| `scroller trail`       | current trail information  | `number`, `size`    |
-| `scroller trailmark`   | current window trailmark?  | `0/1`               |
+| Message                | Occurs when                | Data                                                |
+|------------------------|----------------------------|-----------------------------------------------------|
+| `scroller admitwindow` | admitting a window         |                                                     |
+| `scroller expelwindow` | expelling a window         |                                                     |
+| `scroller overview`    | toggling overview mode     | `0/1`                                               |
+| `scroller mode`        | changing mode or modifiers | `row/column`, `position`, `focus`, `auto`, `number` |
+| `scroller mark`        | current window marked?     | `0/1`, `mark_name`                                  |
+| `scroller trail`       | current trail information  | `number`, `size`                                    |
+| `scroller trailmark`   | current window trailmark?  | `0/1`                                               |
 
 You can use these events to show messages, or modify your bar. This simple
 script captures the events and shows a notification each time:
@@ -581,11 +663,30 @@ export function Scroller() {
         if (text[0] == "scroller") {
             const argv = text[1].split(",");
             if (argv[0] == "mode") {
-                const mode = argv[1].trim();
-                if (mode == "row")
-                    mode_label.label = "-";
-                else
-                    mode_label.label = "|";
+                const mode = argv[1].trim() == "row" ? "-" : "|";
+                const pos = argv[2].trim().substring(0, 3);
+                let pos_str;
+                switch (pos) {
+                case "aft":
+                default:
+                    pos_str = "→";
+                    break;
+                case "bef":
+                    pos_str = "←";
+                    break;
+                case "end":
+                    pos_str = "⇥";
+                    break;
+                case "beg":
+                    pos_str = "⇤";
+                    break;
+                }
+                const focus = argv[3].trim(). substring(0, 1);
+                const focus_str = focus == "f" ? "" : "";
+                const auto_mode = argv[4].trim(). substring(0, 1);
+                const auto_mode_str = auto_mode == "m" ? "✋" : "🅰";
+                const auto_param = argv[5].trim();
+                mode_label.label = mode + " " + pos_str + " " + focus_str + " " + auto_mode_str + " " + auto_param;
             } else if (argv[0] == "overview") {
                 if (argv[1].trim() == "1") {
                     overview_label.label = "🐦";
@@ -1062,6 +1163,34 @@ bind = $mainMod CTRL, end, scroller:movewindow, end
 # Modes
 bind = $mainMod, bracketleft, scroller:setmode, row
 bind = $mainMod, bracketright, scroller:setmode, col
+
+# Set Mode Modifiers submap
+# will switch to a submap called modifiers
+bind = $mainMod, backslash, submap, modifiers
+# will start a submap called "modifiers"
+submap = modifiers
+bind = , right, scroller:setmodemodifier, after
+bind = , right, submap, reset
+bind = , left, scroller:setmodemodifier, before
+bind = , left, submap, reset
+bind = , home, scroller:setmodemodifier, beginning
+bind = , home, submap, reset
+bind = , end, scroller:setmodemodifier, end
+bind = , end, submap, reset
+bind = , up, scroller:setmodemodifier, , focus
+bind = , up, submap, reset
+bind = , down, scroller:setmodemodifier, , nofocus
+bind = , down, submap, reset
+bind = , 2, scroller:setmodemodifier, , , auto, 2
+bind = , 2, submap, reset
+bind = , 3, scroller:setmodemodifier, , , auto, 3
+bind = , 3, submap, reset
+bind = , m, scroller:setmodemodifier, , , manual
+bind = , m, submap, reset
+# use reset to go back to the global submap
+bind = , escape, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
 
 # Sizing keys
 # bind = $mainMod, equal, scroller:cyclesize, next

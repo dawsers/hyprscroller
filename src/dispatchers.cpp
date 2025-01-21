@@ -204,6 +204,44 @@ namespace dispatchers {
         }
         g_ScrollerLayout->set_mode(workspace, mode);
     }
+    void dispatch_setmodemodifier(std::string arg) {
+        auto workspace = workspace_for_action();
+        if (workspace == -1)
+            return;
+
+        const auto args = CVarList(arg);
+        ModeModifier modifier;
+        if (args.size() > 0) {
+            if (args[0] == "after")
+                modifier.set_position(ModeModifier::POSITION_AFTER);
+            else if (args[0] == "before")
+                modifier.set_position(ModeModifier::POSITION_BEFORE);
+            else if (args[0] == "end")
+                modifier.set_position(ModeModifier::POSITION_END);
+            else if (args[0] == "beginning" || args[0] == "beg")
+                modifier.set_position(ModeModifier::POSITION_BEGINNING);
+
+            if (args.size() > 1) {
+                if (args[1] == "focus")
+                    modifier.set_focus(ModeModifier::FOCUS_FOCUS);
+                else if (args[1] == "nofocus")
+                    modifier.set_focus(ModeModifier::FOCUS_NOFOCUS);
+
+                if (args.size() > 2) {
+                    if (args[2] == "manual")
+                        modifier.set_auto_mode(ModeModifier::AUTO_MANUAL);
+                    else if (args[2] == "auto") {
+                        modifier.set_auto_mode(ModeModifier::AUTO_AUTO);
+
+                        if (args.size() > 3) {
+                            modifier.set_auto_param(std::stoi(args[3]));
+                        }
+                    }
+                }
+            }
+        }
+        g_ScrollerLayout->set_mode_modifier(workspace, modifier);
+    }
     std::optional<FitSize> parse_fit_size(std::string arg) {
         if (arg == "active")
             return FitSize::Active;
@@ -391,6 +429,7 @@ namespace dispatchers {
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
+        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmodemodifier", dispatch_setmodemodifier);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
         HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitheight", dispatch_fitheight);

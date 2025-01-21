@@ -46,6 +46,9 @@ public:
     void resize_active_window(const Vector2D &delta);
     void set_mode(Mode m, bool silent = false);
     Mode get_mode() const;
+    void set_mode_modifier(const ModeModifier &m);
+    ModeModifier get_mode_modifier() const;
+    void find_auto_insert_point(Mode &new_mode, ListNode<Column *> *&new_active);
     void align_column(Direction dir);
     void pin();
     Column *get_pinned_column() const;
@@ -93,6 +96,7 @@ private:
     int gap;
     Reorder reorder;
     Mode mode;
+    ModeModifier modifier;
     ListNode<Column *> *pinned;
     ListNode<Column *> *active;
     List<Column *> columns;

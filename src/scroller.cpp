@@ -340,35 +340,45 @@ void ScrollerLayout::onWindowCreatedTiling(PHLWINDOW window, eDirection)
 }
 
 /*
-    Called when a window is removed (unmapped)
+    Called when a window is removed (unmapped) (m_bIsMapped still true), and
+    then again when the window is destroyed.
+    Some XWayland windows only call it once, at destroy, but those
+    windows are not in the layout and are not floating either. For example Qt
+    tooltips with a XWayland backend. What are they?
+    Remove the window from the layout and re-focus in one call, so we can
+    ignore windows that don't belong to the layout. However, if the window is
+    removed because it became floating, we don't want to change focus to a
+    tiled window, just remove it from the layout and let it keep focus.
 */
 void ScrollerLayout::onWindowRemovedTiling(PHLWINDOW window)
 {
+    auto s = getRowForWindow(window);
+    if (s == nullptr)
+        return;
+
     marks.remove(window);
     trails->remove_window(window);
 
-    auto s = getRowForWindow(window);
-    if (s == nullptr) {
-        // Second call, window is no longer in any Row
-        WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
-        if (!workspace_id) {
-            workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
-        }
-        s = getRowForWorkspace(workspace_id);
-        if (s != nullptr)
-            force_focus_to_window(s->get_active_window());
-        return;
-    }
     if (!s->remove_window(window)) {
         // It was the last one, remove the row
         for (auto row = rows.first(); row != nullptr; row = row->next()) {
             if (row->data() == s) {
                 rows.erase(row);
                 delete row->data();
-                return;
+                break;
             }
         }
     }
+    if (window->m_bIsFloating)
+        return;
+
+    WORKSPACEID workspace_id = g_pCompositor->m_pLastMonitor->activeSpecialWorkspaceID();
+    if (!workspace_id) {
+        workspace_id = g_pCompositor->m_pLastMonitor->activeWorkspaceID();
+    }
+    s = getRowForWorkspace(workspace_id);
+    if (s != nullptr)
+        force_focus_to_window(s->get_active_window());
 }
 
 /*

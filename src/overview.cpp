@@ -1,5 +1,8 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/Compositor.hpp>
+#include <hyprland/src/helpers/Monitor.hpp>
+#include <hyprland/src/render/Renderer.hpp>
+
 #include "overview.h"
 
 extern HANDLE PHANDLE;

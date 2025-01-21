@@ -2,6 +2,8 @@
 #include "dispatchers.h"
 
 #include <hyprland/src/Compositor.hpp>
+#include <hyprland/src/helpers/Monitor.hpp>
+#include <hyprland/src/managers/input/InputManager.hpp>
 
 SDispatchResult this_moveFocusTo(std::string args)
 {

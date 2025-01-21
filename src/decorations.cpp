@@ -1,5 +1,8 @@
 #include <hyprland/src/debug/Log.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
+#include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/render/OpenGL.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
 
 #include "decorations.h"
 #include "window.h"

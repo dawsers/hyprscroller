@@ -1,3 +1,6 @@
+#include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
+
 #include "window.h"
 
 extern HANDLE PHANDLE;

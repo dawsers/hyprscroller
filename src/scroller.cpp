@@ -5,6 +5,9 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 #include <hyprland/src/devices/Keyboard.hpp>
+#include <hyprland/src/managers/EventManager.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/render/Renderer.hpp>
 
 #include "scroller.h"
 #include "common.h"

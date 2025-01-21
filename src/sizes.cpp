@@ -1,6 +1,9 @@
 #include "sizes.h"
 
 #include <sstream>
+#include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/helpers/Monitor.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
 
 extern HANDLE PHANDLE;
 

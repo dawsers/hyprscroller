@@ -3,6 +3,7 @@
 #include <hyprland/src/includes.hpp>
 #include <hyprland/src/managers/LayoutManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/helpers/Monitor.hpp>
 #include <optional>
 
 #include "enums.h"

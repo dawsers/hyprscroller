@@ -2,6 +2,9 @@
 #include "column.h"
 #include "row.h"
 
+#include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
+
 extern HANDLE PHANDLE;
 extern std::function<SDispatchResult(std::string)> orig_moveFocusTo;
 extern ScrollerSizes scroller_sizes;

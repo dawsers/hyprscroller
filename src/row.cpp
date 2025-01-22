@@ -645,6 +645,7 @@ void Row::move_active_column(Direction dir)
         toggle_overview();
 
     auto window = active->data()->get_active_window();
+    update_relative_cursor_coords(window);
     eFullscreenMode fsmode = window_fullscreen_state(window);
     if (fsmode != eFullscreenMode::FSMODE_NONE) {
         toggle_window_fullscreen_internal(window, eFullscreenMode::FSMODE_NONE);
@@ -1015,7 +1016,7 @@ void Row::toggle_overview()
             overviews->set_scale(workspace, scale);
             overviews->set_vecsize(workspace, monitor->vecSize);
             // Update cursor
-            g_pCompositor->warpCursorTo(get_active_window()->middle());
+            get_active_window()->warpCursor();
         } else {
             Vector2D offset(0.5 * (max.w - w * scale), 0.5 * (max.h - h * scale));
             for (auto c = columns.first(); c != nullptr; c = c->next()) {
@@ -1050,7 +1051,7 @@ void Row::toggle_overview()
         adjust_columns(active);
         // Turn fullscreen mode back on if enabled
         auto window = get_active_window();
-        g_pCompositor->warpCursorTo(window->middle());
+        window->warpCursor();
         if (preoverview_fsmode != eFullscreenMode::FSMODE_NONE) {
             toggle_window_fullscreen_internal(window, preoverview_fsmode);
         }

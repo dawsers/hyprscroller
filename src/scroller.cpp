@@ -880,6 +880,7 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
     }
 
     auto from = s->get_active_window();
+    update_relative_cursor_coords(from);
 
     if (s->move_focus(direction, **focus_wrap == 0 ? false : true)) {
         // Changed workspace
@@ -1004,6 +1005,7 @@ void ScrollerLayout::marks_delete(const std::string &name) {
 
 void ScrollerLayout::marks_visit(const std::string &name) {
     PHLWINDOW from = getActiveWindow(get_workspace_id());
+    update_relative_cursor_coords(from);
     PHLWINDOW to = marks.visit(name);
     if (to != nullptr) {
         switch_to_window(from, to);
@@ -1048,6 +1050,7 @@ void ScrollerLayout::trailmark_toggle() {
 void ScrollerLayout::trailmark_next() {
     trails->trailmark_next();
     PHLWINDOW from = getActiveWindow(get_workspace_id());
+    update_relative_cursor_coords(from);
     PHLWINDOW to = trails->get_active();
     if (to != nullptr) {
         switch_to_window(from, to);
@@ -1057,6 +1060,7 @@ void ScrollerLayout::trailmark_next() {
 void ScrollerLayout::trailmark_prev() {
     trails->trailmark_prev();
     PHLWINDOW from = getActiveWindow(get_workspace_id());
+    update_relative_cursor_coords(from);
     PHLWINDOW to = trails->get_active();
     if (to != nullptr) {
         switch_to_window(from, to);
@@ -1309,11 +1313,12 @@ void ScrollerLayout::jump() {
             }
         }
         if (focus) {
+            update_relative_cursor_coords(jump_data->from_window.lock());
             switch_to_window(jump_data->from_window.lock(),
                              jump_data->windows[jump_data->window_number].lock());
         } else {
             if (jump_data->from_window != nullptr)
-                g_pCompositor->warpCursorTo(jump_data->from_window.lock()->middle());
+                jump_data->from_window->warpCursor();
             else {
                 g_pCompositor->warpCursorTo(jump_data->from_monitor.lock()->middle());
                 g_pCompositor->setActiveMonitor(jump_data->from_monitor.lock());

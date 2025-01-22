@@ -47,12 +47,17 @@ WORKSPACEID get_workspace_id()
     return workspace_id;
 }
 
+void update_relative_cursor_coords(PHLWINDOW window)
+{
+    if (window != nullptr)
+        window->m_vRelativeCursorCoordsOnLastWarp = g_pInputManager->getMouseCoordsInternal() - window->m_vPosition;
+}
 
 void force_focus_to_window(PHLWINDOW window)
 {
     g_pInputManager->unconstrainMouse();
     g_pCompositor->focusWindow(window);
-    g_pCompositor->warpCursorTo(window->middle());
+    window->warpCursor();
 
     g_pInputManager->m_pForcedFocus = window;
     g_pInputManager->simulateMouseMovement();

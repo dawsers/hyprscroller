@@ -10,6 +10,7 @@ SDispatchResult this_moveActiveTo(std::string args);
 eFullscreenMode window_fullscreen_state(PHLWINDOW window);
 void toggle_window_fullscreen_internal(PHLWINDOW window, eFullscreenMode mode);
 WORKSPACEID get_workspace_id();
+void update_relative_cursor_coords(PHLWINDOW window);
 void force_focus_to_window(PHLWINDOW window);
 void switch_to_window(PHLWINDOW from, PHLWINDOW to);
 

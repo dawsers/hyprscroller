@@ -695,8 +695,8 @@ void Row::move_active_column(Direction dir)
     if (fsmode != eFullscreenMode::FSMODE_NONE) {
         window = active->data()->get_active_window();
         toggle_window_fullscreen_internal(window, fsmode);
-        force_focus_to_window(window);
     }
+    force_focus_to_window(window);
 
     if (overview_on)
         toggle_overview();

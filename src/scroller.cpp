@@ -1269,7 +1269,7 @@ void ScrollerLayout::jump() {
     int i = 0;
     for (auto window : jump_data->windows) {
         const std::string label = generate_label(i++, jump_data->keys, jump_data->nkeys);
-        std::unique_ptr<JumpDecoration> deco = std::make_unique<JumpDecoration>(window.lock(), label);
+        auto deco = makeUnique<JumpDecoration>(window.lock(), label);
         jump_data->decorations.push_back(deco.get());
         HyprlandAPI::addWindowDecoration(PHANDLE, window.lock(), std::move(deco));
     }

@@ -11,7 +11,7 @@ Window::Window(PHLWINDOW window, double maxy, double box_h) : window(window), se
     StandardSize h = scroller_sizes.get_window_default_height(window);
     window->m_vPosition.y = maxy;
     update_height(h, box_h);
-    std::unique_ptr<SelectionBorders> deco = std::make_unique<SelectionBorders>(this);
+    auto deco = makeUnique<SelectionBorders>(this);
     decoration = deco.get();
     HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(deco));
 }

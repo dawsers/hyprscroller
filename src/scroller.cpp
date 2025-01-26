@@ -8,6 +8,7 @@
 #include <hyprland/src/managers/EventManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/managers/input/InputManager.hpp>
 
 #include "scroller.h"
 #include "common.h"
@@ -501,7 +502,7 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
     if (s == nullptr) {
         // Window is not tiled
         *PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize->goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize->goal() + delta).y, 20.0));
-        g_pXWaylandManager->setWindowSize(PWINDOW, PWINDOW->m_vRealSize->goal());
+        PWINDOW->sendWindowSize(PWINDOW->m_vRealSize->goal());
         PWINDOW->updateWindowDecos();
         return;
     }
@@ -537,7 +538,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
 
                 window->unsetWindowData(PRIORITY_LAYOUT);
                 window->updateWindowData();
-                g_pXWaylandManager->setWindowSize(window, window->m_vRealSize->goal());
+                window->sendWindowSize(window->m_vRealSize->goal());
             }
         } else {
             // apply new pos and size being monitors' box
@@ -550,7 +551,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
                             PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
                 *window->m_vRealPosition = Vector2D(box.x, box.y);
                 *window->m_vRealSize = Vector2D(box.w, box.h);
-                g_pXWaylandManager->setWindowSize(window, window->m_vRealSize->goal());
+                window->sendWindowSize(window->m_vRealSize->goal());
             }
         }
     } else {

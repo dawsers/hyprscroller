@@ -76,11 +76,11 @@ void SelectionBorders::draw(PHLMONITOR pMonitor, float const& a) {
     const auto ROUNDING   = m_pWindow->rounding() * pMonitor->scale;
     const auto ROUNDINGPOWER = m_pWindow->roundingPower();
 
-    g_pHyprOpenGL->renderBorder(&windowBox, grad, ROUNDING, borderSize, a1, ROUNDINGPOWER);
+    g_pHyprOpenGL->renderBorder(windowBox, grad, ROUNDING, borderSize, a1, ROUNDINGPOWER);
 
     if (ANIMATED) {
         float a2 = a * (1.f - m_pWindow->m_fBorderFadeAnimationProgress->value());
-        g_pHyprOpenGL->renderBorder(&windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2, ROUNDINGPOWER);
+        g_pHyprOpenGL->renderBorder(windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2, ROUNDINGPOWER);
     }
 }
 
@@ -276,7 +276,7 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
         cairo_surface_destroy(CAIROSURFACE);
     }
 
-    g_pHyprOpenGL->renderTexture(m_pTexture, &windowBox, a);
+    g_pHyprOpenGL->renderTexture(m_pTexture, windowBox, a);
 
     if (ANIMATED || m_iFrames < 3) {
         // Render at least 3 frames to prevent a possible black texture

@@ -67,40 +67,46 @@ namespace dispatchers {
         return step;
     }
 
-    void dispatch_cyclesize(std::string arg) {
+    SDispatchResult dispatch_cyclesize(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:cyclesize: invalid workspace" };
 
         int step = parse_step_arg(arg);
         if (step != 0)
             g_ScrollerLayout->cycle_window_size(workspace, step);
+
+        return {};
     }
 
-    void dispatch_cyclewidth(std::string arg) {
+    SDispatchResult dispatch_cyclewidth(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:cyclewidth: invalid workspace" };
 
         int step = parse_step_arg(arg);
         if (step != 0)
             g_ScrollerLayout->cycle_window_width(workspace, step);
+
+        return {};
     }
 
-    void dispatch_cycleheight(std::string arg) {
+    SDispatchResult dispatch_cycleheight(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:cycleheight: invalid workspace" };
 
         int step = parse_step_arg(arg);
         if (step != 0)
             g_ScrollerLayout->cycle_window_height(workspace, step);
+
+        return {};
     }
 
-    void dispatch_setsize(std::string arg) {
+    SDispatchResult dispatch_setsize(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:setsize: invalid workspace" };
 
         int index;
         try {
@@ -109,12 +115,14 @@ namespace dispatchers {
             index = 0;
         }
         g_ScrollerLayout->set_window_size(workspace, index);
+
+        return {};
     }
 
-    void dispatch_setwidth(std::string arg) {
+    SDispatchResult dispatch_setwidth(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:setwidth: invalid workspace" };
 
         int index;
         try {
@@ -123,12 +131,14 @@ namespace dispatchers {
             index = 0;
         }
         g_ScrollerLayout->set_window_width(workspace, index);
+
+        return {};
     }
 
-    void dispatch_setheight(std::string arg) {
+    SDispatchResult dispatch_setheight(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:setheight: invalid workspace" };
 
         int index;
         try {
@@ -137,24 +147,28 @@ namespace dispatchers {
             index = 0;
         }
         g_ScrollerLayout->set_window_height(workspace, index);
+
+        return {};
     }
 
-    void dispatch_movefocus(std::string arg) {
+    SDispatchResult dispatch_movefocus(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:movefocus: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
             if (direction != Direction::Invalid)
                 g_ScrollerLayout->move_focus(workspace, *direction);
         }
+
+        return {};
     }
 
-    void dispatch_movewindow(std::string arg) {
+    SDispatchResult dispatch_movewindow(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:movewindow: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
@@ -163,39 +177,47 @@ namespace dispatchers {
             else
                orig_moveActiveTo(arg);
         }
+
+        return {};
     }
 
-    void dispatch_alignwindow(std::string arg) {
+    SDispatchResult dispatch_alignwindow(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:alignwindow: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
             if (direction != Direction::Invalid)
                 g_ScrollerLayout->align_window(workspace, *direction);
         }
+
+        return {};
     }
 
-    void dispatch_admitwindow(std::string) {
+    SDispatchResult dispatch_admitwindow(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:admitwindow: invalid workspace" };
 
         g_ScrollerLayout->admit_window_left(workspace);
+
+        return {};
     }
 
-    void dispatch_expelwindow(std::string) {
+    SDispatchResult dispatch_expelwindow(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:expelwindow: invalid workspace" };
 
         g_ScrollerLayout->expel_window_right(workspace);
+
+        return {};
     }
-    void dispatch_setmode(std::string arg) {
+    SDispatchResult dispatch_setmode(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:setmode: invalid workspace" };
 
         Mode mode = Mode::Row;
         if (arg == "r" || arg == "row") {
@@ -204,11 +226,13 @@ namespace dispatchers {
             mode = Mode::Column;
         }
         g_ScrollerLayout->set_mode(workspace, mode);
+
+        return {};
     }
-    void dispatch_setmodemodifier(std::string arg) {
+    SDispatchResult dispatch_setmodemodifier(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:setmodemodifier: invalid workspace" };
 
         const auto args = CVarList(arg);
         ModeModifier modifier;
@@ -242,6 +266,8 @@ namespace dispatchers {
             }
         }
         g_ScrollerLayout->set_mode_modifier(workspace, modifier);
+
+        return {};
     }
     std::optional<FitSize> parse_fit_size(std::string arg) {
         if (arg == "active")
@@ -257,202 +283,248 @@ namespace dispatchers {
         else
             return {};
     }
-    void dispatch_fitsize(std::string arg) {
+    SDispatchResult dispatch_fitsize(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:fitsize: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto fitsize = parse_fit_size(args[0])) {
             g_ScrollerLayout->fit_size(workspace, *fitsize);
         }
+
+        return {};
     }
-    void dispatch_fitwidth(std::string arg) {
+    SDispatchResult dispatch_fitwidth(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:fitwidth: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto fitsize = parse_fit_size(args[0])) {
             g_ScrollerLayout->fit_width(workspace, *fitsize);
         }
+
+        return {};
     }
-    void dispatch_fitheight(std::string arg) {
+    SDispatchResult dispatch_fitheight(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:fitheight: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto fitsize = parse_fit_size(args[0])) {
             g_ScrollerLayout->fit_height(workspace, *fitsize);
         }
+
+        return {};
     }
-    void dispatch_toggleoverview(std::string) {
+    SDispatchResult dispatch_toggleoverview(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:toggleoverview: invalid workspace" };
 
         g_ScrollerLayout->toggle_overview(workspace);
+
+        return {};
     }
-    void dispatch_marksadd(std::string arg) {
+    SDispatchResult dispatch_marksadd(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:marksadd: invalid workspace" };
 
         g_ScrollerLayout->marks_add(arg);
+
+        return {};
     }
-    void dispatch_marksdelete(std::string arg) {
+    SDispatchResult dispatch_marksdelete(std::string arg) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:marksdelete: called while not running hyprscroller" };
 
         g_ScrollerLayout->marks_delete(arg);
+
+        return {};
     }
-    void dispatch_marksvisit(std::string arg) {
+    SDispatchResult dispatch_marksvisit(std::string arg) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:marksvisit: called while not running hyprscroller" };
 
         g_ScrollerLayout->marks_visit(arg);
+
+        return {};
     }
-    void dispatch_marksreset(std::string) {
+    SDispatchResult dispatch_marksreset(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:marksreset: called while not running hyprscroller" };
 
         g_ScrollerLayout->marks_reset();
+
+        return {};
     }
-    void dispatch_pin(std::string) {
+    SDispatchResult dispatch_pin(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:pin: invalid workspace" };
 
         g_ScrollerLayout->pin(workspace);
+
+        return {};
     }
-    void dispatch_selectiontoggle(std::string) {
+    SDispatchResult dispatch_selectiontoggle(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:selectiontoggle: invalid workspace" };
 
         g_ScrollerLayout->selection_toggle(workspace);
+
+        return {};
     }
-    void dispatch_selectionreset(std::string) {
+    SDispatchResult dispatch_selectionreset(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:selectionreset: called while not running hyprscroller" };
 
         g_ScrollerLayout->selection_reset();
+
+        return {};
     }
-    void dispatch_selectionworkspace(std::string) {
+    SDispatchResult dispatch_selectionworkspace(std::string) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:selectionworkspace: invalid workspace" };
 
         g_ScrollerLayout->selection_workspace(workspace);
+
+        return {};
     }
-    void dispatch_selectionmove(std::string arg) {
+    SDispatchResult dispatch_selectionmove(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
-            return;
+            return { .success = false, .error = "scroller:selectionmove: invalid workspace" };
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
             if (direction != Direction::Invalid)
                 g_ScrollerLayout->selection_move(workspace, *direction);
         }
+
+        return {};
     }
-    void dispatch_trailnew(std::string) {
+    SDispatchResult dispatch_trailnew(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailnew: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_new();
+
+        return {};
     }
-    void dispatch_trailnext(std::string) {
+    SDispatchResult dispatch_trailnext(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailnext: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_next();
+
+        return {};
     }
-    void dispatch_trailprev(std::string) {
+    SDispatchResult dispatch_trailprev(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailprevious: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_prev();
+
+        return {};
     }
-    void dispatch_traildelete(std::string) {
+    SDispatchResult dispatch_traildelete(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:traildelete: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_delete();
+
+        return {};
     }
-    void dispatch_trailclear(std::string) {
+    SDispatchResult dispatch_trailclear(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailclear: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_clear();
+
+        return {};
     }
-    void dispatch_trailtoselection(std::string) {
+    SDispatchResult dispatch_trailtoselection(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailtoselection: called while not running hyprscroller" };
 
         g_ScrollerLayout->trail_toselection();
+
+        return {};
     }
-    void dispatch_trailmarktoggle(std::string) {
+    SDispatchResult dispatch_trailmarktoggle(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailmarktoggle: called while not running hyprscroller" };
 
         g_ScrollerLayout->trailmark_toggle();
+
+        return {};
     }
-    void dispatch_trailmarknext(std::string) {
+    SDispatchResult dispatch_trailmarknext(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailmarknext: called while not running hyprscroller" };
 
         g_ScrollerLayout->trailmark_next();
+
+        return {};
     }
-    void dispatch_trailmarkprev(std::string) {
+    SDispatchResult dispatch_trailmarkprev(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:trailmarkprevious: called while not running hyprscroller" };
 
         g_ScrollerLayout->trailmark_prev();
+
+        return {};
     }
-    void dispatch_jump(std::string) {
+    SDispatchResult dispatch_jump(std::string) {
         if (g_pLayoutManager->getCurrentLayout() != g_ScrollerLayout.get())
-            return;
+            return { .success = false, .error = "scroller:jump: called while not running hyprscroller" };
 
         g_ScrollerLayout->jump();
+
+        return {};
     }
     void addDispatchers() {
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cyclewidth", dispatch_cyclewidth);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:cycleheight", dispatch_cycleheight);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setsize", dispatch_setsize);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setwidth", dispatch_setwidth);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setheight", dispatch_setheight);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:movefocus", dispatch_movefocus);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:movewindow", dispatch_movewindow);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmode", dispatch_setmode);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:setmodemodifier", dispatch_setmodemodifier);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitsize", dispatch_fitsize);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:fitheight", dispatch_fitheight);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksadd", dispatch_marksadd);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:marksreset", dispatch_marksreset);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:pin", dispatch_pin);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionworkspace", dispatch_selectionworkspace);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnew", dispatch_trailnew);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailnext", dispatch_trailnext);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailprevious", dispatch_trailprev);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:traildelete", dispatch_traildelete);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailclear", dispatch_trailclear);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailtoselection", dispatch_trailtoselection);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarktoggle", dispatch_trailmarktoggle);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarknext", dispatch_trailmarknext);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:trailmarkprevious", dispatch_trailmarkprev);
-        HyprlandAPI::addDispatcher(PHANDLE, "scroller:jump", dispatch_jump);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:cyclesize", dispatch_cyclesize);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:cyclewidth", dispatch_cyclewidth);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:cycleheight", dispatch_cycleheight);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:setsize", dispatch_setsize);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:setwidth", dispatch_setwidth);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:setheight", dispatch_setheight);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:movefocus", dispatch_movefocus);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:movewindow", dispatch_movewindow);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:alignwindow", dispatch_alignwindow);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:admitwindow", dispatch_admitwindow);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:expelwindow", dispatch_expelwindow);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:setmode", dispatch_setmode);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:setmodemodifier", dispatch_setmodemodifier);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:fitsize", dispatch_fitsize);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:fitwidth", dispatch_fitwidth);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:fitheight", dispatch_fitheight);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:toggleoverview", dispatch_toggleoverview);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:marksadd", dispatch_marksadd);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:marksdelete", dispatch_marksdelete);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:marksvisit", dispatch_marksvisit);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:marksreset", dispatch_marksreset);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:pin", dispatch_pin);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:selectiontoggle", dispatch_selectiontoggle);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:selectionreset", dispatch_selectionreset);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:selectionworkspace", dispatch_selectionworkspace);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:selectionmove", dispatch_selectionmove);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailnew", dispatch_trailnew);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailnext", dispatch_trailnext);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailprevious", dispatch_trailprev);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:traildelete", dispatch_traildelete);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailclear", dispatch_trailclear);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailtoselection", dispatch_trailtoselection);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailmarktoggle", dispatch_trailmarktoggle);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailmarknext", dispatch_trailmarknext);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:trailmarkprevious", dispatch_trailmarkprev);
+        HyprlandAPI::addDispatcherV2(PHANDLE, "scroller:jump", dispatch_jump);
     }
 }

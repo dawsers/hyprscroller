@@ -27,6 +27,31 @@ typedef PHLMONITOR (*origGetMonitorFromVector)(void *thisptr, const Vector2D& po
 typedef void (*origRenderMonitor)(void *thisptr, PHLMONITOR pMonitor);
 typedef Vector2D (*origGetCursorPosForMonitor)(void *thisptr, PHLMONITOR pMonitor);
 
+class OverviewPassElement : public IPassElement {
+public:
+    struct OverviewModifData {
+        std::optional<SRenderModifData> renderModif;
+    };
+
+    OverviewPassElement(const OverviewModifData &data) : data(data) {}
+    virtual ~OverviewPassElement() = default;
+
+    virtual void draw(const CRegion& damage) {
+        if (data.renderModif.has_value())
+            g_pHyprOpenGL->m_RenderData.renderModif = *data.renderModif;
+    }
+    virtual bool needsLiveBlur() { return false; };
+    virtual bool needsPrecomputeBlur() { return false; };
+    virtual bool undiscardable() { return true; };
+
+    virtual const char* passName() {
+        return "OverviewPassElement";
+    }
+
+private:
+    OverviewModifData data;
+};
+
 // Needed to show windows that are outside of the viewport
 static bool hookVisibleOnMonitor(void *thisptr, PHLMONITOR monitor) {
     CWindow *window = static_cast<CWindow *>(thisptr);
@@ -44,11 +69,17 @@ static void hookRenderLayer(void *thisptr, PHLLS layer, PHLMONITOR monitor, time
     bool overview_enabled = overviews->overview_enabled(workspace);
     float scale = monitor->scale;
     if (overview_enabled) {
-        monitor->scale /= overviews->get_scale(workspace);
+        const float scaling = 1.0 / overviews->get_scale(workspace);
+        monitor->scale *= scaling;
+        SRenderModifData modif_data;;
+        modif_data.modifs.push_back({SRenderModifData::eRenderModifType::RMOD_TYPE_SCALE, scaling});
+        modif_data.enabled = true;
+        g_pHyprRenderer->m_sRenderPass.add(makeShared<OverviewPassElement>(OverviewPassElement::OverviewModifData(modif_data)));
         g_pHyprRenderer->damageMonitor(monitor);
     }
     ((origRenderLayer)(g_pRenderLayerHook->m_pOriginal))(thisptr, layer, monitor, time, popups);
     if (overview_enabled) {
+        g_pHyprRenderer->m_sRenderPass.add(makeShared<OverviewPassElement>(OverviewPassElement::OverviewModifData(SRenderModifData())));
         monitor->scale = scale;
         g_pHyprRenderer->damageMonitor(monitor);
     }

@@ -3,6 +3,8 @@
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/render/pass/BorderPassElement.hpp>
+#include <hyprland/src/render/pass/TexPassElement.hpp>
 
 #include "decorations.h"
 #include "window.h"
@@ -67,7 +69,7 @@ void SelectionBorders::draw(PHLMONITOR pMonitor, float const& a) {
     const bool ANIMATED = m_pWindow->m_fBorderFadeAnimationProgress->isBeingAnimated();
     float      a1       = a * (ANIMATED ? m_pWindow->m_fBorderFadeAnimationProgress->value() : 1.f);
 
-    if (m_pWindow->m_fBorderAngleAnimationProgress->getConfig()->pValues->internalEnabled) {
+    if (m_pWindow->m_fBorderAngleAnimationProgress->enabled()) {
         grad.m_fAngle += m_pWindow->m_fBorderAngleAnimationProgress->value() * M_PI * 2;
         grad.m_fAngle = normalizeAngleRad(grad.m_fAngle);
     }
@@ -76,12 +78,22 @@ void SelectionBorders::draw(PHLMONITOR pMonitor, float const& a) {
     const auto ROUNDING   = m_pWindow->rounding() * pMonitor->scale;
     const auto ROUNDINGPOWER = m_pWindow->roundingPower();
 
-    g_pHyprOpenGL->renderBorder(windowBox, grad, ROUNDING, borderSize, a1, ROUNDINGPOWER);
+    CBorderPassElement::SBorderData data;
+    data.box           = windowBox;
+    data.grad1         = grad;
+    data.round         = ROUNDING;
+    data.roundingPower = ROUNDINGPOWER;
+    data.a             = a;
+    data.borderSize    = borderSize;
 
     if (ANIMATED) {
-        float a2 = a * (1.f - m_pWindow->m_fBorderFadeAnimationProgress->value());
-        g_pHyprOpenGL->renderBorder(windowBox, m_pWindow->m_cRealBorderColorPrevious, ROUNDING, borderSize, a2, ROUNDINGPOWER);
+        data.hasGrad2 = true;
+        data.grad1    = m_pWindow->m_cRealBorderColorPrevious;
+        data.grad2    = grad;
+        data.lerp     = m_pWindow->m_fBorderFadeAnimationProgress->value();
     }
+
+    g_pHyprRenderer->m_sRenderPass.add(makeShared<CBorderPassElement>(data));
 }
 
 eDecorationType SelectionBorders::getDecorationType() {
@@ -208,9 +220,6 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
     const bool ANIMATED = m_pWindow->m_vRealPosition->isBeingAnimated() || m_pWindow->m_vRealSize->isBeingAnimated();
 
     if (m_pTexture.get() == nullptr) {
-        m_iFrames++;
-        m_pTexture = makeShared<CTexture>();
-        static auto TEXTFONTSIZE = 64;
         static auto  FALLBACKFONT = CConfigValue<std::string>("misc:font_family");
         static auto const *TEXTFONTFAMILY = (Hyprlang::STRING const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_font")->getDataStaticPtr();
         static auto *const *TEXTCOL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:jump_labels_color")->getDataStaticPtr();
@@ -219,70 +228,14 @@ void JumpDecoration::draw(PHLMONITOR pMonitor, float const& a) {
         if (font_family == "")
             font_family = *FALLBACKFONT;
 
-        const auto LAYOUTSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
-    	const auto LAYOUTCAIRO = cairo_create(LAYOUTSURFACE);
-	    cairo_surface_destroy(LAYOUTSURFACE);
-
-    	PangoLayout *layout = pango_cairo_create_layout(LAYOUTCAIRO);
-	    pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
-    	pango_layout_set_text(layout, m_sLabel.c_str(), -1);
-
-        PangoFontDescription* font_desc = pango_font_description_new();
-        pango_font_description_set_family_static(font_desc, font_family.c_str());
-        pango_font_description_set_size(font_desc, TEXTFONTSIZE * PANGO_SCALE * a);
-        pango_layout_set_font_description(layout, font_desc);
-        pango_font_description_free(font_desc);
-
-        int layout_width, layout_height;
-	    PangoRectangle ink_rect;
-    	PangoRectangle logical_rect;
-	    pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
-        layout_width = ink_rect.width;
-        layout_height = ink_rect.height;
-
-        const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, layout_width, layout_height);
-        const auto CAIRO = cairo_create(CAIROSURFACE);
-
-        // clear the pixmap
-        cairo_save(CAIRO);
-        cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
-        cairo_paint(CAIRO);
-        cairo_restore(CAIRO);
-        cairo_move_to(CAIRO, -ink_rect.x, -ink_rect.y);
-        cairo_set_source_rgba(CAIRO, color.r, color.g, color.b, color.a);
-        pango_cairo_show_layout(CAIRO, layout);
-
-        g_object_unref(layout);
-
-        cairo_surface_flush(CAIROSURFACE);
-
-        // copy the data to an OpenGL texture we have
-        const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
-        m_pTexture->allocate();
-        glBindTexture(GL_TEXTURE_2D, m_pTexture->m_iTexID);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-#ifndef GLES2
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-#endif
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, layout_width, layout_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-
-        // delete cairo
-        cairo_destroy(LAYOUTCAIRO);
-        cairo_destroy(CAIRO);
-        cairo_surface_destroy(CAIROSURFACE);
+        auto TEXTFONTSIZE = windowBox.width / m_sLabel.size();
+        m_pTexture = g_pHyprOpenGL->renderText(m_sLabel, color, TEXTFONTSIZE, false, font_family, windowBox.width);
     }
 
-    g_pHyprOpenGL->renderTexture(m_pTexture, windowBox, a);
-
-    if (ANIMATED || m_iFrames < 3) {
-        // Render at least 3 frames to prevent a possible black texture
-        // when there is no animation but the window is off
-        m_pTexture.reset();
-    }
+    CTexPassElement::SRenderData data;
+    data.tex = m_pTexture;
+    data.box = windowBox;
+    g_pHyprRenderer->m_sRenderPass.add(makeShared<CTexPassElement>(data));
 }
 
 eDecorationType JumpDecoration::getDecorationType() {

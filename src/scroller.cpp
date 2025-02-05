@@ -1257,7 +1257,15 @@ void ScrollerLayout::jump() {
     jump_data->keys = *KEYS;
     jump_data->from_window = g_pCompositor->m_pLastWindow;
     jump_data->from_monitor = g_pCompositor->m_pLastMonitor;
-    jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()) / std::log10(jump_data->keys.size()));
+
+    if (jump_data->keys.size() == 1 && jump_data->windows.size() > 1) {
+        delete jump_data;
+        return;
+    }
+    if (jump_data->windows.size() == 1)
+        jump_data->nkeys = 1;
+    else
+        jump_data->nkeys = std::ceil(std::log10(jump_data->windows.size()) / std::log10(jump_data->keys.size()));
 
     // Set overview mode for those workspaces that are not
     for (auto workspace : jump_data->workspaces) {

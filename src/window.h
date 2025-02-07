@@ -46,7 +46,6 @@ public:
         window->m_vSize = Vector2D(box.w, box.h);
         *window->m_vRealPosition = window->m_vPosition;
         *window->m_vRealSize = window->m_vSize;
-        window->sendWindowSize(window->m_vRealSize->goal());
     }
     bool is_window(PHLWINDOW w) const {
         return window == w;
@@ -66,7 +65,6 @@ public:
         window->m_vSize = Vector2D(std::max(window->m_vSize.x, 1.0), std::max(window->m_vSize.y, 1.0));
         *window->m_vRealSize = window->m_vSize;
         *window->m_vRealPosition = window->m_vPosition;
-        window->sendWindowSize(window->m_vRealSize->goal());
     }
 
     void move_to_bottom(double x, const Box &max, const Vector2D &gap_x, double gap) {
@@ -96,7 +94,6 @@ public:
         window->m_vSize = Vector2D(std::max(w - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(get_geom_h() - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
         *window->m_vRealPosition = window->m_vPosition;
         *window->m_vRealSize = window->m_vSize;
-        window->sendWindowSize(window->m_vRealSize->goal());
     }
     bool can_resize_width(double geomw, double maxw, const Vector2D &gap_x, double gap, double deltax) {
         // First, check if resize is possible or it would leave any window
@@ -180,7 +177,6 @@ private:
         w->m_vSize = mem.vSize;
         *w->m_vRealPosition = w->m_vPosition;
         *w->m_vRealSize = w->m_vSize;
-        w->sendWindowSize(w->m_vRealSize->goal());
     }
 
     PHLWINDOWREF window;

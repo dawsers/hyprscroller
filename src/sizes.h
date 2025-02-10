@@ -43,13 +43,13 @@ public:
     StandardSize get_next_column_width(StandardSize size, int step);
     StandardSize get_window_height(int index);
     StandardSize get_column_width(int index);
+    StandardSize get_size_from_string(const std::string &size, StandardSize default_size);
 
 private:
     StandardSize get_next(const std::vector<StandardSize> &sizes, StandardSize size, int step) const;
     StandardSize get_size(const std::vector<StandardSize> &sizes, int index) const;
     StandardSize get_closest_size(const std::vector<StandardSize> &sizes, double fraction, int step) const;
     void update_sizes(std::vector<StandardSize> &sizes, const std::string &option, StandardSize default_size);
-    StandardSize get_size_from_string(const std::string &size, StandardSize default_size);
     void trim(std::string &str);
 
     std::string str_window_default_height;

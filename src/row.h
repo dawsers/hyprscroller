@@ -42,7 +42,7 @@ public:
     bool move_focus(Direction dir, bool focus_wrap);
 
     void resize_active_column(int step);
-    void size_active_column(int size);
+    void size_active_column(const std::string &arg);
     void resize_active_window(const Vector2D &delta);
     void set_mode(Mode m, bool silent = false);
     Mode get_mode() const;
@@ -87,6 +87,7 @@ private:
     void adjust_columns(ListNode<Column *> *column);
     // Adjust all the columns in the overview
     void adjust_overview_columns();
+    void size_active_column(StandardSize size);
 
     WORKSPACEID workspace;
     Box full;

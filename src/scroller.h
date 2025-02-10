@@ -44,9 +44,9 @@ public:
     void cycle_window_size(WORKSPACEID workspace, int step);
     void cycle_window_width(WORKSPACEID workspace, int step);
     void cycle_window_height(WORKSPACEID workspace, int step);
-    void set_window_size(WORKSPACEID workspace, int index);
-    void set_window_width(WORKSPACEID workspace, int index);
-    void set_window_height(WORKSPACEID workspace, int index);
+    void set_window_size(WORKSPACEID workspace, const std::string &arg);
+    void set_window_width(WORKSPACEID workspace, const std::string &arg);
+    void set_window_height(WORKSPACEID workspace, const std::string &arg);
     void move_focus(WORKSPACEID workspace, Direction);
     void move_window(WORKSPACEID workspace, Direction);
     void align_window(WORKSPACEID workspace, Direction);

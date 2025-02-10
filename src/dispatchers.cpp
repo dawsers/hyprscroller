@@ -108,13 +108,7 @@ namespace dispatchers {
         if (workspace == -1)
             return { .success = false, .error = "scroller:setsize: invalid workspace" };
 
-        int index;
-        try {
-            index = std::stoi(arg);
-        } catch (const std::invalid_argument &ia) {
-            index = 0;
-        }
-        g_ScrollerLayout->set_window_size(workspace, index);
+        g_ScrollerLayout->set_window_size(workspace, arg);
 
         return {};
     }
@@ -124,13 +118,7 @@ namespace dispatchers {
         if (workspace == -1)
             return { .success = false, .error = "scroller:setwidth: invalid workspace" };
 
-        int index;
-        try {
-            index = std::stoi(arg);
-        } catch (const std::invalid_argument &ia) {
-            index = 0;
-        }
-        g_ScrollerLayout->set_window_width(workspace, index);
+        g_ScrollerLayout->set_window_width(workspace, arg);
 
         return {};
     }
@@ -140,13 +128,7 @@ namespace dispatchers {
         if (workspace == -1)
             return { .success = false, .error = "scroller:setheight: invalid workspace" };
 
-        int index;
-        try {
-            index = std::stoi(arg);
-        } catch (const std::invalid_argument &ia) {
-            index = 0;
-        }
-        g_ScrollerLayout->set_window_height(workspace, index);
+        g_ScrollerLayout->set_window_height(workspace, arg);
 
         return {};
     }

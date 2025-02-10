@@ -828,17 +828,17 @@ void ScrollerLayout::cycle_window_height(WORKSPACEID workspace, int step)
     s->set_mode(mode, true);
 }
 
-void ScrollerLayout::set_window_size(WORKSPACEID workspace, int index)
+void ScrollerLayout::set_window_size(WORKSPACEID workspace, const std::string &arg)
 {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
     }
 
-    s->size_active_column(index);
+    s->size_active_column(arg);
 }
 
-void ScrollerLayout::set_window_width(WORKSPACEID workspace, int index)
+void ScrollerLayout::set_window_width(WORKSPACEID workspace, const std::string &arg)
 {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
@@ -847,11 +847,11 @@ void ScrollerLayout::set_window_width(WORKSPACEID workspace, int index)
 
     Mode mode = s->get_mode();
     s->set_mode(Mode::Row, true);
-    s->size_active_column(index);
+    s->size_active_column(arg);
     s->set_mode(mode, true);
 }
 
-void ScrollerLayout::set_window_height(WORKSPACEID workspace, int index)
+void ScrollerLayout::set_window_height(WORKSPACEID workspace, const std::string &arg)
 {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
@@ -860,7 +860,7 @@ void ScrollerLayout::set_window_height(WORKSPACEID workspace, int index)
 
     Mode mode = s->get_mode();
     s->set_mode(Mode::Column, true);
-    s->size_active_column(index);
+    s->size_active_column(arg);
     s->set_mode(mode, true);
 }
 

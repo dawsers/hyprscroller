@@ -511,10 +511,9 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
     recalculate_col_geometry(gap_x, gap);
 }
 
-void Column::size_active_window(int index, const Vector2D &gap_x, double gap)
+void Column::size_active_window(StandardSize height, const Vector2D &gap_x, double gap)
 {
     reorder = Reorder::Auto;
-    StandardSize height = scroller_sizes.get_window_height(index);
     active->data()->update_height(height, row->get_max().h);
     recalculate_col_geometry(gap_x, gap);
 }

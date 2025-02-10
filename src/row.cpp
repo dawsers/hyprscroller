@@ -338,7 +338,7 @@ void Row::resize_active_column(int step)
         toggle_overview();
 }
 
-void Row::size_active_column(int index)
+void Row::size_active_column(StandardSize size)
 {
     if (active->data()->fullscreen())
         return;
@@ -348,15 +348,34 @@ void Row::size_active_column(int index)
         toggle_overview();
 
     if (mode == Mode::Column) {
-        active->data()->size_active_window(index, calculate_gap_x(active), gap);
+        active->data()->size_active_window(size, calculate_gap_x(active), gap);
     } else {
-        StandardSize width = scroller_sizes.get_column_width(index);
-        active->data()->update_width(width, max.w);
+        active->data()->update_width(size, max.w);
         reorder = Reorder::Auto;
         recalculate_row_geometry();
     }
     if (overview_on)
         toggle_overview();
+}
+
+void Row::size_active_column(const std::string &fraction)
+{
+    StandardSize size;
+    if (std::isdigit(fraction.front())) {
+        int index = 0;
+        try {
+            index = std::stoi(fraction);
+        } catch (const std::invalid_argument &ia) {
+            return;
+        }
+        size = mode == Mode::Row ?
+            size = scroller_sizes.get_column_width(index) : size = scroller_sizes.get_window_height(index);
+    } else {
+        StandardSize default_size = mode == Mode::Row ?
+            scroller_sizes.get_column_width(0) : scroller_sizes.get_window_height(0);
+        size = scroller_sizes.get_size_from_string(fraction, default_size);
+    }
+    size_active_column(size);
 }
 
 void Row::resize_active_window(const Vector2D &delta)

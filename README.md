@@ -127,12 +127,12 @@ The plugin adds the following dispatchers:
 | `scroller:movefocus`          | An optional replacement for `movefocus`, takes a direction as argument.                                                          |
 | `scroller:movewindow`         | An optional replacement for `movewindow`, takes a direction as argument.                                                         |
 | `scroller:setmode`            | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.            |
-| `scroller:setmodemodifier`    | Assigns modifiers to the current mode for window creation: position, focus/nofocus, manual/auto. Description [below](#modes)    |
+| `scroller:setmodemodifier`    | Assigns modifiers to the current mode for window creation: position, focus/nofocus, manual/auto. Description [below](#modes)     |
 | `scroller:cyclesize`          | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                       |
 | `scroller:cyclewidth`         | Resize the focused column width.                                                                                                 |
 | `scroller:cycleheight`        | Resize the active window height.                                                                                                 |
 | `scroller:setsize`            | Set the focused column width (*row* mode), or the active window height (*column* mode) to one of the standard sizes.             |
-| `scroller:setwidth`           | Set the focused column width to one of `column_widths`. Takes an int value (0-based idx of the desired size in `column_widths`)  |
+| `scroller:setwidth`           | Set the focused column width to one of `column_widths`. Takes an int value (0-based idx of the size in `column_widths`), or a string indicating the desired width  |
 | `scroller:setheight`          | Set the active window height to one of `window_heights`. Parameter similar to `setwidth`                                         |
 | `scroller:alignwindow`        | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode), `m/middle`  |
 | `scroller:admitwindow`        | Push the current window below the active one of the column to its left.                                                          |
@@ -290,9 +290,13 @@ resizing the active window's height.
 
 `setsize`, `setwidth` and `setheight` are similar to their `cycle...`
 counterparts, but instead of cycling, they set the width or height directly.
-These dispatchers accept an integer parameter *index* which is the zero-based
+These dispatchers accept either an integer parameter, or a string.
+If the parameter is an integer, it means an *index*, which is the zero-based
 index in the `column_widths` array for `setwidth`, or `setsize` in row mode, or
 the index in `window_heights` for `setheight`, or `setsize` in column mode.
+If the parameter is a string containing one of the standard sizes, it sets the
+column/window width/height to that fractional value (even if it is not within
+your default sizes).
 
 ```
 plugin {
@@ -310,6 +314,7 @@ bind = $mainMod SHIFT, 1, scroller:setheight, 0  # sets height to onethird
 bind = $mainMod SHIFT, 2, scroller:setheight, 1  # sets height to onehalf
 bind = $mainMod SHIFT, 3, scroller:setheight, 2  # ...
 bind = $mainMod SHIFT, 4, scroller:setheight, 3
+bind = $mainMod SHIFT, 5, scroller:setheight, oneeighth  # sets the height to oneeighth directly
 ...
 ```
 
@@ -1199,6 +1204,41 @@ bind = $mainMod, equal, scroller:cyclewidth, next
 bind = $mainMod, minus, scroller:cyclewidth, prev
 bind = $mainMod SHIFT, equal, scroller:cycleheight, next
 bind = $mainMod SHIFT, minus, scroller:cycleheight, prev
+
+# Sizes submap
+# will switch to a submap called sizing
+bind = $mainMod, b, submap, sizing
+# will start a submap called "align"
+submap = sizing
+# sets repeatable binds for aligning the active window
+bind = , 1, scroller:setsize, oneeighth
+bind = , 1, submap, reset
+bind = , 2, scroller:setsize, onesixth
+bind = , 2, submap, reset
+bind = , 3, scroller:setsize, onefourth
+bind = , 3, submap, reset
+bind = , 4, scroller:setsize, onethird
+bind = , 4, submap, reset
+bind = , 5, scroller:setsize, threeeighths
+bind = , 5, submap, reset
+bind = , 6, scroller:setsize, onehalf
+bind = , 6, submap, reset
+bind = , 7, scroller:setsize, fiveeighths
+bind = , 7, submap, reset
+bind = , 8, scroller:setsize, twothirds
+bind = , 8, submap, reset
+bind = , 9, scroller:setsize, threequarters
+bind = , 9, submap, reset
+bind = , 0, scroller:setsize, fivesixths
+bind = , 0, submap, reset
+bind = , minus, scroller:setsize, seveneighths
+bind = , minus, submap, reset
+bind = , equal, scroller:setsize, one
+bind = , equal, submap, reset
+# use reset to go back to the global submap
+bind = , escape, submap, reset
+# will reset the submap, meaning end the current one and return to the global one
+submap = reset
 
 # Admit/Expel
 bind = $mainMod, I, scroller:admitwindow,

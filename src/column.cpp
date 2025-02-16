@@ -33,7 +33,6 @@ Column::Column(Window *window, StandardSize width, double maxw, const Row *row)
     : width(width), height(StandardSize::One), reorder(Reorder::Auto), row(row)
 {
     const Box &max = row->get_max();
-    window->set_geom_h(max.h);
     windows.push_back(window);
     active = windows.first();
     update_width(width, maxw);

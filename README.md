@@ -826,6 +826,28 @@ Determines whether focus will *wrap* when at the first or
 last window of a row/column. Possible arguments are: `true`|`1` (default), or
 `false`|`0`.
 
+### `focus_edge_ms`
+
+When your Hyprland setting for `input:follow_mouse` is `0` or `1`, Hyprland
+will change focus to the window where your mouse cursor is. *hyprscroller*
+can have windows outside of the viewport. If your `gaps_out` setting allows
+you to see part of those windows, mouse focusing can trigger a refocus when
+your mouse is over the gap at the edge of the monitor. This can sometimes
+create a series of unwanted focusing events that move focus away, and can be
+quite distracting.
+
+`focus_edge_ms` is a timeout value (default is 400 ms). When your mouse is
+over the edge of the monitor's gap, refocusing on the window under that gap
+will be delayed for this time value. If you didn't want to focus, you can
+still escape! If you actually want to scroll and focus, keep the mouse inside
+the gap for the timeout value. On your next mouse movement, *hyprscroller*
+will scroll to the partially seen window. Note you need to move your mouse
+again after the timeout value, this is attached to the `mouseMove` event, so
+even if you keep the mouse over the gap for longer than the timeout, the
+event won't be triggered until your next mouse movement. The easiest way to
+scroll is to flick the mouse inside and outside of the gap to make sure you
+only scroll once.
+
 ### `cyclesize_wrap`
 
 If `true`, `cyclesize`, `cyclewidth` and `cycleheight` will cycle through all

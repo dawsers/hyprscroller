@@ -673,6 +673,7 @@ static SP<HOOK_CALLBACK_FN> activeWindowHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeBeginHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeUpdateHookCallback;
 static SP<HOOK_CALLBACK_FN> swipeEndHookCallback;
+static SP<HOOK_CALLBACK_FN> mouseMoveHookCallback;
 
 void ScrollerLayout::onEnable() {
     // Hijack Hyprland's default dispatchers
@@ -711,6 +712,11 @@ void ScrollerLayout::onEnable() {
     swipeEndHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "swipeEnd", [&](void* /* self */, SCallbackInfo& info, std::any param) {
         auto swipe_event = std::any_cast<IPointer::SSwipeEndEvent>(param);
         swipe_end(info, swipe_event);
+    });
+
+    mouseMoveHookCallback = HyprlandAPI::registerCallbackDynamic(PHANDLE, "mouseMove", [&](void* /* self */, SCallbackInfo& info, std::any param) {
+        Vector2D mousePos = std::any_cast<Vector2D>(param);
+        mouse_move(info, mousePos);
     });
 
     enabled = true;
@@ -757,6 +763,10 @@ void ScrollerLayout::onDisable() {
     if (swipeEndHookCallback != nullptr) {
         swipeEndHookCallback.reset();
         swipeEndHookCallback = nullptr;
+    }
+    if (mouseMoveHookCallback != nullptr) {
+        mouseMoveHookCallback.reset();
+        mouseMoveHookCallback = nullptr;
     }
 
     if (overviews != nullptr) {
@@ -1496,4 +1506,34 @@ void ScrollerLayout::swipe_end(SCallbackInfo &info,
     gesture_delta = Vector2D(0.0, 0.0);
     swipe_direction = Direction::Begin;
     info.cancelled = true;
+}
+
+void ScrollerLayout::mouse_move(SCallbackInfo& info, const Vector2D &mousePos) {
+    static bool inside = false;
+    auto PMONITOR = g_pCompositor->getMonitorFromVector(mousePos);
+    WORKSPACEID workspace_id = PMONITOR->activeWorkspaceID();
+    auto s = getRowForWorkspace(workspace_id);
+    if (s != nullptr) {
+        Box box = { PMONITOR->vecPosition + PMONITOR->vecReservedTopLeft,
+                    PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
+
+        if (!s->get_max().contains_point(mousePos) && box.contains_point(mousePos)) {
+            // We are in gaps_out territory
+            static auto *const *TIMEOUT = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:focus_edge_ms")->getDataStaticPtr();
+            static auto enteredTime = std::chrono::high_resolution_clock::now();
+            auto eventTime = std::chrono::high_resolution_clock::now();
+            if (!inside) {
+                inside = true;
+                enteredTime = eventTime;
+                info.cancelled = true;
+                return;
+            } else {
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(eventTime - enteredTime).count() < **TIMEOUT) {
+                    info.cancelled = true;
+                    return;
+                }
+            }
+        }
+    }
+    inside = false;
 }

@@ -28,6 +28,11 @@ struct Box {
             return true;
         return false;
     }
+    bool contains_point(const Vector2D &vec) const {
+        if (vec.x >= x && vec.x < x + w && vec.y >= y && vec.y < y + h)
+            return true;
+        return false;
+    }
 
     double x, y, w, h;
 };

@@ -34,6 +34,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:window_default_height", Hyprlang::STRING{"one"});
     // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:focus_wrap", Hyprlang::INT{1});
+    // 0, inf
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:focus_edge_ms", Hyprlang::INT{400});
     // 0, 1
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:scroller:cyclesize_wrap", Hyprlang::INT{1});
     // 0, 1

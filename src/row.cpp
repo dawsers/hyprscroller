@@ -1265,6 +1265,14 @@ void Row::recalculate_row_geometry()
         return;
     }
 
+    static auto* const *center_active_column = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:center_active_column")->getDataStaticPtr();
+    if (**center_active_column) {
+        double start = max.x + 0.5 * (max.w - active->data()->get_geom_w());
+        active->data()->set_geom_pos(start, max.y);
+        adjust_columns(active);
+        return;
+    }
+
     if (a_x < max.x) {
         // active starts outside on the left
         // set it on the left edge

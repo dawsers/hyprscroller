@@ -258,6 +258,10 @@ submap = reset
 There is also an IPC event with details of the current mode and modifiers.
 Read [this](#ipc) for an example
 
+You can also set a window rule for each new window to follow a certain
+combination of mode and mode modifiers. See [window rules](#window-rules) for
+more details.
+
 
 ## Window/Column Focus and Movement
 
@@ -1086,6 +1090,22 @@ explains what Window Rules are, and how to enable and configure them.
 ### Static Window Rules
 
 These are rules specific to *hyprscroller*
+
+#### modemodifier
+
+Use this rule when you want to open a certain window overriding the current
+mode or its modifiers. This doesn't change the mode or its modifiers, it only
+affects the window matching the rule.
+
+**Syntax of rule:** `plugin:scroller:modemodifier row|column after|before|end|beginning focus|nofocus`
+
+For example, the following rule will always open kitty windows in column mode,
+before the active window and won't focus on the new window.
+
+```
+windowrulev2 = plugin:scroller:modemodifier col before nofocus, class:(kitty)
+```
+
 
 #### group
 

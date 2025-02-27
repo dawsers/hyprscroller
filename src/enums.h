@@ -1,6 +1,8 @@
 #ifndef SCROLLER_ENUMS_H
 #define SCROLLER_ENUMS_H
 
+#include <hyprutils/string/VarList.hpp>
+
 #include <string>
 
 enum class Direction { Left, Right, Up, Down, Begin, End, Center, Middle, Invalid };
@@ -29,6 +31,38 @@ public:
         AUTO_AUTO
     };
     ModeModifier() : position(POSITION_UNDEFINED), focus(FOCUS_UNDEFINED), auto_mode(AUTO_UNDEFINED), auto_param(2) {}
+    ModeModifier(const std::string &arg) : ModeModifier() {
+        const auto args = CVarList(arg);
+        if (args.size() > 0) {
+            if (args[0] == "after")
+                set_position(ModeModifier::POSITION_AFTER);
+            else if (args[0] == "before")
+                set_position(ModeModifier::POSITION_BEFORE);
+            else if (args[0] == "end")
+                set_position(ModeModifier::POSITION_END);
+            else if (args[0] == "beginning" || args[0] == "beg")
+                set_position(ModeModifier::POSITION_BEGINNING);
+
+            if (args.size() > 1) {
+                if (args[1] == "focus")
+                    set_focus(ModeModifier::FOCUS_FOCUS);
+                else if (args[1] == "nofocus")
+                    set_focus(ModeModifier::FOCUS_NOFOCUS);
+
+                if (args.size() > 2) {
+                    if (args[2] == "manual")
+                        set_auto_mode(ModeModifier::AUTO_MANUAL);
+                    else if (args[2] == "auto") {
+                        set_auto_mode(ModeModifier::AUTO_AUTO);
+
+                        if (args.size() > 3) {
+                            set_auto_param(std::stoi(args[3]));
+                        }
+                    }
+                }
+            }
+        }
+    }
     void set_position(int p) { position = p; }
     int get_position(bool force_default = true) const {
         if (force_default && position == POSITION_UNDEFINED)

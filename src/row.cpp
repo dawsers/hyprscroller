@@ -102,13 +102,44 @@ void Row::add_active_window(PHLWINDOW window)
     }
 
     auto store_mode = mode;
+
+    // Evaluate window rules
+    auto store_modifier = modifier;
+    for (auto &r: window->m_vMatchedRules) {
+        if (r->szRule.starts_with("plugin:scroller:modemodifier")) {
+            const auto modemodifier = r->szRule.substr(r->szRule.find_first_of(' ') + 1);
+            // params: row|column after|before|end|beginning focus|nofocus
+            std::istringstream iss(modemodifier);
+            std::string arg;
+            while (iss >> arg) {
+                if (arg == "row") {
+                    mode = Mode::Row;
+                } else if (arg == "col" || arg == "column") {
+                    mode = Mode::Column;
+                } else if (arg == "after") {
+                    modifier.set_position(ModeModifier::POSITION_AFTER);
+                } else if (arg == "before") {
+                    modifier.set_position(ModeModifier::POSITION_BEFORE);
+                } else if (arg == "end") {
+                    modifier.set_position(ModeModifier::POSITION_END);
+                } else if (arg == "beg" || arg == "beginning") {
+                    modifier.set_position(ModeModifier::POSITION_BEGINNING);
+                } else if (arg == "focus") {
+                    modifier.set_focus(ModeModifier::FOCUS_FOCUS);
+                } else if (arg == "nofocus") {
+                    modifier.set_focus(ModeModifier::FOCUS_NOFOCUS);
+                }
+            }
+        }
+    }
+
     auto store_active = active;
     find_auto_insert_point(mode, active);
 
     if (active && mode == Mode::Column) {
         active->data()->add_active_window(window);
         active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
-        if (modifier.get_focus() == ModeModifier::FOCUS_NOFOCUS)
+        if (modifier.get_focus() == ModeModifier::FOCUS_NOFOCUS && store_active != nullptr)
             active = store_active;
     } else {
         auto focus = modifier.get_focus();
@@ -128,7 +159,7 @@ void Row::add_active_window(PHLWINDOW window)
             node = columns.emplace_before(columns.first(), new Column(window, max.w, this));
             break;
         }
-        if (focus == ModeModifier::FOCUS_FOCUS)
+        if (focus == ModeModifier::FOCUS_FOCUS || store_active == nullptr)
             active = node;
         else {
             active = store_active;
@@ -138,6 +169,7 @@ void Row::add_active_window(PHLWINDOW window)
         reorder = Reorder::Auto;
         recalculate_row_geometry();
     }
+    modifier = store_modifier;
     mode = store_mode;
 
     if (fsmode != eFullscreenMode::FSMODE_NONE) {

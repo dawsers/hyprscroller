@@ -1237,6 +1237,10 @@ static std::string generate_label(unsigned int i, const std::string &keys, unsig
 }
 
 void ScrollerLayout::jump() {
+    if (jumping)
+        return;
+
+    jumping = true;
     jump_data = new JumpData;
 
     for (auto monitor : g_pCompositor->m_vMonitors) {
@@ -1252,6 +1256,7 @@ void ScrollerLayout::jump() {
     }
     if (jump_data->workspaces.size() == 0) {
         delete jump_data;
+        jumping = false;
         return;
     }
 
@@ -1260,6 +1265,7 @@ void ScrollerLayout::jump() {
     }
     if (jump_data->windows.size() == 0) {
         delete jump_data;
+        jumping = false;
         return;
     }
 
@@ -1270,6 +1276,7 @@ void ScrollerLayout::jump() {
 
     if (jump_data->keys.size() == 1 && jump_data->windows.size() > 1) {
         delete jump_data;
+        jumping = false;
         return;
     }
     if (jump_data->windows.size() == 1)
@@ -1356,6 +1363,7 @@ void ScrollerLayout::jump() {
         info.cancelled = true;
         jump_data->keyPressHookCallback.reset();
         delete jump_data;
+        jumping = false;
     });
 }
 

@@ -105,6 +105,7 @@ private:
     Vector2D gesture_delta;
     bool swipe_active;
     Direction swipe_direction;
+    bool jumping = false;
 };
 
 #endif  // SCROLLER_SCROLLER_H

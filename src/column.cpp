@@ -81,7 +81,10 @@ Window *Column::get_window(PHLWINDOW window) const
 void Column::add_active_window(PHLWINDOW window)
 {
     reorder = Reorder::Auto;
-    auto w = new Window(window, row->get_max().y, row->get_max().h, width);
+    // Store the default window width internally, regardless of that of the column
+    auto wwidth = scroller_sizes.get_column_default_width(window);
+    auto w = new Window(window, row->get_max().y, row->get_max().h, wwidth);
+
     if (row->get_pinned_column() == this)
         w->pin(true);
 
@@ -333,7 +336,7 @@ void Column::admit_window(Window *window)
     active = windows.emplace_after(active, window);
 }
 
-Window *Column::expel_active()
+Window *Column::expel_active(const Vector2D &gap_x)
 {
     reorder = Reorder::Auto;
     Window *window = active->data();
@@ -342,7 +345,8 @@ Window *Column::expel_active()
     active = act;
     // If only one window is left, take its stored width
     if (windows.size() == 1) {
-        update_width(active->data()->get_width(), row->get_max().w);
+        double maxw = width == StandardSize::Free ? active->data()->get_geom_w(gap_x) : row->get_max().w;
+        update_width(active->data()->get_width(), maxw);
     }
     return window;
 }
@@ -379,7 +383,7 @@ void Column::update_heights()
     }
 }
 
-void Column::update_width(StandardSize cwidth, double maxw)
+void Column::update_width(StandardSize cwidth, double maxw, bool internal_too)
 {
     if (maximized()) {
         geom.w = maxw;
@@ -430,7 +434,11 @@ void Column::update_width(StandardSize cwidth, double maxw)
     }
     width = cwidth;
     // Update active window's width
-    active->data()->set_width(width);
+    if (internal_too) {
+        for (auto w = windows.first(); w != nullptr; w = w->next()) {
+            w->data()->set_width(width);
+        }
+    }
 }
 
 void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
@@ -547,9 +555,15 @@ void Column::resize_active_window(const Vector2D &gap_x, double gap, const Vecto
     }
     reorder = Reorder::Auto;
     // Now, resize.
-    width = StandardSize::Free;
-
-    geom.w += delta.x;
+    if (std::abs(static_cast<int>(delta.x)) > 0) {
+        width = StandardSize::Free;
+        geom.w += delta.x;
+        for (auto win = windows.first(); win != nullptr; win = win->next()) {
+            Window *window = win->data();
+            window->set_width(StandardSize::Free);
+            window->set_geom_w(geom.w, gap_x);
+        }
+    }
     if (std::abs(static_cast<int>(delta.y)) > 0) {
         for (auto win = windows.first(); win != nullptr; win = win->next()) {
             Window *window = win->data();

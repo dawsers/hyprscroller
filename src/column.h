@@ -95,7 +95,7 @@ public:
     bool move_focus_up(bool focus_wrap);
     bool move_focus_down(bool focus_wrap);
     void admit_window(Window *window);
-    Window *expel_active();
+    Window *expel_active(const Vector2D &gap_x);
     void align_window(Direction direction, const Vector2D &gap_x, double gap);
 
     StandardSize get_width() const {
@@ -107,7 +107,7 @@ public:
     }
     // Update heights according to new maxh
     void update_heights();
-    void update_width(StandardSize cwidth, double maxw);
+    void update_width(StandardSize cwidth, double maxw, bool internal_too = true);
     void fit_size(FitSize fitsize, const Vector2D &gap_x, double gap);
     void cycle_size_active_window(int step, const Vector2D &gap_x, double gap);
     void size_active_window(StandardSize height, const Vector2D &gap_x, double gap);

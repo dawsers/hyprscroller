@@ -46,6 +46,16 @@ public:
     // the column
     void set_width(StandardSize w) { width = w; }
     StandardSize get_width() const { return width; }
+    void set_geom_w(double geomw, const Vector2D &gap_x) {
+        SBoxExtents reserved_area = window->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+        geom_w = geomw - topL.x - botR.x - gap_x.x - gap_x.y;
+    }
+    double get_geom_w(const Vector2D &gap_x) const {
+        SBoxExtents reserved_area = window->getFullWindowReservedArea();
+        Vector2D topL = reserved_area.topLeft, botR = reserved_area.bottomRight;
+        return geom_w + topL.x + botR.x + gap_x.x + gap_x.y;
+    }
 
     void set_geometry(const Box &box) {
         window->m_vPosition = Vector2D(box.x, box.y);
@@ -196,6 +206,10 @@ private:
     // has this value synced with the column width. So this value changes when
     // the window is active and resized by its parent column resize.
     StandardSize width;
+    // Windows store their `resizeActiveWindow` width, so it can be recovered
+    // when their mode changes to StandardSize::FREE. This is necessary because
+    // their window->m_vSize changes.
+    double geom_w;
     double box_h;
     Memory mem_ov, mem_fs;   // memory to store old height and win y when in overview/fullscreen modes
     bool selected;

@@ -767,7 +767,11 @@ void Row::admit_window_left()
     if (overview)
         toggle_overview();
 
-    auto w = active->data()->expel_active();
+    // This call to expel_active() is just to get the window, but we need the gaps anyway
+    Vector2D gap_x = calculate_gap_x(active);
+    gap_x.x = gap;
+
+    auto w = active->data()->expel_active(gap_x);
     if (active == pinned)
         w->pin(false);
     auto prev = active->prev();
@@ -802,26 +806,18 @@ void Row::expel_window_right()
     if (overview)
         toggle_overview();
 
-    auto w = active->data()->expel_active();
+    // The new column will be on the right of the active, so its gap to the right
+    // will be the same, and on the left there will be a gap (to the column it left)
+    Vector2D gap_x = calculate_gap_x(active);
+    gap_x.x = gap;
+
+    auto w = active->data()->expel_active(gap_x);
     StandardSize width = w->get_width();
     if (active == pinned) {
         w->pin(false);
     }
-    // This code inherits the width of the original column. There is a
-    // problem with that when the mode is "Free". The new column may have
-    // more reserved space for gaps, and the new window in that column
-    // end up having negative size --> crash.
-    // There are two options:
-    // 1. We don't let column resizing make a column smaller than gap
-    // 2. We compromise and inherit the StandardSize attribute unless it is
-    // "Free". In that case, we force OneHalf (the default).
-#if 1
-    double maxw = width == StandardSize::Free ? active->data()->get_geom_w() : max.w;
-#else
-    double maxw = max.w;
-    if (width == StandardSize::Free)
-        width = StandardSize::OneHalf;
-#endif
+
+    double maxw = width == StandardSize::Free ? w->get_geom_w(gap_x) : max.w;
     active = columns.emplace_after(active, new Column(w, width, maxw, this));
     // Initialize the position so it is located after its previous column
     // This helps the heuristic in recalculate_row_geometry()
@@ -1004,6 +1000,9 @@ void Row::fit_size(FitSize fitsize)
             Column *col = c->data();
             col->set_width_free();
             col->set_geom_w(col->get_geom_w() / total * max.w);
+            // Set the width for all windows of each column
+            double maxw = col->get_geom_w();
+            col->update_width(StandardSize::Free, maxw);
         }
         from->data()->set_geom_pos(max.x, max.y);
 
@@ -1128,7 +1127,7 @@ void Row::update_windows(const Box &oldmax, bool force)
         Column *column = col->data();
         StandardSize width = column->get_width();
         double maxw = width == StandardSize::Free ? column->get_geom_w() : max.w;
-        column->update_width(width, maxw);
+        column->update_width(width, maxw, false);
         // Redo all windows for each column according to "height" (unless Free)
         column->update_heights();
     }

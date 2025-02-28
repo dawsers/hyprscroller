@@ -48,10 +48,10 @@ public:
     void set_window_width(WORKSPACEID workspace, const std::string &arg);
     void set_window_height(WORKSPACEID workspace, const std::string &arg);
     void move_focus(WORKSPACEID workspace, Direction);
-    void move_window(WORKSPACEID workspace, Direction);
+    void move_window(WORKSPACEID workspace, Direction, bool);
     void align_window(WORKSPACEID workspace, Direction);
-    void admit_window_left(WORKSPACEID workspace);
-    void expel_window_right(WORKSPACEID workspace);
+    void admit_window(WORKSPACEID workspace, AdmitExpelDirection direction);
+    void expel_window(WORKSPACEID workspace, AdmitExpelDirection direction);
     void set_mode(WORKSPACEID workspace, Mode);
     void set_mode_modifier(WORKSPACEID workspace, const ModeModifier &);
     void fit_size(WORKSPACEID workspace, FitSize);

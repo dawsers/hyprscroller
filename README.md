@@ -125,7 +125,7 @@ The plugin adds the following dispatchers:
 | Dispatcher                    | Description                                                                                                                      |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `scroller:movefocus`          | An optional replacement for `movefocus`, takes a direction as argument.                                                          |
-| `scroller:movewindow`         | An optional replacement for `movewindow`, takes a direction as argument.                                                         |
+| `scroller:movewindow`         | An optional replacement for `movewindow`, takes a direction and a movement mode as arguments.                                    |
 | `scroller:setmode`            | Set mode: `r/row` (default), `c/col/column`. Sets the working mode. Affects most dispatchers and new window creation.            |
 | `scroller:setmodemodifier`    | Assigns modifiers to the current mode for window creation: position, focus/nofocus, manual/auto. Description [below](#modes)     |
 | `scroller:cyclesize`          | Resize the focused column width (*row* mode), or the active window height (*column* mode).                                       |
@@ -135,8 +135,8 @@ The plugin adds the following dispatchers:
 | `scroller:setwidth`           | Set the focused column width to one of `column_widths`. Takes an int value (0-based idx of the size in `column_widths`), or a string indicating the desired width  |
 | `scroller:setheight`          | Set the active window height to one of `window_heights`. Parameter similar to `setwidth`                                         |
 | `scroller:alignwindow`        | Align window on the screen, `l/left`, `c/center`, `r/right` (*row* mode), `c/center`, `u/up`, `d/down` (*col* mode), `m/middle`  |
-| `scroller:admitwindow`        | Push the current window below the active one of the column to its left.                                                          |
-| `scroller:expelwindow`        | Pop the current window out of its column and place it on a new column to the right.                                              |
+| `scroller:admitwindow`        | Accepts an optional direction parameter (`l/left` (default) or `r/right`). Push the current window below the active one of the column in that direction. |
+| `scroller:expelwindow`        | Accepts an optional direction parameter (`l/left` or `r/right` (default)). Pop the current window out of its column and place it on a new column to the right or left. |
 | `scroller:fitsize`            | Resize columns (*row* mode) or windows (*col* mode) so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`      |
 | `scroller:fitwidth`           | Resize columns so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`                                           |
 | `scroller:fitheight`          | Resize windows for the active column so they fit on the screen: `active`, `visible`, `all`, `toend`, `tobeg`                     |
@@ -277,6 +277,17 @@ was the case in the past.
 `begin` or `beginning`, `e` or `end`. So you can focus or move windows/columns
 in a direction or to the beginning or end or the row.
 
+Additionally, `movewindow` accepts an additional, optional, parameter: `nomode`
+If `nomode` is added to the dispatcher, movement will **only** move the active
+window, leaving its column intact, regardless of which *mode* (row/column) you
+are currently in. The movement will be like this:
+
+If the window is in some column with other windows, any `left` or `right`
+movement will `expel` it to that side, creating a new column with just that
+window. Moving it again will `admit` it in the column in the direction of
+movement, and so on. Moving the window `up` or `down` will simply move it in
+its current column.
+
 
 ## Resizing
 
@@ -348,12 +359,14 @@ regardless of which mode you are in, use *middle*.
 
 ## Admit/Expel
 
-You can create columns of windows using `admitwindow`. It takes the active
-window and moves it to the column left of its current one, right under the
-active window in that column.
+You can create columns of windows using `admitwindow`. It takes an optional
+direction parameter `l/left` (default) or `r/right`. The dispatcher takes the
+active window and moves it to the column in the parameter direction from its
+current one, right under the active window in that column.
 
 To expel any window from its current column and position it in a new column to
-its right, use `expelwindow`.
+its right or left, use `expelwindow`. It also takes the same `l/left` or `r/right`
+(default) parameter.
 
 
 ## Fitting the Screen
@@ -1217,6 +1230,12 @@ bind = $mainMod CTRL, up, movewindow, u
 bind = $mainMod CTRL, down, movewindow, d
 bind = $mainMod CTRL, home, scroller:movewindow, begin
 bind = $mainMod CTRL, end, scroller:movewindow, end
+bind = $mainMod ALT, left, movewindow, l, nomode
+bind = $mainMod ALT, right, movewindow, r, nomode
+bind = $mainMod ALT, up, movewindow, u, nomode
+bind = $mainMod ALT, down, movewindow, d, nomode
+bind = $mainMod ALT, home, scroller:movewindow, begin, nomode
+bind = $mainMod ALT, end, scroller:movewindow, end, nomode
 
 # Modes
 bind = $mainMod, bracketleft, scroller:setmode, row
@@ -1296,6 +1315,8 @@ submap = reset
 # Admit/Expel
 bind = $mainMod, I, scroller:admitwindow,
 bind = $mainMod, O, scroller:expelwindow,
+bind = $mainMod SHIFT, I, scroller:admitwindow, r
+bind = $mainMod SHIFT, O, scroller:expelwindow, l
 
 # Center submap
 # will switch to a submap called center

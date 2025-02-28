@@ -61,8 +61,9 @@ public:
     bool selection_exists() const;
     void move_active_window_to_group(const std::string &name);
     void move_active_column(Direction dir);
-    void admit_window_left();
-    void expel_window_right();
+    void move_active_window(Direction dir);
+    void admit_window(AdmitExpelDirection dir);
+    void expel_window(AdmitExpelDirection dir);
     Vector2D predict_window_size() const;
     void post_event(const std::string &event);
     // Returns the old viewport

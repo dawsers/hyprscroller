@@ -154,10 +154,12 @@ namespace dispatchers {
 
         auto args = CVarList(arg);
         if (auto direction = parse_move_arg(args[0])) {
-            if (direction != Direction::Invalid)
-                g_ScrollerLayout->move_window(workspace, *direction);
-            else
+            if (direction != Direction::Invalid) {
+                bool nomode = args.contains("nomode");
+                g_ScrollerLayout->move_window(workspace, *direction, nomode);
+            } else {
                orig_moveActiveTo(arg);
+            }
         }
 
         return {};
@@ -177,22 +179,36 @@ namespace dispatchers {
         return {};
     }
 
-    SDispatchResult dispatch_admitwindow(std::string) {
+    SDispatchResult dispatch_admitwindow(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return { .success = false, .error = "scroller:admitwindow: invalid workspace" };
 
-        g_ScrollerLayout->admit_window_left(workspace);
+        AdmitExpelDirection direction;
+        if (arg == "r" || arg == "right") {
+            direction = AdmitExpelDirection::Right;
+        } else {
+            // Default is left, in case there is no arg
+            direction = AdmitExpelDirection::Left;
+        }
+        g_ScrollerLayout->admit_window(workspace, direction);
 
         return {};
     }
 
-    SDispatchResult dispatch_expelwindow(std::string) {
+    SDispatchResult dispatch_expelwindow(std::string arg) {
         auto workspace = workspace_for_action();
         if (workspace == -1)
             return { .success = false, .error = "scroller:expelwindow: invalid workspace" };
 
-        g_ScrollerLayout->expel_window_right(workspace);
+        AdmitExpelDirection direction;
+        if (arg == "l" || arg == "left") {
+            direction = AdmitExpelDirection::Left;
+        } else {
+            // Default is right, in case there is no arg
+            direction = AdmitExpelDirection::Right;
+        }
+        g_ScrollerLayout->expel_window(workspace, direction);
 
         return {};
     }

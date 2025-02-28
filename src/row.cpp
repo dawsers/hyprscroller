@@ -756,31 +756,129 @@ void Row::move_active_column(Direction dir)
         toggle_overview();
 }
 
-void Row::admit_window_left()
+void Row::move_active_window(Direction dir)
+{
+    bool overview_on = overview;
+    if (overview)
+        toggle_overview();
+
+    auto window = active->data()->get_active_window();
+    update_relative_cursor_coords(window);
+    eFullscreenMode fsmode = window_fullscreen_state(window);
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        toggle_window_fullscreen_internal(window, eFullscreenMode::FSMODE_NONE);
+    }
+
+    switch (dir) {
+    case Direction::Right:
+        if (active->data()->size() == 1) {
+            if (active != columns.last()) {
+                // Need to admit the window in the col to its right
+                admit_window(AdmitExpelDirection::Right);
+            }
+        } else {
+            // Need to expel the window (to the right)
+            expel_window(AdmitExpelDirection::Right);
+        }
+        break;
+    case Direction::Left:
+        if (active->data()->size() == 1) {
+            if (active != columns.first()) {
+                // Need to admit the window in the col to its left
+                admit_window(AdmitExpelDirection::Left);
+            }
+        } else {
+            // Need to expel the window to the left
+            expel_window(AdmitExpelDirection::Left);
+        }
+        break;
+    case Direction::Up:
+        active->data()->move_active_up();
+        break;
+    case Direction::Down:
+        active->data()->move_active_down();
+        break;
+    case Direction::Begin: {
+        if (active->data()->size() == 1) {
+            if (active == columns.first())
+                break;
+            columns.move_before(columns.first(), active);
+        } else {
+            // Expel the window and create a column at the beginning
+            expel_window(AdmitExpelDirection::Left);
+            columns.move_before(columns.first(), active);
+        }
+        break;
+    }
+    case Direction::End: {
+        if (active->data()->size() == 1) {
+            if (active == columns.last())
+                break;
+            columns.move_after(columns.last(), active);
+        } else {
+            // Expel window and create a column at the end
+            expel_window(AdmitExpelDirection::Right);
+            columns.move_after(columns.last(), active);
+        }
+        break;
+    }
+    case Direction::Center:
+    default:
+        return;
+    }
+
+    reorder = Reorder::Auto;
+    recalculate_row_geometry();
+    // Now the columns are in the right order, recalculate again
+    recalculate_row_geometry();
+
+    if (fsmode != eFullscreenMode::FSMODE_NONE) {
+        window = active->data()->get_active_window();
+        toggle_window_fullscreen_internal(window, fsmode);
+    }
+    force_focus_to_window(window);
+
+    if (overview_on)
+        toggle_overview();
+}
+
+void Row::admit_window(AdmitExpelDirection dir)
 {
     if (active->data()->fullscreen())
         return;
-    if (active == columns.first())
+    if (dir == AdmitExpelDirection::Left && active == columns.first())
+        return;
+    if (dir == AdmitExpelDirection::Right && active == columns.last())
         return;
 
     bool overview_on = overview;
     if (overview)
         toggle_overview();
 
-    // This call to expel_active() is just to get the window, but we need the gaps anyway
+    // We extract from active, but insert left or right of it, so we know at
+    // least one gap will change
     Vector2D gap_x = calculate_gap_x(active);
-    gap_x.x = gap;
+    if (dir == AdmitExpelDirection::Left)
+        gap_x.y = gap;
+    else
+        gap_x.x = gap;
 
     auto w = active->data()->expel_active(gap_x);
     if (active == pinned)
         w->pin(false);
-    auto prev = active->prev();
+
+    ListNode<Column *> *node;
+    if (dir == AdmitExpelDirection::Left) {
+        node = active->prev();
+    } else {
+        node = active->next();
+    }
     if (active->data()->size() == 0) {
         if (active == pinned)
             pinned = nullptr;
         columns.erase(active);
     }
-    active = prev;
+    active = node;
     if (active == pinned)
         w->pin(true);
     active->data()->admit_window(w);
@@ -794,7 +892,7 @@ void Row::admit_window_left()
         toggle_overview();
 }
 
-void Row::expel_window_right()
+void Row::expel_window(AdmitExpelDirection dir)
 {
     if (active->data()->fullscreen())
         return;
@@ -809,7 +907,10 @@ void Row::expel_window_right()
     // The new column will be on the right of the active, so its gap to the right
     // will be the same, and on the left there will be a gap (to the column it left)
     Vector2D gap_x = calculate_gap_x(active);
-    gap_x.x = gap;
+    if (dir == AdmitExpelDirection::Left)
+        gap_x.y = gap;
+    else
+        gap_x.x = gap;
 
     auto w = active->data()->expel_active(gap_x);
     StandardSize width = w->get_width();
@@ -818,10 +919,17 @@ void Row::expel_window_right()
     }
 
     double maxw = width == StandardSize::Free ? w->get_geom_w(gap_x) : max.w;
-    active = columns.emplace_after(active, new Column(w, width, maxw, this));
-    // Initialize the position so it is located after its previous column
-    // This helps the heuristic in recalculate_row_geometry()
-    active->data()->set_geom_pos(active->prev()->data()->get_geom_x() + active->prev()->data()->get_geom_w(), max.y);
+    if (dir == AdmitExpelDirection::Left) {
+        active = columns.emplace_before(active, new Column(w, width, maxw, this));
+        // Initialize the position so it is located before the next column
+        // This helps the heuristic in recalculate_row_geometry()
+        active->data()->set_geom_pos(active->next()->data()->get_geom_x() - active->data()->get_geom_w(), max.y);
+    } else {
+        active = columns.emplace_after(active, new Column(w, width, maxw, this));
+        // Initialize the position so it is located after the previous column
+        // This helps the heuristic in recalculate_row_geometry()
+        active->data()->set_geom_pos(active->prev()->data()->get_geom_x() + active->prev()->data()->get_geom_w(), max.y);
+    }
 
     reorder = Reorder::Auto;
     recalculate_row_geometry();

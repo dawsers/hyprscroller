@@ -918,13 +918,16 @@ void ScrollerLayout::move_focus(WORKSPACEID workspace, Direction direction)
     switch_to_window(from, to);
 }
 
-void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction) {
+void ScrollerLayout::move_window(WORKSPACEID workspace, Direction direction, bool nomode) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
     }
 
-    s->move_active_column(direction);
+    if (nomode)
+        s->move_active_window(direction);
+    else
+        s->move_active_column(direction);
 }
 
 void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
@@ -936,20 +939,20 @@ void ScrollerLayout::align_window(WORKSPACEID workspace, Direction direction) {
     s->align_column(direction);
 }
 
-void ScrollerLayout::admit_window_left(WORKSPACEID workspace) {
+void ScrollerLayout::admit_window(WORKSPACEID workspace, AdmitExpelDirection direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
     }
-    s->admit_window_left();
+    s->admit_window(direction);
 }
 
-void ScrollerLayout::expel_window_right(WORKSPACEID workspace) {
+void ScrollerLayout::expel_window(WORKSPACEID workspace, AdmitExpelDirection direction) {
     auto s = getRowForWorkspace(workspace);
     if (s == nullptr) {
         return;
     }
-    s->expel_window_right();
+    s->expel_window(direction);
 }
 
 void ScrollerLayout::set_mode(WORKSPACEID workspace, Mode mode) {

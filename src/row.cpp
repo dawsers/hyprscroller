@@ -147,16 +147,16 @@ void Row::add_active_window(PHLWINDOW window)
         switch (modifier.get_position()) {
         case ModeModifier::POSITION_AFTER:
         default:
-            node = columns.emplace_after(active, new Column(window, max.w, this));
+            node = columns.emplace_after(active, new Column(window, this));
             break;
         case ModeModifier::POSITION_BEFORE:
-            node = columns.emplace_before(active, new Column(window, max.w, this));
+            node = columns.emplace_before(active, new Column(window, this));
             break;
         case ModeModifier::POSITION_END:
-            node = columns.emplace_after(columns.last(), new Column(window, max.w, this));
+            node = columns.emplace_after(columns.last(), new Column(window, this));
             break;
         case ModeModifier::POSITION_BEGINNING:
-            node = columns.emplace_before(columns.first(), new Column(window, max.w, this));
+            node = columns.emplace_before(columns.first(), new Column(window, this));
             break;
         }
         if (focus == ModeModifier::FOCUS_FOCUS || store_active == nullptr)
@@ -803,7 +803,7 @@ void Row::expel_window_right()
         toggle_overview();
 
     auto w = active->data()->expel_active();
-    StandardSize width = active->data()->get_width();
+    StandardSize width = w->get_width();
     if (active == pinned) {
         w->pin(false);
     }

@@ -7,7 +7,7 @@
 
 class Window {
 public:
-    Window(PHLWINDOW window, double maxy, double box_h);
+    Window(PHLWINDOW window, double maxy, double box_h, StandardSize width);
     ~Window() {
         window->removeWindowDeco(decoration);
     }
@@ -40,6 +40,12 @@ public:
     StandardSize get_height() const { return height; }
     void update_height(StandardSize h, double max);
     void set_height_free() { height = StandardSize::Free; }
+
+    // Called by the parent column on the active window every time it changes width
+    // This allows windows to have a independently stored width when they leave
+    // the column
+    void set_width(StandardSize w) { width = w; }
+    StandardSize get_width() const { return width; }
 
     void set_geometry(const Box &box) {
         window->m_vPosition = Vector2D(box.x, box.y);
@@ -185,6 +191,11 @@ private:
 
     PHLWINDOWREF window;
     StandardSize height;
+    // This keeps track of the window width and recovers it when it is alone
+    // in a column. When it is in a column with more windows, the active window
+    // has this value synced with the column width. So this value changes when
+    // the window is active and resized by its parent column resize.
+    StandardSize width;
     double box_h;
     Memory mem_ov, mem_fs;   // memory to store old height and win y when in overview/fullscreen modes
     bool selected;

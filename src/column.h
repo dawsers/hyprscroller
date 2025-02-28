@@ -9,7 +9,7 @@ class Row;
 
 class Column {
 public:
-    Column(PHLWINDOW cwindow, double maxw, const Row *row);
+    Column(PHLWINDOW cwindow, const Row *row);
     Column(Window *window, StandardSize width, double maxw, const Row *row);
     Column(const Row *row, const Column *column, List<Window *> &windows);
     ~Column();
@@ -133,7 +133,6 @@ private:
         ColumnGeom geom;        // memory of the column's box while in overview mode
     };
     StandardSize width;
-    StandardSize height;
     Reorder reorder;
     ColumnGeom geom; // x location and width of the column
     Memory mem;      // memory

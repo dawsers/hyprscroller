@@ -9,15 +9,15 @@ extern HANDLE PHANDLE;
 extern std::function<SDispatchResult(std::string)> orig_moveFocusTo;
 extern ScrollerSizes scroller_sizes;
 
-Column::Column(PHLWINDOW cwindow, double maxw, const Row *row)
-    : height(StandardSize::One), reorder(Reorder::Auto), row(row)
+Column::Column(PHLWINDOW cwindow, const Row *row)
+    : reorder(Reorder::Auto), row(row)
 {
     width = scroller_sizes.get_column_default_width(cwindow);
     const Box &max = row->get_max();
-    Window *window = new Window(cwindow, max.y, max.h);
+    Window *window = new Window(cwindow, max.y, max.h, width);
     windows.push_back(window);
     active = windows.first();
-    update_width(width, maxw);
+    update_width(width, max.w);
 
     // We know it will be located on the right of row->active
     const Column *col = row->get_active_column();
@@ -30,7 +30,7 @@ Column::Column(PHLWINDOW cwindow, double maxw, const Row *row)
 }
 
 Column::Column(Window *window, StandardSize width, double maxw, const Row *row)
-    : width(width), height(StandardSize::One), reorder(Reorder::Auto), row(row)
+    : width(width), reorder(Reorder::Auto), row(row)
 {
     const Box &max = row->get_max();
     windows.push_back(window);
@@ -41,7 +41,6 @@ Column::Column(Window *window, StandardSize width, double maxw, const Row *row)
 Column::Column(const Row *pRow, const Column *column, List<Window *> &pWindows)
 {
     width = column->width;
-    height = column->height;
     reorder = column->reorder;
     geom = column->geom;
     mem = column->mem;
@@ -82,7 +81,7 @@ Window *Column::get_window(PHLWINDOW window) const
 void Column::add_active_window(PHLWINDOW window)
 {
     reorder = Reorder::Auto;
-    auto w = new Window(window, row->get_max().y, row->get_max().h);
+    auto w = new Window(window, row->get_max().y, row->get_max().h, width);
     if (row->get_pinned_column() == this)
         w->pin(true);
 
@@ -341,6 +340,10 @@ Window *Column::expel_active()
     auto act = active == windows.first() ? active->next() : active->prev();
     windows.erase(active);
     active = act;
+    // If only one window is left, take its stored width
+    if (windows.size() == 1) {
+        update_width(active->data()->get_width(), row->get_max().w);
+    }
     return window;
 }
 
@@ -426,6 +429,8 @@ void Column::update_width(StandardSize cwidth, double maxw)
         }
     }
     width = cwidth;
+    // Update active window's width
+    active->data()->set_width(width);
 }
 
 void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)

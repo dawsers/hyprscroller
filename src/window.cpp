@@ -6,7 +6,7 @@
 extern HANDLE PHANDLE;
 extern ScrollerSizes scroller_sizes;
 
-Window::Window(PHLWINDOW window, double maxy, double box_h) : window(window), selected(false)
+Window::Window(PHLWINDOW window, double maxy, double box_h, StandardSize width) : window(window), selected(false), width(width)
 {
     StandardSize h = scroller_sizes.get_window_default_height(window);
     window->m_vPosition.y = maxy;

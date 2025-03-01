@@ -162,8 +162,7 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
     auto a_y0 = std::round(active->data()->get_geom_y(gap0));
     auto a_y1 = std::round(a_y0 + active->data()->get_geom_h());
 
-    static auto* const *center_active_window = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:center_active_window")->getDataStaticPtr();
-    if (**center_active_window && row->get_active_column() == this) {
+    if (row->get_mode_modifier().get_center_window().value() && row->get_active_column() == this) {
         double start = max.y + 0.5 * (max.h - (a_y1 - a_y0));
         active->data()->move_to_pos(geom.x, start, gap_x, gap0);
         adjust_windows(active, gap_x, gap);

@@ -30,6 +30,7 @@ add_library(hyprscroller SHARED
             src/scroller.h
             src/scroller.cpp
             src/enums.h
+            src/enums.cpp
             src/common.h
             src/sizes.h
             src/sizes.cpp

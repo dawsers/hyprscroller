@@ -200,14 +200,23 @@ column before creating a new column. In *column* mode, *hyprscroller* will
 create as many as `number` columns before adding new windows to any of them.
 If you close any window, `auto` mode will start filling the gaps with new
 windows you create.
+4. `center_column/nocenter_column`: It will keep the active column centered
+(or not) on the screen. The default value is the one in your configuration.
+See [center_active_column](https://github.com/dawsers/hyprscroller#center_active_column).
+4. `center_window/nocenter_window`: It will keep the active window centered
+(or not) in its column. The default value is the one in your configuration.
+See [center_active_window](https://github.com/dawsers/hyprscroller#center_active_window).
+
+You can skip any number of parameters when calling the dispatcher, and their
+order doesn't matter.
 
 You can change modifiers at any time using `scoller:setmodemodifier`, which
 works like this:
 
 ```
-# scroller:setmodemodifier, position, focus, auto, number
+# scroller:setmodemodifier, position, focus, auto:number, center_column, center_window
 # examples
-hyprctl dispatch scroller:setmodemodifier before, nofocus, auto, 3
+hyprctl dispatch scroller:setmodemodifier before, nofocus, auto:3
 # creates new windows at the end of the row/column and doesn't focus on them
 hyprctl dispatch scroller:setmodemodifier end, nofocus
 # sets manual mode with no focus on new windows
@@ -215,7 +224,9 @@ hyprctl dispatch scroller:setmodemodifier , nofocus, manual
 # default values
 hyprctl dispatch scroller:setmodemodifier after, focus, manual
 # sets auto mode with a grid of 4 windows
-hyprctl dispatch scroller:setmodemodifier , , auto, 4
+hyprctl dispatch scroller:setmodemodifier , auto:4
+# keeps the active column always centered
+hyprctl dispatch scroller:setmodemodifier , center_column
 ```
 
 You can skip any parameters. If you don't specify some of them, they will merge
@@ -1254,16 +1265,24 @@ bind = , home, scroller:setmodemodifier, beginning
 bind = , home, submap, reset
 bind = , end, scroller:setmodemodifier, end
 bind = , end, submap, reset
-bind = , up, scroller:setmodemodifier, , focus
+bind = , up, scroller:setmodemodifier, focus
 bind = , up, submap, reset
-bind = , down, scroller:setmodemodifier, , nofocus
+bind = , down, scroller:setmodemodifier, nofocus
 bind = , down, submap, reset
-bind = , 2, scroller:setmodemodifier, , , auto, 2
+bind = , 2, scroller:setmodemodifier, auto:2
 bind = , 2, submap, reset
-bind = , 3, scroller:setmodemodifier, , , auto, 3
+bind = , 3, scroller:setmodemodifier, auto:3
 bind = , 3, submap, reset
-bind = , m, scroller:setmodemodifier, , , manual
+bind = , m, scroller:setmodemodifier, manual
 bind = , m, submap, reset
+bind = , c, scroller:setmodemodifier, center_column
+bind = , c, submap, reset
+bind = SHIFT, c, scroller:setmodemodifier, nocenter_column
+bind = SHIFT, c, submap, reset
+bind = , w, scroller:setmodemodifier, center_window
+bind = , w, submap, reset
+bind = SHIFT, w, scroller:setmodemodifier, nocenter_window
+bind = SHIFT, w, submap, reset
 # use reset to go back to the global submap
 bind = , escape, submap, reset
 # will reset the submap, meaning end the current one and return to the global one

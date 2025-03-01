@@ -33,7 +33,6 @@ public:
     ScrollerSizes() {}
     ~ScrollerSizes() {}
 
-    void update();
     Mode get_mode(PHLMONITOR monitor);
     StandardSize get_window_default_height(PHLWINDOW window);
     StandardSize get_column_default_width(PHLWINDOW window);
@@ -49,6 +48,7 @@ private:
     StandardSize get_next(const std::vector<StandardSize> &sizes, StandardSize size, int step) const;
     StandardSize get_size(const std::vector<StandardSize> &sizes, int index) const;
     StandardSize get_closest_size(const std::vector<StandardSize> &sizes, double fraction, int step) const;
+    void update();
     void update_sizes(std::vector<StandardSize> &sizes, const std::string &option, StandardSize default_size);
     void trim(std::string &str);
 

@@ -448,6 +448,13 @@ void Row::set_mode_modifier(const ModeModifier &options)
         modifier.set_auto_mode(auto_mode);
         modifier.set_auto_param(options.get_auto_param());
     }
+    auto center_column = options.get_center_column(false);
+    if (center_column.has_value())
+        modifier.set_center_column(center_column.value());
+    auto center_window = options.get_center_window(false);
+    if (center_window.has_value())
+        modifier.set_center_window(center_window.value());
+
     post_event("mode");
 }
 
@@ -949,7 +956,9 @@ void Row::post_event(const std::string &event)
 {
     if (event == "mode") {
         auto str_mode = mode == Mode::Row ? "row" : "column";
-        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}, {}, {}, {}, {}", str_mode, modifier.get_position_string(), modifier.get_focus_string(), modifier.get_auto_mode_string(), modifier.get_auto_param())});
+        g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("mode, {}, {}, {}, {}:{}, {}, {}", str_mode,
+            modifier.get_position_string(), modifier.get_focus_string(), modifier.get_auto_mode_string(), modifier.get_auto_param(),
+            modifier.get_center_column_string(), modifier.get_center_window_string())});
     } else if (event == "overview") {
         g_pEventManager->postEvent(SHyprIPCEvent{"scroller", std::format("overview, {}", overview ? 1 : 0)});
     } else if (event == "admitwindow") {
@@ -1372,8 +1381,7 @@ void Row::recalculate_row_geometry()
         return;
     }
 
-    static auto* const *center_active_column = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:center_active_column")->getDataStaticPtr();
-    if (**center_active_column) {
+    if (modifier.get_center_column().value()) {
         double start = max.x + 0.5 * (max.w - active->data()->get_geom_w());
         active->data()->set_geom_pos(start, max.y);
         adjust_columns(active);

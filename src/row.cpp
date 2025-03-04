@@ -609,8 +609,15 @@ void Row::selection_get(const Row *row, List<Column *> &selection)
         auto next = col->next();
         Column *column = col->data()->selection_get(row);
         if (column != nullptr) {
+            // Unpin the windows that are moving
+            if (col == pinned) {
+                column->pin(false);
+            }
             selection.push_back(column);
             if (col->data()->size() == 0) {
+                // If the column is left empty, remove pin
+                if (col == pinned)
+                    pinned = nullptr;
                 // Removed all windows
                 if (col == active) {
                     active = active != columns.last() ? active->next() : active->prev();
@@ -716,13 +723,13 @@ void Row::move_active_column(Direction dir)
     case Direction::Right:
         if (active != columns.last()) {
             auto next = active->next();
-            columns.swap(active, next);
+            columns.move_after(next, active);
         }
         break;
     case Direction::Left:
         if (active != columns.first()) {
             auto prev = active->prev();
-            columns.swap(active, prev);
+            columns.move_before(prev, active);
         }
         break;
     case Direction::Up:
@@ -749,8 +756,6 @@ void Row::move_active_column(Direction dir)
     }
 
     reorder = Reorder::Auto;
-    recalculate_row_geometry();
-    // Now the columns are in the right order, recalculate again
     recalculate_row_geometry();
 
     if (fsmode != eFullscreenMode::FSMODE_NONE) {
@@ -1134,6 +1139,8 @@ bool Row::is_overview() const
 
 void Row::toggle_overview()
 {
+    if (columns.size() == 0)
+        return;
     overview = !overview;
     post_event("overview");
     static auto *const *overview_scale_content = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:overview_scale_content")->getDataStaticPtr();

@@ -119,6 +119,8 @@ public:
     Column *selection_get(const Row *row);
     bool selection_exists() const;
     void pin(bool pin) const;
+    void scroll_update(double delta_y);
+    void scroll_end(Direction dir, double gap);
 
 private:
     // Adjust all the windows in the column using 'window' as anchor

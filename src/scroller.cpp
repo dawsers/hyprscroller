@@ -1402,9 +1402,9 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     static auto *const *HSFINGERSMIN = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_min_fingers")->getDataStaticPtr();
     static auto *const *NATURAL = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "input:touchpad:natural_scroll")->getDataStaticPtr();
     static auto *const *HSINVERT = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "gestures:workspace_swipe_invert")->getDataStaticPtr();
+    static auto *const *GSENS = (Hyprlang::FLOAT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_sensitivity")->getDataStaticPtr();
     static auto *const *SENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_enable")->getDataStaticPtr();
     static auto *const *SFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_fingers")->getDataStaticPtr();
-    static auto *const *SDISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_scroll_distance")->getDataStaticPtr();
     static auto *const *OENABLE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_enable")->getDataStaticPtr();
     static auto *const *OFINGERS = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_fingers")->getDataStaticPtr();
     static auto *const *ODISTANCE = (Hyprlang::INT *const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:scroller:gesture_overview_distance")->getDataStaticPtr();
@@ -1428,7 +1428,7 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
 
     info.cancelled = true;
     Vector2D delta = swipe_event.delta;
-    delta *= **NATURAL ? -1.0 : 1.0;
+    delta *= **NATURAL ? -**GSENS : **GSENS;
     if (!swipe_active) {
         gesture_delta = Vector2D(0.0, 0.0);
     }
@@ -1437,38 +1437,11 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
     if (**SENABLE && swipe_event.fingers == **SFINGERS) {
         if (s == nullptr)
             return;
-        int steps_x = gesture_delta.x / **SDISTANCE;
-        int steps_y = gesture_delta.y / **SDISTANCE;
-        gesture_delta.x -= steps_x * **SDISTANCE;
-        gesture_delta.y -= steps_y * **SDISTANCE;
-        Direction dir;
-        int steps;
-        if (std::abs(steps_x) > std::abs(steps_y)) {
-            dir = steps_x < 0 ? Direction::Left : Direction::Right;
-            steps = std::abs(steps_x);
-        } else {
-            dir = steps_y < 0 ? Direction::Up : Direction::Down;
-            steps = std::abs(steps_y);
-        }
-        if (swipe_direction != dir) {
-            gesture_delta = Vector2D(0.0, 0.0);
-            swipe_direction = dir;
-        }
-        for (int i = 0; i < steps; ++i) {
-            switch (dir) {
-            case Direction::Left:
-            case Direction::Right:
-            case Direction::Up:
-            case Direction::Down:
-                s->move_focus(dir, false);
-                // To avoid going to the next monitor, stays in s
-                force_focus_to_window(s->get_active_window());
-                break;
-            default:
-                break;
-            }
-        }
-        s->recalculate_row_geometry();
+        if (std::abs(gesture_delta.x) > std::abs(gesture_delta.y))
+            swipe_direction = gesture_delta.x > 0 ? Direction::Right : Direction::Left;
+        else
+            swipe_direction = gesture_delta.y > 0 ? Direction::Down : Direction::Up;
+        s->scroll_update(swipe_direction, delta);
     } else {
         // Undo natural
         const Vector2D delta = gesture_delta * (**NATURAL ? -1.0 : 1.0);
@@ -1511,6 +1484,11 @@ void ScrollerLayout::swipe_end(SCallbackInfo &info,
     WORKSPACEID wid = get_workspace_id();
     if (wid == -1) {
         return;
+    }
+    // Only if scrolling
+    if (swipe_direction != Direction::Begin) {
+        auto s = getRowForWorkspace(wid);
+        s->scroll_end(swipe_direction);
     }
 
     swipe_active = false;

@@ -594,6 +594,45 @@ void Column::adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, doub
     }
 }
 
+void Column::scroll_update(double delta_y)
+{
+    for (auto w = windows.first(); w != nullptr; w = w->next()) {
+        w->data()->scroll(delta_y);
+    }
+}
+
+void Column::scroll_end(Direction dir, double gap)
+{
+    if (dir == Direction::Up) {
+        auto newactive = windows.last();
+        // Take the first after active that has its left edge in the viewport
+        const auto &max = row->get_max();
+        for (auto win = active->next(); win != nullptr; win = win->next()) {
+            const auto y0 = win->data()->get_geom_y(gap);
+            if (y0 > max.y && y0 < max.y + max.h) {
+                newactive = win;
+                break;
+            }
+        }
+        active = newactive;
+    } else if (dir == Direction::Down) {
+        // Search on the left
+        auto newactive = windows.first();
+        // Take the first abefore active that has its right edge in the viewport
+        const auto &max = row->get_max();
+        for (auto win = active->prev(); win != nullptr; win = win->prev()) {
+            auto gap0 = win == windows.first() ? 0.0f : gap;
+            const auto y0 = win->data()->get_geom_y(gap0);
+            const auto y1 = y0 + win->data()->get_geom_h();
+            if (y1 > max.y && y1 < max.y + max.h) {
+                newactive = win;
+                break;
+            }
+        }
+        active = newactive;
+    }
+}
+
 void Column::selection_toggle()
 {
     active->data()->selection_toggle();

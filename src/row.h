@@ -76,6 +76,9 @@ public:
     void update_windows(const Box &oldmax, bool force);
     void recalculate_row_geometry();
 
+    void scroll_update(Direction dir, const Vector2D &delta);
+    void scroll_end(Direction dir);
+
 private:
     bool move_focus_left(bool focus_wrap); 
     bool move_focus_right(bool focus_wrap);
@@ -89,6 +92,7 @@ private:
     // Adjust all the columns in the overview
     void adjust_overview_columns();
     void size_active_column(StandardSize size);
+    ListNode<Column *> *get_mouse_column() const;
 
     WORKSPACEID workspace;
     Box full;

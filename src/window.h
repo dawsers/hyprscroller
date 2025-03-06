@@ -106,6 +106,11 @@ public:
         window->m_vPosition = Vector2D(x + topL.x + gap_x.x, y + gap + topL.y);
     }
 
+    void scroll(double delta_y) {
+        window->m_vPosition.y += delta_y;
+        *window->m_vRealPosition = window->m_vPosition;
+    }
+
     void update_window(double w, const Vector2D &gap_x, double gap0, double gap1) {
         auto reserved = window->getFullWindowReservedArea();
         //win->m_vSize = Vector2D(w - gap_x.x - gap_x.y, wh - gap0 - gap1);

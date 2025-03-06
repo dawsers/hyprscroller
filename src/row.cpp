@@ -2,6 +2,7 @@
 #include <hyprland/src/managers/EventManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/managers/input/InputManager.hpp>
 
 #include "common.h"
 #include "functions.h"
@@ -1517,4 +1518,78 @@ void Row::adjust_overview_columns()
         auto gap1 = col == columns.last() ? 0.0 : gap;
         col->data()->recalculate_col_geometry_overview(Vector2D(gap0, gap1), gap);
     }
+}
+
+// Find the column where the mouse pointer is, or return active
+ListNode<Column *> *Row::get_mouse_column() const {
+    // Find the column where the cursor is
+    auto pos = g_pInputManager->getMouseCoordsInternal();
+    auto column = active;
+    for (auto col = columns.first(); col != nullptr; col = col->next()) {
+        const auto x0 = col->data()->get_geom_x();
+        const auto x1 = x0 + col->data()->get_geom_w();
+        if (pos.x >= x0 && pos.x < x1) {
+            column = col;
+            break;
+        }
+    }
+    return column;
+}
+void Row::scroll_update(Direction dir, const Vector2D &delta) {
+    switch (dir) {
+    case Direction::Up:
+    case Direction::Down: {
+        auto column = get_mouse_column();
+        column->data()->scroll_update(delta.y);
+        break;
+    }
+    case Direction::Left:
+    case Direction::Right: {
+        // Apply column geometry
+        for (auto col = columns.first(); col != nullptr; col = col->next()) {
+            col->data()->set_geom_pos(col->data()->get_geom_x() + delta.x, max.y);
+            // First and last columns need a different gap
+            auto gap0 = col == columns.first() ? 0.0 : gap;
+            auto gap1 = col == columns.last() ? 0.0 : gap;
+            col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void Row::scroll_end(Direction dir)
+{
+    if (dir == Direction::Left) {
+        auto newactive = columns.last();
+        // Take the first after active that has its left edge in the viewport
+        for (auto col = active->next(); col != nullptr; col = col->next()) {
+            const auto x0 = col->data()->get_geom_x();
+            if (x0 > max.x && x0 < max.x + max.w) {
+                newactive = col;
+                break;
+            }
+        }
+        active = newactive;
+    } else if (dir == Direction::Right) {
+        auto newactive = columns.first();
+        // Take the first abefore active that has its right edge in the viewport
+        for (auto col = active->prev(); col != nullptr; col = col->prev()) {
+            const auto x0 = col->data()->get_geom_x();
+            const auto x1 = x0 + col->data()->get_geom_w();
+            if (x1 > max.x && x1 < max.x + max.w) {
+                newactive = col;
+                break;
+            }
+        }
+        active = newactive;
+    } else if (dir == Direction::Up || dir == Direction::Down) {
+        // This column should be the same while swiping. Mouse coordinates don't change while swiping
+        auto column = get_mouse_column();
+        column->data()->scroll_end(dir, gap);
+    }
+    recalculate_row_geometry();
+    g_pCompositor->focusWindow(get_active_window());
 }

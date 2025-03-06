@@ -1428,7 +1428,7 @@ void ScrollerLayout::swipe_update(SCallbackInfo &info, IPointer::SSwipeUpdateEve
 
     info.cancelled = true;
     Vector2D delta = swipe_event.delta;
-    delta *= **NATURAL ? -**GSENS : **GSENS;
+    delta *= **NATURAL ? **GSENS : -**GSENS;
     if (!swipe_active) {
         gesture_delta = Vector2D(0.0, 0.0);
     }

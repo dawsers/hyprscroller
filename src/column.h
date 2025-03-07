@@ -84,7 +84,7 @@ public:
         geom.vy = vy;
     }
     // Recalculates the geometry of the windows in the column
-    void recalculate_col_geometry(const Vector2D &gap_x, double gap);
+    void recalculate_col_geometry(const Vector2D &gap_x, double gap, bool animate);
     // Recalculates the geometry of the windows in the column for overview mode
     void recalculate_col_geometry_overview(const Vector2D &gap_x, double gap);
     PHLWINDOW get_active_window() {
@@ -124,7 +124,7 @@ public:
 
 private:
     // Adjust all the windows in the column using 'window' as anchor
-    void adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, double gap);
+    void adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, double gap, bool animate);
 
     struct ColumnGeom {
         double x;

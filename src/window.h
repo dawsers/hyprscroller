@@ -108,13 +108,16 @@ public:
 
     void scroll(double delta_y) {
         window->m_vPosition.y += delta_y;
+        window->m_vRealPosition->warp(false);
         *window->m_vRealPosition = window->m_vPosition;
     }
 
-    void update_window(double w, const Vector2D &gap_x, double gap0, double gap1) {
+    void update_window(double w, const Vector2D &gap_x, double gap0, double gap1, bool animate) {
         auto reserved = window->getFullWindowReservedArea();
         //win->m_vSize = Vector2D(w - gap_x.x - gap_x.y, wh - gap0 - gap1);
         window->m_vSize = Vector2D(std::max(w - reserved.topLeft.x - reserved.bottomRight.x - gap_x.x - gap_x.y, 1.0), std::max(get_geom_h() - reserved.topLeft.y - reserved.bottomRight.y - gap0 - gap1, 1.0));
+        if (!animate)
+            window->m_vRealPosition->warp(false);
         *window->m_vRealPosition = window->m_vPosition;
         *window->m_vRealSize = window->m_vSize;
         window->sendWindowSize(window->m_vRealSize->goal());

@@ -139,7 +139,7 @@ void Row::add_active_window(PHLWINDOW window)
 
     if (active && mode == Mode::Column) {
         active->data()->add_active_window(window);
-        active->data()->recalculate_col_geometry(calculate_gap_x(active), gap);
+        active->data()->recalculate_col_geometry(calculate_gap_x(active), gap, true);
         if (modifier.get_focus() == ModeModifier::FOCUS_NOFOCUS && store_active != nullptr)
             active = store_active;
     } else {
@@ -220,7 +220,7 @@ bool Row::remove_window(PHLWINDOW window)
                     break;
                 }
             } else {
-                c->data()->recalculate_col_geometry(calculate_gap_x(c), gap);
+                c->data()->recalculate_col_geometry(calculate_gap_x(c), gap, true);
                 break;
             }
         }
@@ -482,7 +482,7 @@ void Row::align_column(Direction dir)
         if (mode == Mode::Column) {
             const Vector2D gap_x = calculate_gap_x(active);
             active->data()->align_window(Direction::Center, gap_x, gap);
-            active->data()->recalculate_col_geometry(gap_x, gap);
+            active->data()->recalculate_col_geometry(gap_x, gap, true);
             return;
         } else {
             center_active_column();
@@ -492,7 +492,7 @@ void Row::align_column(Direction dir)
     case Direction::Down: {
         const Vector2D gap_x = calculate_gap_x(active);
         active->data()->align_window(dir, gap_x, gap);
-        active->data()->recalculate_col_geometry(gap_x, gap);
+        active->data()->recalculate_col_geometry(gap_x, gap, true);
         return;
     } break;
     case Direction::Middle: {
@@ -694,7 +694,7 @@ void Row::move_active_window_to_group(const std::string &name)
             remove_window(window);
             col->add_active_window(window);
             if (!window->isFullscreen())
-                col->recalculate_col_geometry(calculate_gap_x(c), gap);
+                col->recalculate_col_geometry(calculate_gap_x(c), gap, true);
             active = c;
             if (!window->isFullscreen())
                 recalculate_row_geometry();
@@ -1504,7 +1504,7 @@ void Row::adjust_columns(ListNode<Column *> *column)
         // First and last columns need a different gap
         auto gap0 = col == columns.first() ? 0.0 : gap;
         auto gap1 = col == columns.last() ? 0.0 : gap;
-        col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap);
+        col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap, true);
     }
 }
 
@@ -1551,7 +1551,7 @@ void Row::scroll_update(Direction dir, const Vector2D &delta) {
             // First and last columns need a different gap
             auto gap0 = col == columns.first() ? 0.0 : gap;
             auto gap1 = col == columns.last() ? 0.0 : gap;
-            col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap);
+            col->data()->recalculate_col_geometry(Vector2D(gap0, gap1), gap, false);
         }
         break;
     }

@@ -145,7 +145,7 @@ void Column::focus_window(PHLWINDOW window)
 }
 
 // Recalculates the geometry of the windows in the column
-void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
+void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap, bool animate)
 {
     const Box &max = row->get_max();
     // In theory, every window in the Columm should have the same size,
@@ -165,7 +165,7 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
     if (row->get_mode_modifier().get_center_window().value() && row->get_active_column() == this) {
         double start = max.y + 0.5 * (max.h - (a_y1 - a_y0));
         active->data()->move_to_pos(geom.x, start, gap_x, gap0);
-        adjust_windows(active, gap_x, gap);
+        adjust_windows(active, gap_x, gap, animate);
         return;
     }
 
@@ -263,14 +263,14 @@ void Column::recalculate_col_geometry(const Vector2D &gap_x, double gap)
             active->data()->set_geom_x(geom.x, gap_x);
         }
     }
-    adjust_windows(active, gap_x, gap);
+    adjust_windows(active, gap_x, gap, animate);
 }
 
 // Recalculates the geometry of the windows in the column for overview mode
 void Column::recalculate_col_geometry_overview(const Vector2D &gap_x, double gap)
 {
     windows.first()->data()->move_to_pos(geom.x, geom.vy, gap_x, 0.0);
-    adjust_windows(windows.first(), gap_x, gap);
+    adjust_windows(windows.first(), gap_x, gap, true);
 }
 
 void Column::move_active_up()
@@ -506,7 +506,7 @@ void Column::fit_size(FitSize fitsize, const Vector2D &gap_x, double gap)
         auto gap0 = from == windows.first() ? 0.0 : gap;
         from->data()->move_to_top(geom.x, max, gap_x, gap0);
 
-        adjust_windows(from, gap_x, gap);
+        adjust_windows(from, gap_x, gap, true);
     }
 }
 
@@ -528,14 +528,14 @@ void Column::cycle_size_active_window(int step, const Vector2D &gap_x, double ga
         height = scroller_sizes.get_next_window_height(height, step);
     }
     active->data()->update_height(height, row->get_max().h);
-    recalculate_col_geometry(gap_x, gap);
+    recalculate_col_geometry(gap_x, gap, true);
 }
 
 void Column::size_active_window(StandardSize height, const Vector2D &gap_x, double gap)
 {
     reorder = Reorder::Auto;
     active->data()->update_height(height, row->get_max().h);
-    recalculate_col_geometry(gap_x, gap);
+    recalculate_col_geometry(gap_x, gap, true);
 }
 
 void Column::resize_active_window(const Vector2D &gap_x, double gap, const Vector2D &delta)
@@ -575,7 +575,7 @@ void Column::resize_active_window(const Vector2D &gap_x, double gap, const Vecto
 }
 
 // Adjust all the windows in the column using 'window' as anchor
-void Column::adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, double gap)
+void Column::adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, double gap, bool animate)
 {
     // 2. adjust positions of windows above
     for (auto w = win->prev(), p = win; w != nullptr; p = w, w = w->prev()) {
@@ -590,7 +590,7 @@ void Column::adjust_windows(ListNode<Window *> *win, const Vector2D &gap_x, doub
     for (auto w = windows.first(); w != nullptr; w = w->next()) {
         auto gap0 = w == windows.first() ? 0.0 : gap;
         auto gap1 = w == windows.last() ? 0.0 : gap;
-        w->data()->update_window(geom.w, gap_x, gap0, gap1);
+        w->data()->update_window(geom.w, gap_x, gap0, gap1, animate);
     }
 }
 

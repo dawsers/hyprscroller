@@ -1558,6 +1558,9 @@ void Row::scroll_update(Direction dir, const Vector2D &delta) {
     default:
         break;
     }
+
+    auto monitor = g_pCompositor->getWorkspaceByID(workspace)->m_pMonitor;
+    g_pHyprRenderer->damageMonitor(monitor.lock());
 }
 
 void Row::scroll_end(Direction dir)

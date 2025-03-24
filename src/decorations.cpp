@@ -247,7 +247,7 @@ void JumpDecoration::damageEntire() {
 }
 
 eDecorationLayer JumpDecoration::getDecorationLayer() {
-    return DECORATION_LAYER_OVERLAY;
+    return DECORATION_LAYER_OVER;
 }
 
 uint64_t JumpDecoration::getDecorationFlags() {

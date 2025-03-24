@@ -502,7 +502,7 @@ void ScrollerLayout::resizeActiveWindow(const Vector2D &delta,
     if (s == nullptr) {
         // Window is not tiled
         *PWINDOW->m_vRealSize = Vector2D(std::max((PWINDOW->m_vRealSize->goal() + delta).x, 20.0), std::max((PWINDOW->m_vRealSize->goal() + delta).y, 20.0));
-        PWINDOW->sendWindowSize(PWINDOW->m_vRealSize->goal());
+        PWINDOW->sendWindowSize();
         PWINDOW->updateWindowDecos();
         return;
     }
@@ -538,7 +538,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
 
                 window->unsetWindowData(PRIORITY_LAYOUT);
                 window->updateWindowData();
-                window->sendWindowSize(window->m_vRealSize->goal());
+                window->sendWindowSize();
             }
         } else {
             // apply new pos and size being monitors' box
@@ -551,7 +551,7 @@ void ScrollerLayout::fullscreenRequestForWindow(PHLWINDOW window,
                             PMONITOR->vecSize - PMONITOR->vecReservedTopLeft - PMONITOR->vecReservedBottomRight};
                 *window->m_vRealPosition = Vector2D(box.x, box.y);
                 *window->m_vRealSize = Vector2D(box.w, box.h);
-                window->sendWindowSize(window->m_vRealSize->goal());
+                window->sendWindowSize();
             }
         }
     } else {

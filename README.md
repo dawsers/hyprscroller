@@ -26,7 +26,7 @@ that front.
 ## Requirements
 
 *hyprscroller* supports the version of *Hyprland* I use, which should be the
-same as the Arch Linux `hyprland` package (v0.48.0). You can try your luck with the
+same as the Arch Linux `hyprland` package (v0.48.1). You can try your luck with the
 latest `git` changes, but I will be slower to keep up with those, as there are
 too many API changes going on upstream.
 
